@@ -45,7 +45,7 @@
 ## 内置内容
 
 - **AI 助手规则集**：`CLAUDE.md`（含 ArkTS 硬约束、状态管理坑、构建/调试/上架检查清单）+ `AGENTS.md`（跨工具简版，Codex / Cursor / Aider 通用）
-- **PostToolUse 钩子**：Claude Code 每次 Edit/Write 后自动跑 ArkTS 反模式扫描（`tools/hooks/lib/scan-arkts.sh`）+ OHPM 包名校验（`tools/check-ohpm-deps.sh`），违规反馈到 AI 上下文让其自我修正——**这是本仓库的核心差异化能力**
+- **PostToolUse 钩子链路**：Claude Code 每次 Edit/Write 后自动跑反模式扫描——含 ArkTS 语法（`tools/hooks/lib/scan-arkts.sh`）+ OHPM 包名核验（`tools/check-ohpm-deps.sh`）+ `module.json5` 权限提示，违规反馈到 AI 上下文自我修正
 - **Claude Skills**：`.claude/skills/` 下 5 个按需触发的小卡片（arkts-rules / state-management / build-debug / signing-publish / harmonyos-review）+ `manifest.json` 元数据
 - **多工具 fan-out**：`tools/generate-ai-configs.sh` 单源同步到 Cursor `.mdc` / Copilot instructions
 - **CLI 工具集**：
@@ -58,6 +58,31 @@
 - **十大主题指南**（`00-` 至 `09-`）：环境搭建、ArkTS、ArkUI、Platform APIs、构建调试、最佳实践、设计、上架、资源链接、Quick Reference
 - **2026 提审拒因清单**：[`07-publishing/checklist-2026-rejection-top20.md`](07-publishing/checklist-2026-rejection-top20.md) Top 20 拒因 + 修复 + 自查命令
 - **测试 fixture**：`tools/hooks/test-fixtures/` 故意写错的 .ets 用于校验脚本回归
+
+### 真正独有的能力（vs 同类项目）
+
+PostToolUse 钩子并非孤例（[`yibaiba/harmonyos-skills-pack`](https://github.com/yibaiba/harmonyos-skills-pack) 也有 hooks 目录与 ArkTS 扫描器），本仓库的真实差异点是：
+
+1. **OHPM 包名四级校验**（黑名单 → 白名单 → `ohpm view` CLI → 未知降级）—— [`tools/check-ohpm-deps.sh`](tools/check-ohpm-deps.sh)。同类无人做。
+2. **AGC 提审 Top 20 拒因稳定 ID 体系**（`AGC-RJ-001..020`）+ 6 条高频项配可粘贴代码示例 —— `harmonyos-review` skill 与扫描器可用同一编号互引。同类无人做。
+3. **awk 双状态机去注释预处理**（块注释 + 行注释）后再扫描，比直接 grep 假阳性更低 —— [`tools/hooks/lib/scan-arkts.sh`](tools/hooks/lib/scan-arkts.sh) 第 42-72 行
+4. **OpenHarmony 官方文档镜像 bootstrap 脚本**（5300+ 中文 / 5100+ 英文 md 离线检索）—— 同类无人做
+5. **测试 fixture 回归保障**（`tools/hooks/test-fixtures/` 故意写错的 .ets/.json5）—— 同类无人做
+
+完整对比与同类生态全景见 [`docs/USAGE-GUIDE.md`](docs/USAGE-GUIDE.md) § B。
+
+### 规则编号体系（精确说明）
+
+本仓库的规则按用途分四层，**不应被合并表述为单一数字**：
+
+| 层 | 数量 | 位置 | 用途 |
+| --- | --- | --- | --- |
+| **自动化扫描**（钩子触发） | 13 条 | `tools/hooks/lib/scan-arkts.sh` 内联（v0.2 → 扩展中） | grep-based 快扫，毫秒级反馈 |
+| **代码审查清单** | 36 条（9 大类） | `.claude/skills/harmonyos-review/references/checklist.md` | review skill 引用的稳定 ID（`SEC-001` / `STATE-002` / `KIT-003` 等） |
+| **AGC 提审拒因** | 20 条 | `07-publishing/checklist-2026-rejection-top20.md` | 上架审核拒因映射，含 `AGC-RJ-*` 稳定 ID |
+| **OHPM 黑名单**（已知伪包） | ~25 项 | `tools/data/ohpm-blacklist.txt` + 脚本内联 | 防 AI 虚构包名 |
+
+合计 ~94 条编号规则，分布在四个层；它们用于不同场景。
 
 ---
 

@@ -1,0 +1,106 @@
+name: HarmonyOS ArkTS Check
+
+# 等价于 Claude Code PostToolUse 钩子的 CI 版本：
+#   每个 PR 自动跑 scan-arkts.sh（JSON 模式）+ check-ohpm-deps.sh
+#   命中 High 级反模式直接阻塞合并
+
+on:
+  pull_request:
+    paths:
+      - '**/*.ets'
+      - '**/*.ts'
+      - '**/oh-package.json5'
+      - '**/module.json5'
+
+jobs:
+  arkts-scan:
+    name: ArkTS 反模式扫描
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 需要 git diff 找改动文件
+
+      - name: 找出 PR 改动的 .ets / .ts
+        id: changed
+        run: |
+          changed=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }} | grep -E '\.(ets|ts)$' || true)
+          {
+            echo "files<<EOF"
+            echo "$changed"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: 跑 ArkTS 反模式扫描（JSON 输出）
+        if: steps.changed.outputs.files != ''
+        id: scan
+        run: |
+          violations="["
+          first=1
+          worst=0
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            [ ! -f "$f" ] && continue
+            output=$(bash tools/hooks/lib/scan-arkts.sh --json "$f") || rc=$?
+            rc=${rc:-0}
+            [ "$rc" -gt "$worst" ] && worst=$rc
+            # 拼到大数组（去掉每个文件输出的外层 [ ]）
+            inner=$(echo "$output" | sed 's/^\[//; s/\]$//')
+            if [ -n "$inner" ] && [ "$inner" != "" ]; then
+              if [ "$first" = "1" ]; then
+                first=0
+              else
+                violations="$violations,"
+              fi
+              violations="$violations$inner"
+            fi
+          done <<< "${{ steps.changed.outputs.files }}"
+          violations="$violations]"
+          echo "$violations" > /tmp/violations.json
+          cat /tmp/violations.json | jq '.' || true
+          echo "worst=$worst" >> $GITHUB_OUTPUT
+
+      - name: 跑 OHPM 包名校验
+        if: steps.changed.outputs.files != ''
+        run: |
+          if [ -f oh-package.json5 ]; then
+            bash tools/check-ohpm-deps.sh oh-package.json5 || rc=$?
+            [ "${rc:-0}" -ge 2 ] && exit 1 || true
+          fi
+
+      - name: PR 评论汇总（可选）
+        if: steps.changed.outputs.files != '' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let violations = [];
+            try {
+              violations = JSON.parse(fs.readFileSync('/tmp/violations.json', 'utf8'));
+            } catch (e) {}
+            if (violations.length === 0) return;
+
+            const high = violations.filter(v => v.severity === 'High');
+            const med = violations.filter(v => v.severity === 'Medium');
+            const body = [
+              `## HarmonyOS ArkTS 扫描结果`,
+              `- High: **${high.length}** | Medium: **${med.length}**`,
+              '',
+              ...violations.slice(0, 30).map(v =>
+                `- [${v.rule} · ${v.severity}] \`${v.file}:${v.line}\` — ${v.reason}`
+              ),
+              violations.length > 30 ? `\n_… 还有 ${violations.length - 30} 条_` : ''
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
+
+      - name: 阻塞合并（命中 High）
+        if: steps.scan.outputs.worst == '2'
+        run: |
+          echo "::error::存在 High 级 ArkTS 反模式，阻塞合并。详见上面的 PR 评论。"
+          exit 1

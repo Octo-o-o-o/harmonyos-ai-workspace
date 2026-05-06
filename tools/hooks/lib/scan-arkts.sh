@@ -14,7 +14,17 @@
 
 set -u
 
-FILE="${1:-}"
+# 解析参数：--json 切到 JSON 输出模式，其余视为文件路径
+JSON_MODE="0"
+FILE=""
+for arg in "$@"; do
+  case "$arg" in
+    --json) JSON_MODE="1" ;;
+    --help|-h) sed -n '2,15p' "$0"; exit 0 ;;
+    *) [[ -z "$FILE" ]] && FILE="$arg" ;;
+  esac
+done
+
 if [[ -z "$FILE" ]]; then
   echo "scan-arkts.sh: 需要文件路径参数" >&2
   exit 64
@@ -77,17 +87,41 @@ TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
 strip_comments "$FILE" > "$TMP"
 
+# JSON 累积器（仅 JSON 模式使用；用临时文件避免 here-string + JQ 依赖）
+JSON_BUF="$(mktemp)"
+
+# JSON 安全转义（最小集：" \ 控制字符）
+json_escape() {
+  printf '%s' "$1" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read())[1:-1])' 2>/dev/null \
+    || printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/	/\\t/g'
+}
+
+emit_record() {
+  local rule="$1" sev="$2" line="$3" snippet="$4" reason="$5"
+  if [[ "$JSON_MODE" == "1" ]]; then
+    {
+      printf '{'
+      printf '"rule":"%s",' "$rule"
+      printf '"severity":"%s",' "$sev"
+      printf '"file":"%s",' "$(json_escape "$REL")"
+      printf '"line":%s,' "$line"
+      printf '"snippet":"%s",' "$(json_escape "${snippet:0:120}")"
+      printf '"reason":"%s"' "$(json_escape "$reason")"
+      printf '}\n'
+    } >>"$JSON_BUF"
+  else
+    printf '[%s · %s] %s:%s: %s\n  ↳ %s\n' \
+      "$rule" "$sev" "$REL" "$line" "$snippet" "$reason" >&2
+  fi
+}
+
 emit_high() {
-  local rule="$1" line="$2" snippet="$3" reason="$4"
-  printf '[%s · High] %s:%s: %s\n  ↳ %s\n' \
-    "$rule" "$REL" "$line" "$snippet" "$reason" >&2
+  emit_record "$1" "High" "$2" "$3" "$4"
   violations_high=$((violations_high + 1))
 }
 
 emit_med() {
-  local rule="$1" line="$2" snippet="$3" reason="$4"
-  printf '[%s · Medium] %s:%s: %s\n  ↳ %s\n' \
-    "$rule" "$REL" "$line" "$snippet" "$reason" >&2
+  emit_record "$1" "Medium" "$2" "$3" "$4"
   violations_med=$((violations_med + 1))
 }
 
@@ -235,13 +269,97 @@ while IFS= read -r match; do
     "ArkTS 禁一元 + 转换。改写：parseInt(s, 10) 或 Number(s)"
 done < <(scan_lines '[^a-zA-Z0-9_)\]]\+\s*[a-zA-Z_]\w*\b' | grep -E '\+\s*[a-zA-Z_]' | grep -vE '\+\s*=' || true)
 
+# ─── 新增规则（v0.3 扩展，Top 7 高把握） ────────────────────
+
+# KIT-001: Network Kit `http.createHttp()` 用完未 destroy
+# 简化检测：见 createHttp() 但同文件没出现 destroy()
+if grep -qE 'http\.createHttp\(\)' "$TMP" 2>/dev/null && ! grep -qE '\.destroy\(\)' "$TMP" 2>/dev/null; then
+  ln_kit=$(grep -nE 'http\.createHttp\(\)' "$TMP" | head -1 | cut -d: -f1)
+  emit_med "KIT-001" "${ln_kit:-1}" "$(grep -E 'http\.createHttp\(\)' "$TMP" | head -1)" \
+    "@kit.NetworkKit 的 http 实例使用完应调 destroy() 释放；本文件未见 destroy()"
+fi
+
+# PERF-001: forEach + await 反模式（无法并发也无法保序）
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  emit_high "PERF-001" "$ln" "${content:0:80}" \
+    "forEach 内 await 既不并发也不保序。要并发用 Promise.all(arr.map(...))；要顺序用 for-of"
+done < <(scan_lines '\.forEach\s*\(\s*async' | head -10)
+
+# ARKTS-013: console.log 但不带 hilog 形式
+# （ARKTS-012 已检 console.*，此条更细：检 throw new Error 后丢弃 stack）
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  # 排除 throw new Error("...") 这种正常用法；只命中 catch 内吞错
+  if echo "$content" | grep -qE 'catch\s*\([^)]*\)\s*\{\s*\}'; then
+    emit_high "ARKTS-016" "$ln" "${content:0:80}" \
+      "空 catch 块吞掉异常会让上架审核失败稳定性测试。最少打 hilog.error 或重抛"
+  fi
+done < <(scan_lines 'catch\s*\(' | head -20)
+
+# STATE-009: Map / Set 就地 set / delete / clear 但外层是 @State
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  emit_high "STATE-009" "$ln" "${content:0:80}" \
+    "Map / Set 就地 set / delete / clear 不触发重渲染。改写：const next = new Map(this.m); next.set(...); this.m = next;"
+done < <(scan_lines '\bthis\.[a-zA-Z_]\w*\.(set|delete|clear)\s*\(' | head -10)
+
+# SEC-001: 硬编码看起来像 token / api-key / secret 的字符串字面量
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  # 只匹配明显的赋值表达式，避免 import / 类型注解假阳
+  if echo "$content" | grep -qE '(token|secret|apiKey|api_key|password)[[:space:]]*[:=][[:space:]]*["'\''][A-Za-z0-9+/=_-]{16,}["'\'']'; then
+    emit_high "SEC-001" "$ln" "${content:0:80}" \
+      "看似硬编码密钥/口令/Token，长度 ≥ 16。请挪到环境变量或 secure storage（@kit.AbilityKit 的 EncryptedPreferences）"
+  fi
+done < <(scan_lines '(token|secret|apiKey|api_key|password)' | head -20)
+
+# COMPAT-001: 调到看起来像 API 21+ 新 Kit 但未做 canIUse 守护
+# 简化检测：用了 @kit.Foo 但全文没 canIUse
+if grep -qE 'from[[:space:]]+["\'']@kit\.' "$TMP" 2>/dev/null && ! grep -qE 'canIUse\s*\(' "$TMP" 2>/dev/null; then
+  # 仅在导入了较"新"的 Kit 时提示，避免每个文件都报
+  if grep -qE 'from[[:space:]]+["\'']@kit\.(BackgroundTasksKit|DistributedDataObject|DeviceManagerKit|IAPKit|HuksAuthKit)["\'']' "$TMP" 2>/dev/null; then
+    ln_compat=$(grep -nE 'from[[:space:]]+["\'']@kit\.' "$TMP" | head -1 | cut -d: -f1)
+    emit_med "COMPAT-001" "${ln_compat:-1}" "(import @kit.*)" \
+      "导入了较新的 Kit 但未见 canIUse('SystemCapability.X') 守护；如果 minSDK < 21 会在老设备崩"
+  fi
+fi
+
 # ─── 总结 ───────────────────────────────────────────
 
+# JSON 模式：把累积的 record 拼成数组输出到 stdout
+if [[ "$JSON_MODE" == "1" ]]; then
+  if [[ -s "$JSON_BUF" ]]; then
+    printf '['
+    awk 'BEGIN{first=1} {if(first){first=0}else{printf ","}; printf "%s", $0}' "$JSON_BUF"
+    printf ']\n'
+  else
+    printf '[]\n'
+  fi
+  rm -f "$JSON_BUF"
+fi
+
+# 文本模式：summary
+if [[ "$JSON_MODE" != "1" ]]; then
+  if [[ "$violations_high" -gt 0 ]]; then
+    printf '\n[summary] %s · High: %d · Medium: %d\n' "$REL" "$violations_high" "$violations_med" >&2
+  elif [[ "$violations_med" -gt 0 ]]; then
+    printf '\n[summary] %s · Medium: %d\n' "$REL" "$violations_med" >&2
+  fi
+fi
+
+# 退出码（两种模式都用）
 if [[ "$violations_high" -gt 0 ]]; then
-  printf '\n[summary] %s · High: %d · Medium: %d\n' "$REL" "$violations_high" "$violations_med" >&2
   exit 2
 elif [[ "$violations_med" -gt 0 ]]; then
-  printf '\n[summary] %s · Medium: %d\n' "$REL" "$violations_med" >&2
   exit 1
 fi
 

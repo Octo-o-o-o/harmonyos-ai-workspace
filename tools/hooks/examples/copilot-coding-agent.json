@@ -1,0 +1,17 @@
+{
+  "_comment": "GitHub Copilot Coding Agent (beta) 的钩子接入示例。Copilot 当前 hook 机制还在演进，本文件是占位，等正式 API 发布再 sync。",
+  "_install": "把本文件 cp 到 .github/copilot/hooks.json，或在 GitHub repo settings 中导入。",
+  "_status": "实验性。Copilot Coding Agent 是 beta（2026-04），格式可能调整；以官方文档为准。",
+
+  "hooks": {
+    "post_edit": {
+      "matcher": ["*.ets", "*.ts", "**/oh-package.json5", "**/module.json5"],
+      "command": "bash tools/hooks/post-edit.sh",
+      "timeout_ms": 5000,
+      "on_failure": "report",
+      "_note": "Copilot Coding Agent 在 PR 阶段对 AI 生成的文件做 lint。本脚本同 Claude Code 钩子复用。"
+    }
+  },
+
+  "_fallback_for_now": "在 Copilot 真支持本级 hook 之前，请改用 git pre-commit：参见 tools/hooks/examples/codex-precommit.sh"
+}

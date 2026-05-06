@@ -1,0 +1,47 @@
+# OHPM 黑名单 · 已知由 AI 虚构 / 常被混淆的伪包名
+# 格式：<fake-name>|<reason or correct-name>
+# 来源：CSDN / 掘金 / 华为开发者论坛真实案例 + 团队测试
+# 维护：欢迎 PR；新增前请确认 https://ohpm.openharmony.cn/ 搜索后**不存在**
+#
+# 注意：脚本会先读取本文件，再合并 check-ohpm-deps.sh 内联的核心条目
+
+# ─── React / Vue / 前端框架（鸿蒙不在 npm 生态） ───
+@ohos/react|不存在；鸿蒙是 ArkUI 声明式，不是 React
+@ohos/react-dom|不存在；同上
+@ohos/vue|不存在；鸿蒙是 ArkUI 声明式
+@ohos/svelte|不存在；同上
+@ohos/preact|不存在；同上
+@ohos/next|不存在；不要把 Next.js 概念套到鸿蒙
+
+# ─── HTTP 客户端（用 @kit.NetworkKit） ───
+@ohos/axios|不存在；ArkTS 没有 axios，用 @kit.NetworkKit 的 http
+@ohos/fetch|不存在；用 @kit.NetworkKit 的 http
+@ohos/got|不存在；同上
+@ohos/superagent|不存在；同上
+
+# ─── 工具库（用 @kit.ArkTS / 自实现） ───
+@ohos/lodash|不存在；用 @kit.ArkTS 的 ArrayList / HashMap 或自实现
+@ohos/underscore|不存在；同上
+@ohos/ramda|不存在；同上
+@ohos/moment|不存在；用 @kit.LocalizationKit 的 i18n.DateTimeFormat
+@ohos/dayjs|不存在；同上
+@ohos/date-fns|不存在；同上
+@ohos/uuid|不存在；用 @kit.AbilityKit 的能力或自实现
+@ohos/jsonwebtoken|不存在；用 @kit.AuthenticationKit 或自实现
+
+# ─── 后端 / Node 包（鸿蒙不在 Node 生态） ───
+@ohos/express|不存在；鸿蒙不在 Node 生态
+@ohos/koa|不存在；同上
+@ohos/socket.io-client|不存在；用 @kit.NetworkKit 的 webSocket
+
+# ─── 易混淆名称（真实包名不带后缀 / 前缀） ───
+@ohos/lottie-player|不存在；真实包名是 @ohos/lottie（不带 -player）
+@ohos/echarts-for-rich|不存在；查 OHPM 真实 echarts 包名
+
+# ─── AI 经常虚构的"知名 SDK 鸿蒙版" ───
+@ohos/firebase|不存在；用华为 AGC 服务（@ohos/agconnect-*）
+@ohos/sentry|不存在；用华为 Crash 服务（@ohos/crash）或自接 hilog
+@ohos/openai|不存在；用 @kit.NetworkKit 直接调 API
+@ohos/redux|不存在；ArkUI 状态管理是装饰器（@State/@Local）系统
+@ohos/mobx|不存在；同上
+@ohos/styled-components|不存在；ArkUI 样式系统是 @Styles/@Extend

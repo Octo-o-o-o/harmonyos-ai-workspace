@@ -26,12 +26,14 @@ PRIMARY_URL="https://github.com/openharmony-rs/openharmony-docs.git"
 FALLBACK_URL="https://gitee.com/openharmony/docs.git"
 
 MODE="install"
+ASSUME_YES="0"
 for arg in "$@"; do
   case "$arg" in
     --force)  MODE="force"  ;;
     --update) MODE="update" ;;
+    -y|--yes) ASSUME_YES="1" ;;
     -h|--help)
-      sed -n '2,12p' "$0"
+      sed -n '2,14p' "$0"
       exit 0
       ;;
   esac
@@ -66,8 +68,23 @@ if [[ -d "$TARGET" ]]; then
   esac
 fi
 
-info "克隆 OpenHarmony 文档镜像（浅克隆，约 2.7 GB）..."
-info "源：$PRIMARY_URL"
+info "OpenHarmony 文档镜像下载体积：约 2.7 GB"
+info "目标位置：$TARGET"
+info "源：$PRIMARY_URL（备：$FALLBACK_URL）"
+echo
+warn "本仓库的核心能力（钩子 / OHPM 校验 / Skills）**不依赖**这份镜像。"
+warn "仅当你想离线检索 OpenHarmony 官方原文（5300+ 中文 / 5100+ 英文 md）时才需要拉。"
+echo
+
+if [[ "$ASSUME_YES" != "1" && -t 0 ]]; then
+  read -r -p "是否继续下载 ~2.7 GB？[y/N] " confirm
+  case "$confirm" in
+    [yY]|[yY][eE][sS]) ;;
+    *) info "已取消。需要时重跑 bash tools/bootstrap-upstream-docs.sh -y"; exit 0 ;;
+  esac
+fi
+
+info "开始克隆..."
 
 if git clone --depth=1 "$PRIMARY_URL" openharmony-docs; then
   ok "克隆完成"

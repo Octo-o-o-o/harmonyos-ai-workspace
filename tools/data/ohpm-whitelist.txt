@@ -1,0 +1,41 @@
+# OHPM 白名单 · 已知真实存在的常用 / 核心包
+# 格式：每行一个包名
+# 来源：DevEco 默认模板 + OHPM 热门 + 华为官方文档
+# 维护：欢迎 PR；新增前请确认 https://ohpm.openharmony.cn/ 搜索后**存在**
+#
+# 注意：脚本会先读取本文件，再合并 check-ohpm-deps.sh 内联的核心条目
+
+# 测试 / 框架（DevEco 默认依赖）
+@ohos/hypium
+@ohos/hamock
+@ohos/hammertest
+
+# 构建工具
+@ohos/hvigor
+@ohos/hvigor-ohos-plugin
+
+# 华为云服务（AGC）
+@ohos/agconnect-core
+@ohos/agconnect-auth
+@ohos/agconnect-cloud
+@ohos/agconnect-storage
+@ohos/agconnect-database
+@ohos/agconnect-feedback
+@ohos/agconnect-applinking
+@ohos/agconnect-crash
+@ohos/agconnect-cloudfunctions
+@ohos/agconnect-clouddb
+
+# UI / 动画
+@ohos/lottie
+@ohos/svg-mapping
+@ohos/imageknife
+
+# 工具
+@ohos/aki
+@ohos/turbomodule
+@ohos/sm-crypto
+@ohos/mcimagecompress
+
+# 路由 / 导航
+@ohos/router
