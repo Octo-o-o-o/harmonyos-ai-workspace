@@ -111,6 +111,174 @@ V2 没有 `@Link`，要双向用 `@Param` + `@Event` 一对：
 }
 ```
 
+## V2 完整范例（鸿蒙 6 推荐风格）
+
+V2 在 API 12+ 推出、API 21/22 已成熟。下面是覆盖 V2 全部 11 装饰器的完整范例：
+
+### 范例 1 · `@Local` + `@Param` + `@Event`：基础双向数据流
+
+```typescript
+import { hilog } from '@kit.PerformanceAnalysisKit';
+
+@ComponentV2
+struct Counter {
+  @Param @Require value: number = 0;          // ⚠️ 父 → 子，不可变；@Require 强制父必传
+  @Event onValueChange: (v: number) => void = () => {};   // 子 → 父，必须默认值
+
+  build() {
+    Row() {
+      Button('-').onClick(() => this.onValueChange(this.value - 1));
+      Text(`${this.value}`).margin(8);
+      Button('+').onClick(() => this.onValueChange(this.value + 1));
+    }
+  }
+}
+
+@Entry
+@ComponentV2
+struct Page {
+  @Local count: number = 0;                   // 私有状态（替代 V1 @State）
+
+  build() {
+    Counter({
+      value: this.count,
+      onValueChange: (v: number) => { this.count = v }
+    })
+  }
+}
+```
+
+### 范例 2 · `@ObservedV2` + `@Trace`：响应式对象（字段粒度）
+
+```typescript
+@ObservedV2
+class User {
+  @Trace name: string = '';        // 改了会触发 UI 刷新
+  @Trace age: number = 0;
+  email: string = '';              // 没加 @Trace → 改了不刷
+}
+
+@ComponentV2
+struct UserCard {
+  @Param @Require user: User = new User();
+  build() {
+    Column() {
+      Text(this.user.name);
+      Text(`${this.user.age}`);
+      Text(this.user.email);     // 改 email 不会刷新
+    }
+  }
+}
+```
+
+> **vs V1 `@Observed`**：V1 是类粒度（任意字段变都通知，性能不好）；V2 `@Trace` 是字段粒度，只追踪标了的字段。
+
+### 范例 3 · `@Provider` / `@Consumer`：跨层级数据流
+
+```typescript
+@ComponentV2
+struct App {
+  @Provider() theme: 'light' | 'dark' = 'light';   // ⚠️ 注解带 ()
+  build() { DeepNested() }
+}
+
+@ComponentV2
+struct DeepNested {
+  build() { Inner() }
+}
+
+@ComponentV2
+struct Inner {
+  @Consumer() theme: 'light' | 'dark' = 'light';   // 自动从最近的 Provider 拿
+  build() {
+    Text(this.theme === 'dark' ? '🌙' : '☀️')
+  }
+}
+```
+
+### 范例 4 · `@Once @Param`：父变化后子只同步一次
+
+```typescript
+@ComponentV2
+struct Snapshot {
+  @Once @Param value: number = 0;     // 第一次拿到后，父再变也不更新
+  build() { Text(`快照值: ${this.value}`) }
+}
+```
+
+### 范例 5 · `@Monitor`：精确监听字段路径变化
+
+```typescript
+@ObservedV2
+class Form {
+  @Trace name: string = '';
+  @Trace email: string = '';
+
+  @Monitor('name', 'email')
+  validate(monitor: IMonitor): void {
+    monitor.dirty.forEach(path => {
+      hilog.info(0xBEEF, 'form', '%{public}s changed', path);
+    });
+  }
+}
+```
+
+### 范例 6 · `@Computed`：派生值（带依赖追踪 + 自动缓存）
+
+```typescript
+@ComponentV2
+struct Cart {
+  @Local items: number[] = [10, 20, 30];
+
+  @Computed
+  get total(): number {
+    return this.items.reduce((a, b) => a + b, 0);
+  }
+
+  build() {
+    Column() {
+      Text(`合计: ${this.total}`);
+      Button('+5').onClick(() => {
+        this.items = [...this.items, 5];   // 必须替换引用，@Computed 才会重算
+      });
+    }
+  }
+}
+```
+
+## V1 → V2 迁移决策树
+
+```
+新建 .ets 文件，要写状态？
+├── 团队 / 老项目已用 V1 ───────→ 沿用 V1（兼容性）
+├── 这个文件需要派生计算 / 字段级精确追踪 ──→ V2
+├── 跨层级数据流复杂 ───────────→ V2（Provider/Consumer 类型更安全）
+├── targetSDK >= 21 且新业务 ──→ V2（鸿蒙 6 推荐）
+└── 其他 ─────────────────────→ V1（生态最成熟）
+```
+
+## V2 反模式 Top 5
+
+```typescript
+// ❌ 1. @Param 直接被子组件改写
+@Param x: number = 0;
+build() { Button('').onClick(() => { this.x++ }) }   // 编译报错
+
+// ❌ 2. @Event 没给默认值
+@Event onTap: () => void;                            // 编译报错；要 = () => {}
+
+// ❌ 3. @Provider 忘了带 ()
+@Provider theme: string = 'light';                   // 错；应为 @Provider()
+
+// ❌ 4. @Computed 依赖非响应式字段
+@Local n: number = 0;
+private otherN: number = 0;                          // 不响应式
+@Computed get x() { return this.otherN * 2 }        // 永远不重算
+
+// ❌ 5. @Trace 字段在普通类上（没 @ObservedV2）
+class User { @Trace name: string = ''; }             // @Trace 失效；类必须 @ObservedV2
+```
+
 ## 错误诊断速查
 
 | 现象 | 大概率原因 | 解决 |

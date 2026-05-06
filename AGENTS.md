@@ -1,8 +1,8 @@
-# AGENTS.md · 给 Codex / 其他 AI Agent 的指引
+# AGENTS.md · 跨工具通用宪法
 
-本文件供 OpenAI Codex CLI、Cursor、Aider 等非 Claude 类 agent 读取（约定俗成的 AGENTS.md 文件名）。Claude Code 读 [`CLAUDE.md`](CLAUDE.md)，两者内容主旨相同。
-
-> **强烈建议先读 [`CLAUDE.md`](CLAUDE.md)**，它包含完整的项目导航、AI 硬约束、开发/调试/构建注意事项。本文件只列最紧要的跨 agent 通用规则。
+> 本文件是**所有 AI 编码助手**（Codex / Cursor / Aider / Copilot / Claude Code / Gemini CLI / Junie / Windsurf / Zed / Warp 等 24+ 工具）的鸿蒙开发硬约束**单一真源**（[agents.md](https://agents.md/) 标准）。
+>
+> Claude Code 用户额外读 [`CLAUDE.md`](CLAUDE.md)（含 Skills 触发索引 + 钩子说明 + 项目导航等 Claude 特有内容；它在第 0 节明确说"通用宪法见 AGENTS.md"）。
 >
 > **维护者文档清单（AI 写代码不读）**：`docs/PLAN.md` / `docs/RESEARCH-*.md` / `docs/REVIEW-*.md` / `docs/OPEN-SOURCE-STRATEGY.md` / `docs/USAGE-GUIDE.md` / `docs/MCP-INTEGRATION.md` / `docs/SETUP-FROM-SCRATCH.md` / `CHANGELOG.md` / `CONTRIBUTING.md` 是给项目维护者 / 装环境的新手看的。除非用户明问"项目演进 / 贡献 / 发布 / 装 DevEco / 接 MCP"，否则忽略。
 

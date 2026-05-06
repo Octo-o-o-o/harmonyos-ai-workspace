@@ -44,9 +44,18 @@
   - `verify-environment.sh` 每个失败项给"下一步建议"，OpenHarmony 文档镜像降为可选
   - `install.sh` 装完检测 Claude Code / DevEco 缺失并提示
 - **v3 评审响应**（详见 [`docs/REVIEW-2026-05-07.md`](docs/REVIEW-2026-05-07.md)）：
-  - `post-edit.sh` 退出码语义修正：High → exit 2（block + 反馈给 AI），Medium → exit 0（让 AI 看见但不阻塞），消除"Medium 级 exit 1 让 Claude 看不到反馈"的隐性 bug
-  - `.mcp.json` 改 `npx -y mcp-harmonyos@latest`：fresh clone 不再需要先全局装 npm 包
-  - **版本契约**：README 顶部加 yaml `targets:` 段；5 个 SKILL.md frontmatter 加 `verified_against: harmonyos-6.0.2-api22` —— 区别于其他半年/22 月停更的同类项目，让用户和 AI 都能即时判断"这套 skill 是否对齐当下鸿蒙版本"
+  - **第一轮**（B-fix + C-3）：
+    - `post-edit.sh` 退出码语义修正：High → exit 2（block + 反馈给 AI），Medium → exit 0（让 AI 看见但不阻塞），消除"Medium 级 exit 1 让 Claude 看不到反馈"的隐性 bug
+    - `.mcp.json` 改 `npx -y mcp-harmonyos@latest`：fresh clone 不再需要先全局装 npm 包
+    - **版本契约**：README 顶部加 yaml `targets:` 段；5 个 SKILL.md frontmatter 加 `verified_against: harmonyos-6.0.2-api22`
+  - **第二轮**（G-1 / C-1 / C-2 / C-4 / E-1 / E-2 / X-2 全部采纳）：
+    - **G-1 CLAUDE.md 瘦身**：650 → 484 行；§ 11-13 详细内容（150 行）拆到新建的 `.claude/skills/build-debug/references/develop-debug-build.md`，CLAUDE.md 保留高频精华
+    - **C-1 ArkTS 规范快查**：新建 `.claude/skills/arkts-rules/references/spec-quick-ref.md`：14 ARKTS / 6 STATE / 4 KIT/PERF/SEC/COMPAT 条规则映射到官方规范条款 + 正确写法表；arkts-rules SKILL.md 顶部强调"必须引用 ID 而非凭印象"
+    - **C-2 state-management V2 强化**：SKILL.md 加 6 个完整 V2 范例（覆盖 11 装饰器）+ V1→V2 决策树 + 5 条 V2 反模式
+    - **C-4 钩子 timeout**：post-edit.sh 加 `timeout 10`（gtimeout fallback），超时返回 124 → 不阻塞 AI 流程
+    - **E-1 AGENTS.md 重定位为通用宪法**：标 [agents.md 标准](https://agents.md/) 24+ 工具兼容；CLAUDE.md 顶部加"通用宪法见 AGENTS.md"，冲突以 AGENTS.md 为准
+    - **E-2 ID 体系收口**：harmonyos-review report-template 强制要求所有 finding 用稳定 ID 引用；列出 9 大命名空间 88 条规则 + 引用格式示例
+    - **X-2 README 一图流**：加 ASCII art 流程图：AI 启动 → 钩子触发 → stderr 反馈 → AI 自我修正
 
 ### v0.3 候选（按真实用户反馈定）
 

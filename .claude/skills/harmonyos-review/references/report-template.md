@@ -101,14 +101,61 @@
 
 ## 附录 · 引用规则编号说明
 
-详见 `.claude/skills/harmonyos-review/references/checklist.md`：
+**报告必须用稳定 ID 引用规则**，不要"自由发挥写一句解释"。这是工程化壁垒——评审输出可被 grep / link / cross-reference。
 
-- `SEC-*` 安全合规 8 条
-- `ARKTS-*` ArkTS 语法 14 条
-- `STATE-*` 状态管理 10 条
-- `LIFE-*` 生命周期 5 条
-- `DB-*` 数据库 / 持久化 6 条
-- `PERM-*` 权限管理 5 条
-- `PERF-*` 性能 8 条
-- `COMPAT-*` API 兼容 5 条
-- `KIT-*` Kit 使用 7 条
+### ID 命名空间总表
+
+| 前缀 | 主题 | 数量 | 来源文件 |
+| --- | --- | --- | --- |
+| `ARKTS-*` | ArkTS 语法（编译期） | 14 条 | `.claude/skills/arkts-rules/references/spec-quick-ref.md` § 一 |
+| `STATE-*` | 状态管理（运行时） | 10 条 | 同上 § 二 |
+| `KIT-*` | Kit 使用规范 | 7 条 | 同上 § 三 + `references/checklist.md` |
+| `PERF-*` | 性能反模式 | 8 条 | `references/checklist.md` § 7 |
+| `SEC-*` | 安全 / 隐私 | 8 条 | `references/checklist.md` § 1 |
+| `LIFE-*` | 生命周期资源管理 | 5 条 | `references/checklist.md` § 4 |
+| `DB-*` | 数据库 / 持久化 | 6 条 | `references/checklist.md` § 5 |
+| `PERM-*` | 权限管理 | 5 条 | `references/checklist.md` § 6 |
+| `COMPAT-*` | API 兼容 | 5 条 | `references/checklist.md` § 8 |
+| `AGC-RJ-*` | 上架审核拒因 | 20 条 | `07-publishing/checklist-2026-rejection-top20.md` |
+
+合计 **88 条**带稳定 ID 的规则跨四类生命周期阶段。
+
+### 引用格式（强制）
+
+每条 finding 必须形如：
+
+```
+[<ID> · <Severity>] <relative-path>:<line>: <短问题>
+  ↳ <修复建议（含正确写法的引用）>
+  ↳ 参考：<对应 references 路径>
+```
+
+**示例**：
+
+```
+[STATE-002 · High] entry/src/main/ets/pages/Cart.ets:48:
+  this.items.push(item) 不触发重渲染
+  ↳ 改写：this.items = [...this.items, item]
+  ↳ 参考：.claude/skills/arkts-rules/references/spec-quick-ref.md § 二
+
+[ARKTS-014 · Medium] entry/src/main/ets/api/http.ts:3:
+  import http from '@ohos.net.http' 是旧式
+  ↳ 改写：import { http } from '@kit.NetworkKit'
+  ↳ 参考：.claude/skills/arkts-rules/references/spec-quick-ref.md § 一 ARKTS-014
+
+[AGC-RJ-007 · Critical] entry/src/main/ets/pages/Login.ets:15:
+  hilog.info(DOMAIN, 'auth', 'token=%{public}s', token) 用 %{public} 输出 token
+  ↳ 改写：用 %{private}s 或脱敏后再打
+  ↳ 参考：07-publishing/checklist-2026-rejection-top20.md AGC-RJ-007
+```
+
+### 不要
+
+- ❌ 自由文案（"这里有点问题" / "建议优化"）
+- ❌ 跳过 ID 直接给修法
+- ❌ 编造 ID（`SEC-099` / `STATE-100` 等）—— 必须查表
+
+### 工具协助
+
+- 自动扫描：`tools/hooks/lib/scan-arkts.sh --json` 直接输出带 ID 的 JSON 数组
+- 跨工具集成：`tools/hooks/examples/github-action-arkts-check.yml` 在 PR 上自动评论引用 ID

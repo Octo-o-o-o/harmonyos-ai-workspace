@@ -48,8 +48,21 @@ run_check() {
   local script="$1"
   shift
   if [[ -x "$script" || -f "$script" ]]; then
-    bash "$script" "$@" 2>>"$TMP_ERR"
+    # 加 timeout：钩子卡死会让 Claude Code 一直等
+    # macOS 自带 BSD timeout 名为 gtimeout（coreutils）；不存在就回退裸调用
+    if command -v timeout >/dev/null 2>&1; then
+      timeout 10 bash "$script" "$@" 2>>"$TMP_ERR"
+    elif command -v gtimeout >/dev/null 2>&1; then
+      gtimeout 10 bash "$script" "$@" 2>>"$TMP_ERR"
+    else
+      bash "$script" "$@" 2>>"$TMP_ERR"
+    fi
     local rc=$?
+    # timeout(1) 在超时时返回 124，不应当作扫描结果
+    if [[ $rc -eq 124 ]]; then
+      echo "[hook-timeout] $script 超过 10 秒，已终止" >>"$TMP_ERR"
+      rc=0   # 超时不阻塞 AI 流程
+    fi
     if [[ $rc -gt $worst_exit ]]; then
       worst_exit=$rc
     fi

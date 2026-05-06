@@ -86,8 +86,21 @@ hvigorw assembleHap -p buildMode=debug  # 真编译验证
 2. 找不到再上 [developer.huawei.com](https://developer.huawei.com/consumer/cn/)
 3. 仍不确定就告诉用户「我无法验证此 API 当前形态，建议你在 IDE 里 Ctrl+点进类型定义确认」
 
+## 引用稳定 ID（强制）
+
+**所有 ArkTS / 状态 / Kit 反模式都有稳定 ID**——回答用户时必须引用。完整映射表：[`references/spec-quick-ref.md`](references/spec-quick-ref.md)。
+
+常用 ID：
+
+- `ARKTS-001..016` 编译期语法（any / 解构 / for-in / delete 等）
+- `STATE-001..009` 运行时状态（V1V2 混用 / 就地 mutation）
+- `KIT-001` `PERF-001` `SEC-001` `COMPAT-001` 各领域
+
+被钩子命中违规时，回复结构应是：**引用 ID → 引用 references 中的"正确写法" → 不要另造一个看似对的版本**。
+
 ## 进一步参考
 
+- 完整 ID 映射 + 规范条款：[`references/spec-quick-ref.md`](references/spec-quick-ref.md)
 - 完整对照：`01-language-arkts/01-arkts-vs-typescript.md`
 - 全部规则编号：`01-language-arkts/02-typescript-to-arkts-migration.md`
 - 上游：`upstream-docs/.../quick-start/arkts-migration-background.md`

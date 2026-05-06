@@ -18,6 +18,39 @@ last_verified: "2026-05-07"
 
 > 鸿蒙生态快速迭代（API 12 → 22 跨度大）。本仓库每次发版前在 `last_verified` 日期对齐一次"当前消费稳定版"。如果你的 SDK 比这更新，建议先跑 `bash tools/run-linter.sh` 自查规则是否仍适用，并在 issue 里反馈差异。
 
+## 它怎么工作（一图流）
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│   你的鸿蒙 app 项目                                              │
+│   ┌─────────┐                                                    │
+│   │ AI 助手 │  Claude Code / Codex / Cursor / Copilot           │
+│   └────┬────┘                                                    │
+│        │ 启动时自动加载                                          │
+│        ▼                                                          │
+│   CLAUDE.md / AGENTS.md / .cursor/rules/ / .github/copilot-…     │
+│        │ AI 读到鸿蒙硬约束                                       │
+│        ▼                                                          │
+│   AI 写代码 → Edit .ets / .ts / oh-package.json5                 │
+│        │                                                          │
+│        ▼ ⚡ 钩子触发（仅 Claude Code 强校验）                    │
+│   ┌─────────────────────────────────────────────────────┐        │
+│   │ tools/hooks/post-edit.sh                            │        │
+│   │  ├─ scan-arkts.sh   18 条 ArkTS 反模式 grep         │        │
+│   │  ├─ check-ohpm-deps.sh  OHPM 包名黑/白/CLI 三层     │        │
+│   │  └─ module.json5    权限提示                        │        │
+│   └─────────────────────────────────────────────────────┘        │
+│        │                                                          │
+│        ├─ High 级 → exit 2 + stderr   ▶ AI 看到，自我修正        │
+│        └─ Medium  → exit 0 + stderr   ▶ AI 看到，但不阻塞        │
+│        │                                                          │
+│        ▼                                                          │
+│   写入 .claude/.harmonyos-last-scan.txt（下一轮 AI 可读）        │
+│                                                                   │
+│   人类 → hvigorw assembleHap → 设备                              │
+└──────────────────────────────────────────────────────────────────┘
+```
+
 ## 这是给谁用的？
 
 **前置要求**：你必须已经在用以下任意一个 AI 编码助手——本仓库不是独立工具，是给它们装的"鸿蒙领域规则包"。
