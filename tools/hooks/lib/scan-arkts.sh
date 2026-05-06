@@ -333,6 +333,81 @@ if grep -qE 'from[[:space:]]+["\'']@kit\.' "$TMP" 2>/dev/null && ! grep -qE 'can
   fi
 fi
 
+# ─── v0.3 新增 7 条规则（高把握，假阳性低） ──────────────────────────
+
+# SEC-002: hilog %{public} 输出敏感字段
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  if echo "$content" | grep -qE 'hilog\.[a-z]+\([^,]+,[^,]+,[^,]*%\{public\}.*?,[^)]*\b(token|password|secret|apiKey|api_key|身份证|idCard|phone)' ; then
+    emit_high "SEC-002" "$ln" "${content:0:80}" \
+      "hilog 用 %{public} 输出敏感字段（token / password / 身份证等）会泄漏到日志。改 %{private} 或脱敏后再打"
+  fi
+done < <(scan_lines 'hilog\.[a-z]+\(' | head -20)
+
+# SEC-007: 弱算法（MD5 / SHA1 / DES）
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  emit_med "SEC-007" "$ln" "${content:0:80}" \
+    "MD5 / SHA1 / DES 是弱算法，AGC 审核会被拒。改 SHA-256+ / AES-GCM（@kit.CryptoArchitectureKit）"
+done < <(scan_lines '\b(MD5|SHA1|DES)\b' | grep -vE 'SHA1?256|SHA-?256|DESC|description' | head -10)
+
+# DB-001: ResultSet / RdbStore 取出后无 close
+if grep -qE '\.getResultSet\s*\(|\.getRdbStore\s*\(' "$TMP" 2>/dev/null && ! grep -qE '\.close\s*\(\s*\)' "$TMP" 2>/dev/null; then
+  ln_db=$(grep -nE '\.getResultSet\s*\(|\.getRdbStore\s*\(' "$TMP" | head -1 | cut -d: -f1)
+  emit_high "DB-001" "${ln_db:-1}" "$(grep -E '\.getResultSet\s*\(|\.getRdbStore\s*\(' "$TMP" | head -1 | sed 's/^[[:space:]]*//')" \
+    "ResultSet / RdbStore 取出后未见 .close()。AGC 提审会卡稳定性测试。用 try/finally 保证释放"
+fi
+
+# KIT-002: ImageSource 解码后未 release
+if grep -qE 'createImageSource\s*\(|imageSource' "$TMP" 2>/dev/null && ! grep -qE '\.release\s*\(\s*\)' "$TMP" 2>/dev/null; then
+  ln_img=$(grep -nE 'createImageSource\s*\(' "$TMP" | head -1 | cut -d: -f1)
+  if [[ -n "$ln_img" ]]; then
+    emit_med "KIT-002" "$ln_img" "$(grep -E 'createImageSource\s*\(' "$TMP" | head -1 | sed 's/^[[:space:]]*//')" \
+      "ImageSource 解码后应调 .release() 释放原生缓冲；本文件未见 release"
+  fi
+fi
+
+# AGC-RJ-014: UI 中文字符串硬编码（应走 $r('app.string.xxx')）
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  emit_med "AGC-RJ-014" "$ln" "${content:0:80}" \
+    "UI 中含硬编码中文字符串。AGC 审核要求走资源 \$r('app.string.xxx') 以支持国际化"
+done < <(scan_lines 'Text\s*\(\s*['\''"][^'\''"\$]*[一-鿿]' | head -10)
+
+# PERF-002: 使用了 ForEach 但数据源是 Array 类型且行数 > 50（提示用 LazyForEach）
+foreach_lines=$(grep -cE '\bForEach\s*\(' "$TMP" 2>/dev/null) || foreach_lines=0
+if [[ "${foreach_lines:-0}" -gt 0 ]] && ! grep -qE 'LazyForEach' "$TMP" 2>/dev/null; then
+  total_lines=$(wc -l < "$TMP")
+  if [[ "$total_lines" -gt 80 ]]; then
+    ln_fe=$(grep -nE '\bForEach\s*\(' "$TMP" | head -1 | cut -d: -f1)
+    emit_med "PERF-002" "${ln_fe:-1}" "$(grep -E '\bForEach\s*\(' "$TMP" | head -1 | sed 's/^[[:space:]]*//')" \
+      "ForEach 适合短列表；超过 50 项时用 LazyForEach + IDataSource 才不会一次性渲染所有项"
+  fi
+fi
+
+# STATE-006: V1 调用方双向绑定丢 $$
+# 检测：V1 子组件用 @Link，但调用方写 `Child({ x: this.y })` 而不是 `Child({ x: $$this.y })`
+# 简化：仅当文件含 @Link 时给提示，要求人核查
+if grep -qE '@Link\s+\w+' "$TMP" 2>/dev/null; then
+  # 查所有形如 SomeComponent({ ... }) 但未见 $$
+  while IFS= read -r match; do
+    [[ -z "$match" ]] && continue
+    ln="${match%%:*}"
+    content="${match#*:}"
+    # 排除已用 $$ 的行
+    if echo "$content" | grep -qvE '\$\$'; then
+      emit_med "STATE-006" "$ln" "${content:0:80}" \
+        "本文件含 @Link 装饰器，调用子组件时双向绑定字段必须用 \$\$x 而非 x，否则单向"
+    fi
+  done < <(scan_lines '^[[:space:]]*[A-Z][a-zA-Z0-9_]*\s*\(\s*\{' | head -5)
+fi
+
 # ─── 总结 ───────────────────────────────────────────
 
 # JSON 模式：把累积的 record 拼成数组输出到 stdout

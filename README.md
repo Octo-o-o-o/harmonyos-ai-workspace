@@ -140,11 +140,17 @@ PostToolUse 钩子并非孤例（[`yibaiba/harmonyos-skills-pack`](https://githu
 # 1) 进入你的鸿蒙 app 根目录（不是这个仓库）
 cd ~/WorkSpace/apps/my-music-player
 
-# 2) 一行装好（默认 Claude Code + Codex）
+# 2) 一行装好（默认 Claude Code + Codex）—— 二选一
+
+# 2a) curl（最直接）
 curl -fsSL https://raw.githubusercontent.com/Octo-o-o-o/harmonyos-ai-workspace/main/tools/install.sh | bash
+
+# 2b) npx（不必先 git clone；npm 包未发到 npm 时走 GitHub source 同样可用）
+npx -y github:Octo-o-o-o/harmonyos-ai-workspace
 
 # 加 Cursor / Copilot：
 curl -fsSL https://raw.githubusercontent.com/Octo-o-o-o/harmonyos-ai-workspace/main/tools/install.sh | bash -s -- --targets=claude,codex,cursor,copilot
+# 等价：npx -y github:Octo-o-o-o/harmonyos-ai-workspace --targets=claude,codex,cursor,copilot
 
 # 国内 GitHub 不通时：
 curl -fsSL https://raw.githubusercontent.com/Octo-o-o-o/harmonyos-ai-workspace/main/tools/install.sh | bash -s -- --mirror=ghproxy

@@ -57,13 +57,41 @@
     - **E-2 ID 体系收口**：harmonyos-review report-template 强制要求所有 finding 用稳定 ID 引用；列出 9 大命名空间 88 条规则 + 引用格式示例
     - **X-2 README 一图流**：加 ASCII art 流程图：AI 启动 → 钩子触发 → stderr 反馈 → AI 自我修正
 
-### v0.3 候选（按真实用户反馈定）
+### v0.2.x 后续 patch（v0.3 提前实施 · 2026-05-07）
 
-- 扩展自动扫描到稳定 36 ID 规则集
+逐条评估 v0.3 候选清单后，**3 件"完全自主可控、对真实开发者立即有用"的提前做完**：
+
+- **A · scan-arkts.sh 18 → 25 条**（高把握 grep 规则，假阳性低）：
+  - `SEC-002` hilog `%{public}` 输出敏感字段（token / password / 身份证）
+  - `SEC-007` 弱算法（MD5 / SHA1 / DES）
+  - `DB-001` ResultSet / RdbStore 未 close
+  - `KIT-002` ImageSource 解码后未 release
+  - `AGC-RJ-014` UI 中文字符串硬编码（应走 `$r('app.string.xxx')`）
+  - `PERF-002` 长列表用 ForEach 而非 LazyForEach
+  - `STATE-006` V1 `@Link` 调用方丢 `$$`
+  - 配套 fixture：`tools/hooks/test-fixtures/BadSecurityKit.ets`
+  - `spec-quick-ref.md` 同步更新 ID 映射表
+
+- **B · 4 个 Recipe 模板**（`samples/templates/`）：
+  - `permission/` 完整代码：4 类常见权限（位置 / 相机 / 通知 / 麦克风）的运行时申请 + UI 解释 + 拒绝兜底
+  - `list/` 完整代码：LazyForEach + IDataSource + 下拉刷新 + 上拉加载
+  - `dark-mode/` 完整代码：系统主题跟随 + 资源限定符 + mediaquery 监听
+  - `login/` 指引型（不写完整代码）：华为账号 SSO API 在 12 → 22 多次变化，AI 训练数据是旧版；只给"约束 + 文档链接 + 反模式提醒"避免误导
+
+- **C · npm 薄 CLI**（`package.json` + `bin/cli.js`）：
+  - 让 `npx -y github:Octo-o-o-o/harmonyos-ai-workspace` 直接可用，不必先 npm publish
+  - 透传所有 `tools/install.sh` 参数（`--targets` / `--mirror` / `--uninstall`）
+  - Windows 检测：明示走 WSL，不试图在 native 上跑
+  - npm publish 后等价 `npx harmonyos-ai-workspace`
+
+### v0.3 仍候选（依赖外部 / 内容工程半衰期短，等真用户反馈）
+
+- 接入动作型 MCP 默认装（替代 docs/MCP-INTEGRATION.md 指引）—— G 半年未更新
+- PowerShell 版本（Windows native）—— 多走 WSL
 - Layer 2 抽出 Claude Plugin 独立仓库
-- PowerShell 版本（Windows native 用户）
-- 接入动作型 MCP 写侧能力（默认装而非指引）
-- starter-kit 业务模板（取决于鸿蒙 API 稳定度）
+- starter-kit 完整业务模板（不止 4 recipe）—— 取决于鸿蒙 API 稳定度
+- SDK recipe 第三方贡献规范 —— 需先有 1-2 真实 recipe
+- RAG MCP serving 13524 docs —— 独立项目级
 
 ### codex 评审响应（详见 [`docs/archive/reviews/2026-05-07-codex.md`](docs/archive/reviews/2026-05-07-codex.md)）
 

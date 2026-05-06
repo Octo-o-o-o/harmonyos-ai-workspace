@@ -44,14 +44,21 @@
 
 ---
 
-## 三、Kit / 性能 / 安全
+## 三、Kit / 性能 / 安全 / 数据库 / 上架
 
-| 规则 ID | 反模式 | 正确写法 |
-| --- | --- | --- |
-| `KIT-001` | `http.createHttp()` 用完没 `destroy()` | 加 `req.destroy()` 释放 |
-| `PERF-001` | `arr.forEach(async ...)` | 并发 `Promise.all(arr.map(async ...))` 或顺序 `for-of` |
-| `SEC-001` | 硬编码看似 token / api-key / password 的字符串 | 挪到 EncryptedPreferences / 环境变量 |
-| `COMPAT-001` | 用 API 21+ 新 Kit 但无 `canIUse` 守护 | `if (canIUse('SystemCapability.Foo')) { ... }` |
+| 规则 ID | 反模式 | 正确写法 | 自动扫描 |
+| --- | --- | --- | --- |
+| `KIT-001` | `http.createHttp()` 用完没 `destroy()` | 加 `req.destroy()` 释放 | ✅ |
+| `KIT-002` | ImageSource 解码后未 `.release()` | `imageSource.release()` 释放原生缓冲 | ✅ |
+| `PERF-001` | `arr.forEach(async ...)` | 并发 `Promise.all(arr.map(async ...))` 或顺序 `for-of` | ✅ |
+| `PERF-002` | 长列表用 `ForEach` 而非 `LazyForEach` | `LazyForEach + IDataSource`（> 50 项时） | ✅ |
+| `SEC-001` | 硬编码看似 token / api-key / password 的字符串（≥ 16 字符） | 挪到 EncryptedPreferences / 环境变量 | ✅ |
+| `SEC-002` | `hilog %{public}` 输出敏感字段（token / 身份证 / password 等） | 用 `%{private}` 或脱敏 `mask()` 后再打 | ✅ |
+| `SEC-007` | `MD5` / `SHA1` / `DES` 弱算法 | SHA-256+ / AES-GCM（`@kit.CryptoArchitectureKit`） | ✅ |
+| `DB-001` | ResultSet / RdbStore 取出后未 `.close()` | `try { ... } finally { rs.close() }` | ✅ |
+| `COMPAT-001` | 用 API 21+ 新 Kit 但无 `canIUse` 守护 | `if (canIUse('SystemCapability.Foo')) { ... }` | ✅ |
+| `AGC-RJ-014` | UI 硬编码中文字符串 | `Text($r('app.string.xxx'))` + 资源文件 | ✅ |
+| `STATE-006` | V1 子组件 `@Link`，调用方丢 `$$` | `Toggle({ on: $$this.x })` 而非 `Toggle({ on: this.x })` | ✅ |
 
 ---
 

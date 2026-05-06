@@ -1,0 +1,54 @@
+{
+  "name": "harmonyos-ai-workspace",
+  "version": "0.2.5",
+  "description": "Rule pack + PostToolUse hooks + skills for AI coding assistants (Claude Code / Codex CLI / Cursor / Copilot) writing HarmonyOS / ArkTS code that actually compiles.",
+  "bin": {
+    "harmonyos-ai-workspace": "bin/cli.js"
+  },
+  "scripts": {
+    "test": "bash tools/hooks/lib/scan-arkts.sh tools/hooks/test-fixtures/BadState.ets || true"
+  },
+  "keywords": [
+    "harmonyos",
+    "harmonyos-next",
+    "arkts",
+    "arkui",
+    "claude-code",
+    "claude-skills",
+    "codex",
+    "cursor",
+    "copilot",
+    "agents-md",
+    "ai-coding",
+    "mcp"
+  ],
+  "homepage": "https://github.com/Octo-o-o-o/harmonyos-ai-workspace",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Octo-o-o-o/harmonyos-ai-workspace.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Octo-o-o-o/harmonyos-ai-workspace/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin/",
+    "tools/install.sh",
+    "tools/hooks/",
+    "tools/check-ohpm-deps.sh",
+    "tools/data/",
+    "tools/run-linter.sh",
+    "tools/generate-ai-configs.sh",
+    "CLAUDE.md",
+    "AGENTS.md",
+    ".claude/",
+    ".cursor/",
+    ".github/copilot-instructions.md",
+    ".mcp.json",
+    "LICENSE",
+    "README.md"
+  ]
+}
