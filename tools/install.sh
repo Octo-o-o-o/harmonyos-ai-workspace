@@ -148,6 +148,12 @@ install() {
   fetch "$BASE_URL/tools/check-ohpm-deps.sh"           "tools/check-ohpm-deps.sh"
   chmod +x tools/hooks/post-edit.sh tools/hooks/lib/*.sh tools/check-ohpm-deps.sh
 
+  # 2b) OHPM 黑/白名单数据（脚本会自动加载这些外部文件 → 不拉就退化为内联兜底）
+  fetch "$BASE_URL/tools/data/ohpm-blacklist.txt" "tools/data/ohpm-blacklist.txt" || \
+    warn "ohpm-blacklist.txt 拉取失败；脚本会回退到内联 11 项核心黑名单"
+  fetch "$BASE_URL/tools/data/ohpm-whitelist.txt" "tools/data/ohpm-whitelist.txt" || \
+    warn "ohpm-whitelist.txt 拉取失败；脚本会回退到内联白名单"
+
   # 3) Claude Code 专属：settings.json + skills/
   if contains_target "claude"; then
     fetch "$BASE_URL/.claude/settings.json"                                 ".claude/settings.json"

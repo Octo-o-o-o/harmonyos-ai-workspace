@@ -464,23 +464,6 @@ hvigorw assembleHap -p buildMode=debug  # 真编译
 
 ---
 
-## 14. 任务请求模板（贴给用户参考）
+## 14. 任务请求模板
 
-让用户给 AI 提需求时，附上以下模板更准确：
-
-```
-请按以下约束在 [文件路径] 写/改 [功能描述]：
-
-约束：
-- HarmonyOS 6（targetSDK API 21 / 6.0.1，minSDK API 12），ArkTS + ArkUI 声明式
-- 装饰器系列：V1（或 V2，二选一）
-- import 走 @kit.*
-- 严格遵守 ArkTS 规则（禁 any/var/解构/索引访问/对象字面量无注解等）
-- 不要发明 API；查 upstream-docs/openharmony-docs/zh-cn/application-dev/reference/ 验证
-
-期望产出：
-- 新建 / 修改的文件清单
-- 完整可粘贴的 .ets 代码
-- 需要在 module.json5 加的权限
-- 路由：在 main_pages.json 加什么
-```
+任务请求模板（贴给用户参考）已挪到 [`docs/USAGE-GUIDE.md` § 任务模板](docs/USAGE-GUIDE.md)。这是低频内容（用户在跟 AI 提需求时偶尔参考），不需要每轮注入到 AI 上下文。

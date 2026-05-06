@@ -6,6 +6,33 @@
 
 ---
 
+## 任务请求模板（贴给 AI 参考）
+
+让 AI 一次写对鸿蒙代码的关键是把约束讲清楚。下面这个模板可以直接复制粘贴到对话开头：
+
+```
+请按以下约束在 [文件路径] 写/改 [功能描述]：
+
+约束：
+- HarmonyOS 6（targetSDK API 21 / 6.0.1，minSDK API 12），ArkTS + ArkUI 声明式
+- 装饰器系列：V1（或 V2，二选一，不混用）
+- import 走 @kit.*（不用 @ohos.* 旧式）
+- 严格遵守 ArkTS 规则（禁 any / var / 解构 / 索引访问 / 对象字面量无注解 / for-in / delete 等）
+- 状态变更必须替换引用（this.list = [...this.list, x]，不要 this.list.push(x)）
+- 不要发明 API；查 upstream-docs/openharmony-docs/zh-cn/application-dev/reference/ 验证
+- 不要发明 OHPM 包名；本仓库 tools/check-ohpm-deps.sh 会自动校验
+
+期望产出：
+- 新建 / 修改的文件清单
+- 完整可粘贴的 .ets 代码
+- 需要在 module.json5 加的权限
+- 路由：在 main_pages.json 加什么
+```
+
+> Claude Code 用户：模板里的约束已经通过 `CLAUDE.md` + `.claude/skills/` 自动加载，不需要每次重复。这个模板适合**用别的 AI 工具**（如 ChatGPT 网页 / 文心 / Kimi）做单次问答时贴在 prompt 顶部。
+
+---
+
 ## A. 个人自用（开发自己的鸿蒙 app）
 
 **目录约定**——`HarmonyOS_DevSpace` 是参考库，**不要**把真业务 app 放进 `samples/`：

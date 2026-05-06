@@ -65,6 +65,24 @@
 - 接入动作型 MCP 写侧能力（默认装而非指引）
 - starter-kit 业务模板（取决于鸿蒙 API 稳定度）
 
+### codex 评审响应（详见 [`docs/archive/reviews/2026-05-07-codex.md`](docs/archive/reviews/2026-05-07-codex.md)）
+
+第三轮评审（codex 视角，源码 + WebFetch 八仓基线）。**P0 全部立即采纳**：
+
+- **README curl 命令补全** · 三处 `curl -fsSL ...` 占位换成完整 URL，新手可直接复制
+- **install.sh 补拉 OHPM 数据文件** · 加 `fetch tools/data/ohpm-{blacklist,whitelist}.txt`，避免 fresh clone 退化为内联兜底
+- **`.DS_Store` 物理清理** · 删除 root / tools / tools/hooks 下的 .DS_Store（核查发现未被 git tracked，但避免 macOS 后续误 add）
+- **评审归档** · `docs/REVIEW-2026-05-*.md` → `docs/archive/reviews/`（按 `日期-轮次-评审者` 命名）+ 加 README INDEX，clone 首屏不再被复盘文件淹没
+- **CLAUDE.md § 14 任务模板挪到 USAGE-GUIDE.md** · 是给用户跟其他 AI 提需求时用的低频内容，不该每轮注入到 Claude 上下文
+- **README 内置内容段压缩** · 13 条二级 bullet 压成 8 条精炼描述，节省 39 行
+
+评审错判核查后澄清：
+- "PLAN.md 与 docs/PLAN.md 重复" → root **没有 PLAN.md**（v1 已迁移）
+- "`.cursor/rules/harmonyos.mdc` 未入库" → **已入库**（git ls-files 可见）
+- "`.mcp.json` 改 npx -y" → **早已实施**（v3 第一轮）
+
+详细处置决策见评审顶部 `## 处置决策表`。
+
 [0.2.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.1.0
 [Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.2.0...HEAD

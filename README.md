@@ -97,21 +97,14 @@ bash tools/setup-from-scratch.sh
 
 ## 内置内容
 
-- **AI 助手规则集**：`CLAUDE.md`（含 ArkTS 硬约束、状态管理坑、构建/调试/上架检查清单）+ `AGENTS.md`（跨工具简版，Codex / Cursor / Aider 通用）
-- **PostToolUse 钩子链路**：Claude Code 每次 Edit/Write 后自动跑反模式扫描——含 ArkTS 语法（`tools/hooks/lib/scan-arkts.sh`）+ OHPM 包名核验（`tools/check-ohpm-deps.sh`）+ `module.json5` 权限提示，违规反馈到 AI 上下文自我修正
-- **Claude Skills**：`.claude/skills/` 下 5 个按需触发的小卡片（arkts-rules / state-management / build-debug / signing-publish / harmonyos-review）+ `manifest.json` 元数据
-- **多工具 fan-out**：`tools/generate-ai-configs.sh` 单源同步到 Cursor `.mdc` / Copilot instructions
-- **CLI 工具集**：
-  - `tools/install.sh` —— curl-pipeable 一行装到任意鸿蒙 app
-  - `tools/run-linter.sh` —— 离线 codeLinter wrapper（不依赖 DevEco GUI）
-  - `tools/check-ohpm-deps.sh` —— OHPM 包名校验
-  - `tools/bootstrap-upstream-docs.sh` —— 拉取官方文档镜像
-- **完整官方文档镜像**：5300+ 中文 + 5100+ 英文 markdown，来自 OpenHarmony 官方仓库（首次 clone 后跑 `bootstrap-upstream-docs.sh` 拉取，约 2.7 GB；不入主分支）
-- **MCP 配置**：`.mcp.json` 已接通 [`mcp-harmonyos`](https://www.npmjs.com/package/mcp-harmonyos)
-- **十大主题指南**（`00-` 至 `09-`）：环境搭建、ArkTS、ArkUI、Platform APIs、构建调试、最佳实践、设计、上架、资源链接、Quick Reference
-- **2026 提审拒因清单**：[`07-publishing/checklist-2026-rejection-top20.md`](07-publishing/checklist-2026-rejection-top20.md) Top 20 拒因 + 修复 + 自查命令
-- **测试 fixture**：`tools/hooks/test-fixtures/` 故意写错的 .ets 用于校验脚本回归
-
+- **AI 规则集** · `CLAUDE.md`（Claude）+ `AGENTS.md`（24+ 工具通用）+ 5 个按需触发的 [`.claude/skills/`](.claude/skills/)
+- **PostToolUse 钩子链路** · Edit `.ets`/`.ts`/`oh-package.json5` 后自动跑 ArkTS 反模式扫描 + OHPM 包名核验 + 权限提示
+- **多工具 fan-out** · 单源 `.claude/skills/*/SKILL.md` → Cursor `.mdc` + Copilot instructions
+- **CLI 工具集** · `install.sh`（一行装到 app）/ `run-linter.sh`（离线 codeLinter）/ `check-ohpm-deps.sh`（包名校验）/ `setup-from-scratch.sh`（新手向导）/ `bootstrap-upstream-docs.sh`（按需拉文档镜像）
+- **2026 提审 Top 20 拒因** · [`07-publishing/checklist-2026-rejection-top20.md`](07-publishing/checklist-2026-rejection-top20.md)，6 条高频项配可粘贴代码片段
+- **测试 fixture** · `tools/hooks/test-fixtures/` 4 个故意写错的文件，钩子回归保障
+- **MCP** · `.mcp.json` 接通 `mcp-harmonyos`（npx 自动）；动作型 MCP 接入指引见 [`docs/MCP-INTEGRATION.md`](docs/MCP-INTEGRATION.md)
+- **可选官方文档镜像** · 5300+ 中文 + 5100+ 英文 OpenHarmony md（按需 `bootstrap-upstream-docs.sh -y` 拉取，~2.7 GB）
 ### 真正独有的能力（vs 同类项目）
 
 PostToolUse 钩子并非孤例（[`yibaiba/harmonyos-skills-pack`](https://github.com/yibaiba/harmonyos-skills-pack) 也有 hooks 目录与 ArkTS 扫描器），本仓库的真实差异点是：
@@ -151,13 +144,13 @@ cd ~/WorkSpace/apps/my-music-player
 curl -fsSL https://raw.githubusercontent.com/Octo-o-o-o/harmonyos-ai-workspace/main/tools/install.sh | bash
 
 # 加 Cursor / Copilot：
-curl -fsSL ... | bash -s -- --targets=claude,codex,cursor,copilot
+curl -fsSL https://raw.githubusercontent.com/Octo-o-o-o/harmonyos-ai-workspace/main/tools/install.sh | bash -s -- --targets=claude,codex,cursor,copilot
 
 # 国内 GitHub 不通时：
-curl -fsSL ... | bash -s -- --mirror=ghproxy
+curl -fsSL https://raw.githubusercontent.com/Octo-o-o-o/harmonyos-ai-workspace/main/tools/install.sh | bash -s -- --mirror=ghproxy
 
 # 卸载：
-curl -fsSL ... | bash -s -- --uninstall
+curl -fsSL https://raw.githubusercontent.com/Octo-o-o-o/harmonyos-ai-workspace/main/tools/install.sh | bash -s -- --uninstall
 ```
 
 #### 5 分钟自测（验收装好了）
