@@ -70,14 +70,13 @@
 └── hooks
     └── PostToolUse
         └── matcher: "Write|Edit|MultiEdit"
-            └── command: tools/hooks/arkts-scan.sh
+            └── command: tools/hooks/lib/scan-arkts.sh
 
 tools/hooks/
-├── arkts-scan.sh           # 解析 Claude/Codex hook payload，运行扫描
-├── module-json-acl.sh      # 检查 module.json5 权限是否最小化
+├── post-edit.sh                # 入口；解析 hook payload，分发扫描
 └── lib/
-    ├── rules.txt           # 60+ 编号反模式正则（ARKTS-001 至 KIT-007）
-    └── parse-hook-input.sh # 兼容 Claude / Codex / 其他 JSON 格式
+    ├── scan-arkts.sh           # 60+ 编号反模式正则扫描
+    └── parse-hook-input.sh     # 兼容 Claude / Codex / 其他 JSON 格式
 ```
 
 **扫描规则**：复用 `.claude/skills/harmonyos-review/references/checklist.md` 的 60+ 编号规则；先实现 grep-based 快扫（< 200ms），未来可接 ArkAnalyzer。
@@ -292,7 +291,7 @@ claude
 # > "帮我加一个播放历史页面，用 LazyForEach"
 # AI 写了 entry/src/main/ets/pages/History.ets
 # ↓ Edit 工具完成的瞬间，PostToolUse 钩子触发
-# ↓ tools/hooks/arkts-scan.sh 跑完，输出回喂给 AI:
+# ↓ tools/hooks/lib/scan-arkts.sh 跑完，输出回喂给 AI:
 # "[STATE-002 · High] line 28: this.history.push(item) 不触发重渲染。
 #  请改为 this.history = [...this.history, item]"
 # ↓ AI 看到反馈，立即自我修正
@@ -352,7 +351,7 @@ npx harmonyos-ai-workspace upgrade --diff
 
 | ID | 任务 | 工作量 | 依赖 |
 | --- | --- | --- | --- |
-| **P0-A** | `tools/hooks/arkts-scan.sh` + `.claude/settings.json` PostToolUse 配置 | 半天 | 无 |
+| **P0-A** | `tools/hooks/lib/scan-arkts.sh` + `.claude/settings.json` PostToolUse 配置 | 半天 | 无 |
 | **P0-B** | `tools/check-ohpm-deps.sh` | 2 小时 | curl |
 | **P0-C** | `tools/install.sh`（curl pipe-able） + 文档说明 | 半天 | 无 |
 | **P0-D** | 钩子在 Claude / Codex 不同 hook payload 下的兼容（统一 parser） | 2 小时 | P0-A |
@@ -431,7 +430,7 @@ npx harmonyos-ai-workspace upgrade --diff
 
 - 仓库内 CI 能跑
 - 新 contributor 改钩子时能立即知道有没有跑挂
-- 用户拿到也能 `bash tools/hooks/arkts-scan.sh tools/hooks/test-fixtures/Bad.ets` 验证
+- 用户拿到也能 `bash tools/hooks/lib/scan-arkts.sh tools/hooks/test-fixtures/Bad.ets` 验证
 
 ### 11.5 v0.1 出口标准重申
 

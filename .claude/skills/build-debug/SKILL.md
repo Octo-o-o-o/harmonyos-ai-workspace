@@ -1,6 +1,14 @@
 ---
 name: harmonyos-build-debug
-description: HarmonyOS 项目构建、Hvigor、OHPM、hdc 调试、模拟器/真机部署。当用户要打包 HAP/HSP/HAR、跑 codeLinter、装到设备、查日志、或处理签名错误时使用。
+description: |
+  HarmonyOS Hvigor / OHPM / hdc 工具链 + 错误码诊断。
+  **激活条件**（满足任一即激活）：
+    - 用户跑 hvigorw / ohpm / hdc 命令时出错
+    - 用户问构建产物（.hap / .app / .har / .hsp）的差异 / 选型
+    - 错误码 201 / 202 / 401 / 801 / 9568305 / 9568322 等鸿蒙特定数字
+    - hilog 日志解读 / hdc fport 端口转发 / NAPI 调试
+    - 装包到模拟器或真机失败
+  **不激活**：Android adb / iOS Xcode / Web devtools 调试问题（即使概念相似）。
 ---
 
 # HarmonyOS 构建与调试

@@ -1,6 +1,12 @@
 ---
 name: state-management
-description: ArkUI V1 / V2 状态管理装饰器选型与反模式诊断。当写 @State / @Local / @Prop / @Param / @Link / @Provide / @Observed / @ObservedV2 / @Watch / @Monitor / @Computed，或遇到「数据变了 UI 不刷新」时使用。
+description: |
+  ArkUI V1 / V2 状态管理装饰器选型 + "数据变了 UI 不刷新" 诊断。
+  **激活条件**（满足任一即激活）：
+    - 代码中出现 @State / @Local / @Prop / @Param / @Link / @Provide / @Consume / @Observed / @ObservedV2 / @ObjectLink / @Trace / @Watch / @Monitor / @Computed / @Provider / @Consumer
+    - 用户报告 UI 不刷新 / 状态没生效 / 数据改了视图没动 / push/splice 后列表没更新
+    - 用户问 V1 vs V2 / @ComponentV2 / `$$x` 双向绑定
+  **不激活**：React/Vue/Svelte 状态问题（即使关键词相似）；非 ArkUI 的 MVVM 讨论。
 ---
 
 # ArkUI 状态管理

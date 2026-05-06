@@ -4,20 +4,41 @@
 >
 > 基线：裸 LLM 在 ArkTS 上 Pass@1 仅 **3.13%**（[ArkEval](https://arxiv.org/html/2602.08866)）。本仓库通过**规则注入 + Edit 后自动校验 + OHPM 包名核验**把这个数字显著拉高。
 
-## 5 秒决策：你应该走哪条路？
+## 这是给谁用的？
+
+**前置要求**：你必须已经在用以下任意一个 AI 编码助手——本仓库不是独立工具，是给它们装的"鸿蒙领域规则包"。
+
+| AI 工具 | 安装 | 本仓库怎么注入 |
+| --- | --- | --- |
+| **Claude Code** | `npm i -g @anthropic-ai/claude-code` | `CLAUDE.md` 自动加载 + PostToolUse 钩子 |
+| **Codex CLI** | `brew install codex` 或 `npm i -g @openai/codex` | `AGENTS.md` 自动加载 |
+| **Cursor** | <https://cursor.com> | `.cursor/rules/harmonyos.mdc` |
+| **GitHub Copilot** | VS Code Marketplace | `.github/copilot-instructions.md` |
+
+没装过其中任何一个？那本仓库**对你目前没用**——先去装一个 AI 编码助手（推荐 Claude Code），再回来。
+
+## 5 秒决策：装到哪里？
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│ 我已经有鸿蒙 app 项目，想让 AI 写代码不踩 ArkTS 坑           │
-│   → 用法 A：一行 curl 把规则装进 app（不要 clone 这个仓库） │
-└──────────────────────────────────────────────────────────────┘
-┌──────────────────────────────────────────────────────────────┐
-│ 我想系统学鸿蒙开发 / 想读完整官方文档 / 想给本仓库贡献       │
-│   → 用法 B：git clone 整个工作区到本地                       │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ 我已经有鸿蒙 app 项目，想让 AI 不再写 ArkTS 编译错             │
+│   → 用法 A：一行 curl 把规则装进 app（不需要 clone 本仓库)    │
+│   → 时间：30 秒                                                 │
+│   → 体积：< 1 MB（不含官方文档镜像）                            │
+└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ 我想离线读完整 OpenHarmony 官方文档 / 系统学鸿蒙 / 给本仓库贡献 │
+│   → 用法 B：git clone 整个工作区                                │
+│   → 时间：3-10 分钟（视是否拉文档镜像）                         │
+│   → 体积：基础 < 5 MB；可选含官方文档镜像 ~2.7 GB              │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-> **仓库地址**：<https://github.com/Octo-o-o-o/harmonyos-ai-workspace>  · 想 fork 维护自己版本时，记得把命令中的 `Octo-o-o-o` 替换为你的 GitHub 用户名。
+**99% 的鸿蒙开发者只需要用法 A**。用法 B 是给"想看官方文档原件 / 系统学习 / 维护本仓库"的人。
+
+> **AI 规则文件**：[CLAUDE.md](CLAUDE.md)（Claude Code 自动加载）/ [AGENTS.md](AGENTS.md)（Codex / Cursor / Aider 自动加载）。这两个文件是 AI 行为的硬约束，**人类用户不需要主动读**——AI 工具进入仓库会自己加载。
+>
+> **仓库地址**：<https://github.com/Octo-o-o-o/harmonyos-ai-workspace>  · fork 维护自己版本时，把命令中的 `Octo-o-o-o` 替换为你的 GitHub 用户名。
 
 ---
 
@@ -173,120 +194,11 @@ grep -rln 'Octo-o-o-o' --include='*.md' --include='*.sh' --include='*.json' . | 
 
 ---
 
-## 推荐使用方式
+## 进阶用法
 
-### A. 个人自用（开发自己的鸿蒙 app）
-
-**目录约定**——`HarmonyOS_DevSpace` 是参考库，**不要**把真业务 app 放进 `samples/`：
-
-```
-~/WorkSpace/
-├── HarmonyOS_DevSpace/         ← 本仓库（参考库 + AI 规则）
-└── apps/
-    ├── my-music-player/         ← 真 app A，DevEco Studio 项目
-    ├── my-todo/                 ← 真 app B
-    └── ...
-```
-
-**让 AI 助手在 app 项目里也能读到本仓库**——三种方式任选：
-
-```bash
-# 方式 1：每个 app 软链 CLAUDE.md / AGENTS.md（最直接）
-cd ~/WorkSpace/apps/my-music-player
-ln -s ../../HarmonyOS_DevSpace/CLAUDE.md CLAUDE.md
-ln -s ../../HarmonyOS_DevSpace/AGENTS.md AGENTS.md
-ln -s ../../HarmonyOS_DevSpace/.mcp.json .mcp.json
-
-# 方式 2：在 ~/.claude/CLAUDE.md（user-level memory）写一行（推荐）
-# "鸿蒙开发统一参考 ~/WorkSpace/HarmonyOS_DevSpace/，遇到 ArkTS / ArkUI / 鸿蒙 API
-# 问题先读该目录下的 CLAUDE.md 与 upstream-docs/。"
-# → 任何目录启动 Claude Code 都自带此上下文
-
-# 方式 3：项目级 CLAUDE.md 顶部 import（柔性）
-# 在 my-music-player/CLAUDE.md 里写：
-# > 通用鸿蒙开发规则继承自 ../../HarmonyOS_DevSpace/CLAUDE.md
-```
-
-**启动 Claude Code 的两种姿势**：
-
-```bash
-# 学习 / 改文档
-cd ~/WorkSpace/HarmonyOS_DevSpace && claude
-
-# 实际开发功能
-cd ~/WorkSpace/apps/my-music-player && claude
-# Claude 自动读本目录的 CLAUDE.md，并能用 Bash 工具读 ../../HarmonyOS_DevSpace/...
-```
-
-**Codex CLI 同理**——在 app 根放 `AGENTS.md`（软链或独立写）即可。Codex 默认会从 git root 向上查找 `AGENTS.md`，并支持 `~/.codex/AGENTS.md` 全局兜底。
-
-### B. 开源给其他开发者（推荐分三层）
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│ Layer 1 · harmonyos-ai-workspace  ← 本仓库                   │
-│ 形态：参考工作区（规则 + Skills + 文档镜像 + 脚手架）        │
-│ 受众：希望用 Claude/Codex/Cursor 开发鸿蒙的工程师             │
-│ 安装：git clone + bootstrap-upstream-docs.sh                 │
-└──────────────────────────────────────────────────────────────┘
-              ↓ 抽规则                       ↓ 抽骨架
-┌────────────────────────────┐   ┌────────────────────────────┐
-│ Layer 2 ·                  │   │ Layer 3 ·                  │
-│ claude-code-harmonyos-     │   │ harmonyos-app-template     │
-│   skills (Skill 包)        │   │   (项目模板)               │
-│ 形态：可重用 Claude Plugin │   │ 形态：DevEco 可直接打开    │
-│ 安装：/plugin install      │   │ 安装：degit your/template  │
-│   github:你/...            │   │   my-app                   │
-└────────────────────────────┘   └────────────────────────────┘
-```
-
-**当前版本（v1.0）已完成 Layer 1**。Layer 2 的 Skill 文件已在 `.claude/skills/`，未来抽出独立仓库即可。Layer 3 等跑通 1 个真 app 后再做。详细路线图见 [`OPEN-SOURCE-STRATEGY.md`](OPEN-SOURCE-STRATEGY.md)。
-
-### C. 与已有同类项目的差异化
-
-截至 2026-05，GitHub 上有几个相邻项目：
-
-| 项目 | 形态 | 与本仓库的差异 |
-| --- | --- | --- |
-| `DengShiyingA/harmonyos-ai-skill` | 单源文件 → 11+ AI 工具配置生成器 | 他们偏"配置导出器"；本仓库是**结构化工作区**（含分类目录 + 上游文档镜像 + Skills + 脚手架） |
-| `yibaiba/harmonyos-skills-pack` | Skills 包，有 manifest | 他们偏"上架 / 模块模板"；本仓库覆盖**语言迁移 + 状态管理 V1/V2 + 构建/调试/签名**全链路 |
-| `CoreyLyn/harmonyos-skills` | 较小的 Agent Skills | 体量与覆盖面都小一档 |
-| `aresbit/arkts-dev-skill` | 单 SKILL.md | 仅 ArkTS 语法层 |
-
-如果你要做的是"可重用的 AI Skill 包"，已有项目可参考；本仓库的差异点在于**完整工作区 + 官方文档镜像 + 三层发布策略**——它先是给 AI 看的"百科全书"，再衍生出 Skill / 模板。
-
----
-
-## 目录结构
-
-```
-HarmonyOS_DevSpace/
-├── CLAUDE.md / AGENTS.md         AI 助手主入口（同源不同形）
-├── README.md                     本文件
-├── OPEN-SOURCE-STRATEGY.md       自用 + 开源分发策略
-├── CONTRIBUTING.md               贡献指南
-├── CHANGELOG.md                  版本变更
-├── LICENSE                       MIT
-├── .mcp.json                     MCP-HarmonyOS 服务配置
-├── .gitignore                    含鸿蒙生态产物
-├── .claude/skills/               按需触发的 4 个 Skills
-├── .github/workflows/            CI（markdown lint）
-├── 00-getting-started/           环境搭建、第一个项目、签名、AI 协作
-├── 01-language-arkts/            ArkTS 语言：装饰器、TS 差异、状态速查
-├── 02-framework-arkui/           ArkUI 声明式 UI、布局、动画
-├── 03-platform-apis/             Kit 系统能力分类索引
-├── 04-build-debug-tools/         Hvigor / OHPM / hdc / Inspector / Profiler
-├── 05-best-practices/            性能 / 多端 / 安全 / 包大小 / i18n / a11y
-├── 06-design-guidelines/         鸿蒙设计语言、控件规范
-├── 07-publishing/                AppGallery 上架、签名证书、灰度
-├── 08-resources-links/           精选官方/社区链接
-├── 09-quick-reference/           cheat sheet（装饰器、命令、错误码）
-├── samples/                      示例项目（路线图见目录 README）
-├── tools/                        安装与校验脚本
-└── upstream-docs/openharmony-docs/   OpenHarmony 官方文档（bootstrap 后存在；不入主分支）
-```
-
-详细索引见 [`CLAUDE.md`](CLAUDE.md) 第 2 节"快速判断"表。
+- **多 app 共享一套规则** / **AI 启动姿势** / **三层发布策略** / **与同类项目差异化对比** → 见 [`docs/USAGE-GUIDE.md`](docs/USAGE-GUIDE.md)
+- **目录全图** → 见 [`CLAUDE.md` § 3 目录布局](CLAUDE.md)
+- **快速判断"问题去哪查"** → 见 [`CLAUDE.md` § 2 快速判断](CLAUDE.md)
 
 ---
 

@@ -106,4 +106,4 @@ ArkTS 严格规则部分参考了：
 - 官方迁移指南：<https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/typescript-to-arkts-migration-guide>
 - ArkEval 基准（arxiv 2602.08866）的错误分布数据
 - 社区 [`aresbit/arkts-dev-skill`](https://github.com/aresbit/arkts-dev-skill)
-- 同类项目调研沉淀在 [`PLAN.md`](PLAN.md) § 五
+- 同类项目调研沉淀在 [`PLAN.md`](docs/PLAN.md) § 五

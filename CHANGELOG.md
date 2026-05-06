@@ -4,7 +4,7 @@
 
 ## [0.2.0] - 2026-05-06
 
-完整施工方案与决策记录见 [`PLAN.md`](PLAN.md)。本版完成 P0+P1 全套：
+完整施工方案与决策记录见 [`PLAN.md`](docs/PLAN.md)。本版完成 P0+P1 全套：
 
 - **PostToolUse 钩子** · Claude Code 每次 Edit/Write 自动跑 ArkTS 反模式扫描 + OHPM 包名校验，结果回喂 AI 上下文
 - **`tools/install.sh`** · curl-pipeable 一行装到任意鸿蒙 app（默认 Claude Code + Codex；可加 Cursor / Copilot）

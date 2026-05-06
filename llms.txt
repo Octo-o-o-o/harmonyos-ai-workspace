@@ -44,7 +44,7 @@
 
 - License: MIT（含独立的 CC-BY-4.0 上游文档）
 - Repository: https://github.com/Octo-o-o-o/harmonyos-ai-workspace
-- Strategy: [OPEN-SOURCE-STRATEGY.md](OPEN-SOURCE-STRATEGY.md)（Layer 1 工作区 / Layer 2 Skill 包 / Layer 3 项目模板）
+- Strategy: [OPEN-SOURCE-STRATEGY.md](docs/OPEN-SOURCE-STRATEGY.md)（Layer 1 工作区 / Layer 2 Skill 包 / Layer 3 项目模板）
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
 

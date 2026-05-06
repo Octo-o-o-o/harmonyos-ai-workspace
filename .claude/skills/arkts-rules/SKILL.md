@@ -1,6 +1,13 @@
 ---
 name: arkts-rules
-description: HarmonyOS / ArkTS 严格语法规则。在写 .ets / .ts 鸿蒙代码、改 ArkUI 组件、迁移 TypeScript 代码到 ArkTS、或遇到 arkts-no-* 编译错误时使用。
+description: |
+  HarmonyOS / ArkTS 严格语法规则。
+  **激活条件**（满足任一即激活）：
+    - 用户在写 / 改 .ets 或 .ts 文件，且文件路径含 entry/ / .arkui / harmonyos / ohos
+    - 用户在迁移 TypeScript 代码到 ArkTS
+    - 用户问 arkts-no-* 编译错误
+    - 用户提到 @kit.* / @ohos.* / Stage 模型 / ArkUI 装饰器
+  **不激活**：纯 TypeScript / 浏览器 / Node.js 项目（即使语法相似）；React / Vue / 小程序代码。
 ---
 
 # ArkTS 严格规则

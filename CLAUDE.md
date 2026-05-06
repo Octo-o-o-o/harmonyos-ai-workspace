@@ -5,7 +5,7 @@
 > **当 Claude / Codex / 其他 AI 助手阅读本文件时**：第 0 节是硬约束，必须先看；再读第 2 节快速判断；写代码前必读第 11、12、13 节。
 >
 > **维护者文档清单（AI 写代码时不需要读）**：
-> `PLAN.md` / `RESEARCH-NOTES.md` / `OPEN-SOURCE-STRATEGY.md` / `CHANGELOG.md` / `CONTRIBUTING.md` 是给项目维护者看的施工方案、调研记录、贡献流程。除非用户明确问"项目怎么演进 / 怎么贡献 / 怎么发布"，**否则不要读它们**——读了浪费 context 也不影响你写鸿蒙代码。
+> `docs/PLAN.md` / `docs/RESEARCH-NOTES.md` / `docs/OPEN-SOURCE-STRATEGY.md` / `docs/USAGE-GUIDE.md` / `CHANGELOG.md` / `CONTRIBUTING.md` 是给项目维护者看的施工方案、调研记录、贡献流程。除非用户明确问"项目怎么演进 / 怎么贡献 / 怎么发布 / 多 app 共享规则"，**否则不要读它们**——读了浪费 context 也不影响你写鸿蒙代码。
 
 ---
 
@@ -230,10 +230,13 @@ HarmonyOS_DevSpace/
 │   └── install-deveco-prereqs.sh
 ├── .cursor/rules/harmonyos.mdc ← fan-out 生成（不要手改）
 ├── .github/                    ← workflows / copilot-instructions.md（fan-out 生成）
-─── 维护者文档（AI 写代码不需要读）─────────────────────────────
-├── PLAN.md                     ← 施工方案 / 调研 / 决策
-├── OPEN-SOURCE-STRATEGY.md     ← 三层发布策略（指针到 PLAN.md）
-├── RESEARCH-NOTES.md           ← 同类项目调研档案（指针到 PLAN.md）
+─── 维护者文档（AI 写代码不需要读，全部在 docs/）─────────────
+├── docs/
+│   ├── PLAN.md                 ← 施工方案 / 调研 / 决策
+│   ├── OPEN-SOURCE-STRATEGY.md ← 三层发布策略（指针到 PLAN）
+│   ├── RESEARCH-NOTES.md       ← 同类项目调研档案（指针到 PLAN）
+│   ├── USAGE-GUIDE.md          ← 进阶使用方式（多 app 共享 / 三层发布）
+│   └── REVIEW-2026-05-06.md    ← 第三方评审存档
 ├── CHANGELOG.md                ← 版本变更
 ├── CONTRIBUTING.md             ← 贡献指南
 ─── 主题目录（按 § 2 路由表查询）─────────────────────────────

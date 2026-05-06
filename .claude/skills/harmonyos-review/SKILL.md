@@ -1,6 +1,13 @@
 ---
 name: harmonyos-review
-description: 鸿蒙 ArkTS / ArkUI 项目代码审查。当用户说「review 这段鸿蒙代码 / 帮我审一下 PR / 审计 .ets 文件 / 上线前检查」时使用，按 9 大类规则扫描并产出带优先级的 markdown 报告。
+description: |
+  鸿蒙 ArkTS / ArkUI 代码审查 + 9 大类 60+ 规则扫描 + 优先级报告。
+  **激活条件**（满足任一即激活）：
+    - 用户说"review 这段鸿蒙代码" / "审一下 PR" / "审计 .ets 文件"
+    - 用户问"上线前检查" / "提审前自查" / "技术债梳理"
+    - 多文件 .ets 改动需要做整体性安全 / 性能 / 规范扫描
+    - 引用了 SEC-* / ARKTS-* / STATE-* / PERF-* / KIT-* / AGC-RJ-* 等规则编号
+  **不激活**：单纯写一个新组件（用 arkts-rules / state-management）；非鸿蒙代码 review。
 ---
 
 # 鸿蒙代码审查

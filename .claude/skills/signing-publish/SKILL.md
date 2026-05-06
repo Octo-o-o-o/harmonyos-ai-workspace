@@ -1,6 +1,14 @@
 ---
 name: harmonyos-signing-publish
-description: HarmonyOS 应用签名、AppGallery Connect 上架流程。当用户配 .p12/.cer/.p7b、自动签名、申请发布证书、提交审核、灰度发布时使用。
+description: |
+  HarmonyOS 应用签名 + AppGallery Connect 上架流程。
+  **激活条件**（满足任一即激活）：
+    - 用户提到 .p12 / .cer / .csr / .p7b（签名三件套）
+    - 用户问"自动签名失败" / "签名校验失败 9568322" / "调试证书"
+    - 用户问 AGC / AppGallery Connect / 实名认证 / ICP 备案
+    - 用户准备提审 / 上架被拒（AGC-RJ-* 编号）
+    - hvigorw assembleApp -p buildMode=release 相关
+  **不激活**：Android 签名（keytool / jarsigner）；iOS 证书；普通 Web 部署。
 ---
 
 # HarmonyOS 签名与上架

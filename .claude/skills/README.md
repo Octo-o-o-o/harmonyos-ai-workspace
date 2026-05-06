@@ -23,7 +23,7 @@
 
 ## 与 root `CLAUDE.md` 的关系
 
-`CLAUDE.md` 是项目级"大宪章"——告诉 AI 这个工作区的整体导航和硬约束。Skills 是"可分发的小卡片"——可以被抽出来单独发布成 Plugin（见 [`OPEN-SOURCE-STRATEGY.md`](../../OPEN-SOURCE-STRATEGY.md) Layer 2 部分），用在任何鸿蒙 app 项目中。
+`CLAUDE.md` 是项目级"大宪章"——告诉 AI 这个工作区的整体导航和硬约束。Skills 是"可分发的小卡片"——可以被抽出来单独发布成 Plugin（见 [`docs/OPEN-SOURCE-STRATEGY.md`](../../docs/OPEN-SOURCE-STRATEGY.md) Layer 2 部分），用在任何鸿蒙 app 项目中。
 
 未来扩展方向：
 
@@ -33,4 +33,4 @@
 - `multi-device-adapt/`：多端适配（手机/平板/折叠屏/智慧屏）
 - `performance-tuning/`：Profiler 用法、首屏优化、列表虚拟化
 
-新建 Skill 的规范见 [`OPEN-SOURCE-STRATEGY.md`](../../OPEN-SOURCE-STRATEGY.md) B.4。
+新建 Skill 的规范见 [`docs/OPEN-SOURCE-STRATEGY.md`](../../docs/OPEN-SOURCE-STRATEGY.md)。
