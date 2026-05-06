@@ -4,7 +4,7 @@
 
 > **强烈建议先读 [`CLAUDE.md`](CLAUDE.md)**，它包含完整的项目导航、AI 硬约束、开发/调试/构建注意事项。本文件只列最紧要的跨 agent 通用规则。
 >
-> **维护者文档清单（AI 写代码不读）**：`docs/PLAN.md` / `docs/RESEARCH-NOTES.md` / `docs/OPEN-SOURCE-STRATEGY.md` / `docs/USAGE-GUIDE.md` / `CHANGELOG.md` / `CONTRIBUTING.md` 是给项目维护者看的。除非用户明问"项目演进 / 贡献 / 发布 / 多 app 共享规则"，否则忽略。
+> **维护者文档清单（AI 写代码不读）**：`docs/PLAN.md` / `docs/RESEARCH-*.md` / `docs/REVIEW-*.md` / `docs/OPEN-SOURCE-STRATEGY.md` / `docs/USAGE-GUIDE.md` / `docs/MCP-INTEGRATION.md` / `docs/SETUP-FROM-SCRATCH.md` / `CHANGELOG.md` / `CONTRIBUTING.md` 是给项目维护者 / 装环境的新手看的。除非用户明问"项目演进 / 贡献 / 发布 / 装 DevEco / 接 MCP"，否则忽略。
 
 ## 0. Skills 触发索引
 

@@ -1,5 +1,6 @@
 ---
 name: harmonyos-build-debug
+verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
 description: |
   HarmonyOS Hvigor / OHPM / hdc 工具链 + 错误码诊断。
   **激活条件**（满足任一即激活）：

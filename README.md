@@ -4,6 +4,20 @@
 >
 > 基线：裸 LLM 在 ArkTS 上 Pass@1 仅 **3.13%**（[ArkEval](https://arxiv.org/html/2602.08866)）。本仓库通过**规则注入 + Edit 后自动校验 + OHPM 包名核验**把这个数字显著拉高。
 
+## 版本契约（Version Contract）
+
+```yaml
+targets:
+  harmonyos:      ">= 6.0.0  (API >= 12, 推荐 21/22)"
+  arkts:          ">= 1.2.0"
+  deveco_studio:  ">= 6.0"
+  claude_code:    ">= 0.5"
+  codex_cli:      ">= 0.1"
+last_verified: "2026-05-07"
+```
+
+> 鸿蒙生态快速迭代（API 12 → 22 跨度大）。本仓库每次发版前在 `last_verified` 日期对齐一次"当前消费稳定版"。如果你的 SDK 比这更新，建议先跑 `bash tools/run-linter.sh` 自查规则是否仍适用，并在 issue 里反馈差异。
+
 ## 这是给谁用的？
 
 **前置要求**：你必须已经在用以下任意一个 AI 编码助手——本仓库不是独立工具，是给它们装的"鸿蒙领域规则包"。
@@ -15,7 +29,13 @@
 | **Cursor** | <https://cursor.com> | `.cursor/rules/harmonyos.mdc` |
 | **GitHub Copilot** | VS Code Marketplace | `.github/copilot-instructions.md` |
 
-没装过其中任何一个？那本仓库**对你目前没用**——先去装一个 AI 编码助手（推荐 Claude Code），再回来。
+没装过其中任何一个？或者**完全没装过 DevEco Studio**？看 [`docs/SETUP-FROM-SCRATCH.md`](docs/SETUP-FROM-SCRATCH.md)——从 macOS 干净状态到第一行 `.ets` 跑通的完整引导（30-60 分钟）。或者一行启动半自动向导：
+
+```bash
+git clone https://github.com/Octo-o-o-o/harmonyos-ai-workspace.git ~/WorkSpace/HarmonyOS_DevSpace
+cd ~/WorkSpace/HarmonyOS_DevSpace
+bash tools/setup-from-scratch.sh
+```
 
 ## 5 秒决策：装到哪里？
 

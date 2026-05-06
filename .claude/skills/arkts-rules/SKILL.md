@@ -1,5 +1,6 @@
 ---
 name: arkts-rules
+verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
 description: |
   HarmonyOS / ArkTS 严格语法规则。
   **激活条件**（满足任一即激活）：

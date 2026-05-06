@@ -87,23 +87,66 @@ for f in HarmonyOS-Sans HarmonyOSSans HarmonyOS_Sans; do
   fi
 done
 
-sect "OpenHarmony 文档"
+sect "OpenHarmony 文档（可选，2.7 GB）"
 DOC_DIR="$(dirname "$(realpath "$0")")/../upstream-docs/openharmony-docs"
 if [[ -d "$DOC_DIR/zh-cn/application-dev" ]]; then
   N=$(find "$DOC_DIR/zh-cn/application-dev" -name "*.md" | wc -l | tr -d ' ')
   ok "本地文档已就绪：$N 个 zh-cn .md 文件"
   PASS=$((PASS+1))
 else
-  err "本地文档缺失：$DOC_DIR"
+  echo "  未拉取（不是必装；按需 bash tools/bootstrap-upstream-docs.sh）"
+fi
+
+sect "AI 编码助手"
+if command -v claude >/dev/null 2>&1; then
+  ok "Claude Code → $(command -v claude)"
+  PASS=$((PASS+1))
+else
+  warn "Claude Code 未装"
   FAIL=$((FAIL+1))
+fi
+if command -v codex >/dev/null 2>&1; then
+  ok "Codex CLI → $(command -v codex)"
+  PASS=$((PASS+1))
+else
+  echo "  Codex CLI 未装（可选）"
 fi
 
 sect "总结"
 echo
 echo -e "  ${GREEN}通过：$PASS${NC}    ${RED}失败：$FAIL${NC}"
-echo
+
 if [[ "$FAIL" -gt 0 ]]; then
-  echo "建议：运行 tools/install-deveco-prereqs.sh，并完成 DevEco Studio 的首次启动向导。"
+  echo
+  echo "下一步建议（按缺失项给）："
+
+  command -v brew >/dev/null 2>&1 || \
+    echo "  · Homebrew 未装：bash tools/install-deveco-prereqs.sh"
+
+  command -v node >/dev/null 2>&1 || \
+    echo "  · Node 未装：brew install node 或 跑 install-deveco-prereqs.sh"
+
+  if [[ ! -d /Applications/DevEco-Studio.app ]]; then
+    echo "  · DevEco Studio 未装："
+    echo "      1) https://developer.huawei.com/consumer/cn/deveco-studio/"
+    echo "      2) 登录华为账号 → 下 macOS DMG → 装到 /Applications/"
+    echo "      3) 首次启动配 Node/Ohpm/SDK（建议 API 21+22 + 一个 LTS）"
+  fi
+
+  for c in hdc ohpm hvigorw; do
+    command -v "$c" >/dev/null 2>&1 || \
+      echo "  · $c 不在 PATH：跑 bash tools/install-deveco-prereqs.sh 或 source ~/.zshrc"
+  done
+
+  command -v claude >/dev/null 2>&1 || \
+    echo "  · Claude Code 未装：npm i -g @anthropic-ai/claude-code"
+
+  echo
+  echo "  一键串联向导：bash tools/setup-from-scratch.sh"
   exit 1
 fi
+
+echo
+echo "环境齐备。下一步："
+echo "  cd 到鸿蒙 app 项目  →  curl -fsSL .../tools/install.sh | bash  →  claude"
 exit 0

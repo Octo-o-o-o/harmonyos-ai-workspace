@@ -5,7 +5,7 @@
 > **当 Claude / Codex / 其他 AI 助手阅读本文件时**：第 0 节是硬约束，必须先看；再读第 2 节快速判断；写代码前必读第 11、12、13 节。
 >
 > **维护者文档清单（AI 写代码时不需要读）**：
-> `docs/PLAN.md` / `docs/RESEARCH-NOTES.md` / `docs/OPEN-SOURCE-STRATEGY.md` / `docs/USAGE-GUIDE.md` / `CHANGELOG.md` / `CONTRIBUTING.md` 是给项目维护者看的施工方案、调研记录、贡献流程。除非用户明确问"项目怎么演进 / 怎么贡献 / 怎么发布 / 多 app 共享规则"，**否则不要读它们**——读了浪费 context 也不影响你写鸿蒙代码。
+> `docs/PLAN.md` / `docs/RESEARCH-NOTES.md` / `docs/REVIEW-*.md` / `docs/OPEN-SOURCE-STRATEGY.md` / `docs/USAGE-GUIDE.md` / `docs/MCP-INTEGRATION.md` / `docs/SETUP-FROM-SCRATCH.md` / `CHANGELOG.md` / `CONTRIBUTING.md` 是给项目维护者 / 新手装环境看的。除非用户明确问"项目怎么演进 / 怎么贡献 / 怎么装 DevEco / 怎么接 MCP"，**否则不要读它们**——读了浪费 context 也不影响你写鸿蒙代码。
 
 ---
 

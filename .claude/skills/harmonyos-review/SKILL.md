@@ -1,5 +1,6 @@
 ---
 name: harmonyos-review
+verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
 description: |
   鸿蒙 ArkTS / ArkUI 代码审查 + 9 大类 60+ 规则扫描 + 优先级报告。
   **激活条件**（满足任一即激活）：

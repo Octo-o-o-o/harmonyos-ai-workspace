@@ -1,5 +1,6 @@
 ---
 name: state-management
+verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
 description: |
   ArkUI V1 / V2 状态管理装饰器选型 + "数据变了 UI 不刷新" 诊断。
   **激活条件**（满足任一即激活）：

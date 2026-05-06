@@ -1,5 +1,6 @@
 ---
 name: harmonyos-signing-publish
+verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
 description: |
   HarmonyOS 应用签名 + AppGallery Connect 上架流程。
   **激活条件**（满足任一即激活）：

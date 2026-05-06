@@ -194,6 +194,18 @@ install() {
   echo "  · 卸载：        curl -fsSL $BASE_URL/tools/install.sh | bash -s -- --uninstall"
   echo
   info "故障排查 / 完整文档： https://github.com/$REPO_OWNER/$REPO_NAME#常见故障排查"
+  echo
+  if ! command -v claude >/dev/null 2>&1 && ! command -v codex >/dev/null 2>&1; then
+    warn "未检测到 Claude Code 或 Codex CLI——本仓库的规则需要它们才生效"
+    echo "  · Claude Code: npm i -g @anthropic-ai/claude-code"
+    echo "  · Codex CLI:   brew install codex（或 npm i -g @openai/codex）"
+    echo "  · 完整新手向导: $BASE_URL/docs/SETUP-FROM-SCRATCH.md"
+  fi
+  if [[ ! -d /Applications/DevEco-Studio.app && "$OSTYPE" == "darwin"* ]]; then
+    warn "未检测到 DevEco Studio——hvigorw / hdc / 模拟器都需要它"
+    echo "  · 下载: https://developer.huawei.com/consumer/cn/deveco-studio/"
+    echo "  · 完整向导: $BASE_URL/docs/SETUP-FROM-SCRATCH.md"
+  fi
 }
 
 # ─── 入口 ─────────────────────────────────────────────────────

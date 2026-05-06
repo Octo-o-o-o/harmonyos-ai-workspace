@@ -101,4 +101,16 @@ if [[ "${HARMONYOS_HOOK_NONBLOCKING:-0}" == "1" ]]; then
   exit 0
 fi
 
-exit "$worst_exit"
+# Claude Code PostToolUse 退出码语义（关键）：
+#   exit 2  : block + stderr 反馈给 Claude，Claude 会重新尝试
+#   exit 0  : success；stderr 内容仍被 Claude 看见但不重试
+#   其他    : 视为 hook 自身错误（Claude 行为不一致；避免）
+#
+# 因此：
+#   High 级（必须修）→ exit 2，让 AI 当场重写
+#   Medium 级（提醒）→ exit 0 + stderr，让 AI 看到但不强制重写
+#   两种都没有     → exit 0
+case "$worst_exit" in
+  2) exit 2 ;;     # High：阻塞 + 反馈
+  *) exit 0 ;;     # Medium / 无：通过；stderr 已写入仍能被 AI 看到
+esac
