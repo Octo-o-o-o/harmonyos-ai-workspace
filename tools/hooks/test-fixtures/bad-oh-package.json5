@@ -1,0 +1,14 @@
+{
+  "name": "test-fixture-fake-deps",
+  "version": "1.0.0",
+  "description": "Fixture with fake OHPM package names. Used to verify check-ohpm-deps.sh.",
+  "main": "",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@ohos/lottie-player": "^1.0.0",
+    "@ohos/axios-fake": "^2.0.0",
+    "@ohos/this-package-does-not-exist": "*",
+    "@ohos/hypium": "1.0.21"
+  }
+}

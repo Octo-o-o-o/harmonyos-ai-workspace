@@ -1,0 +1,78 @@
+# ----- HarmonyOS / DevEco -----
+oh_modules/
+build/
+.preview/
+.hvigor/
+.cxx/
+.test/
+.idea/
+.deveco-studio/
+*.iml
+local.properties
+captures/
+
+# ohpm 缓存（保留 oh-package-lock.json5 用于版本锁定）
+.ohpm/
+
+# 构建产物
+*.hap
+*.app
+*.har
+*.hsp
+*.hapsig
+entry/build/
+entry-default-signed.hap
+
+# 签名材料（绝不提交）
+*.p12
+*.cer
+*.csr
+*.p7b
+*.jks
+*.keystore
+material/
+sign-config-debug.json5
+sign-config-release.json5
+
+# ----- macOS -----
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# ----- 编辑器 -----
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.shared.json
+.cursor/
+*.swp
+*.swo
+*~
+
+# ----- AI 助手私有覆盖 -----
+.claude/local/
+.claude/settings.local.json
+.claude/.harmonyos-last-scan.txt
+CLAUDE.local.md
+AGENTS.override.md
+.codex/state/
+
+# ----- 上游文档（约 2.7 GB，不入主分支；用 tools/bootstrap-upstream-docs.sh 拉取） -----
+upstream-docs/openharmony-docs/
+
+# ----- Node / npm（脚本和 Hvigor 的内部使用，不污染仓库） -----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ----- 日志 -----
+*.log
+hilog-*.txt
+
+# ----- 操作系统 -----
+Thumbs.db
+Desktop.ini

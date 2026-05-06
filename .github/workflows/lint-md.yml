@@ -1,0 +1,46 @@
+name: Lint Markdown
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - '**.md'
+      - '.github/workflows/lint-md.yml'
+  pull_request:
+    paths:
+      - '**.md'
+
+jobs:
+  link-check:
+    name: Markdown link check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check internal & external links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          config-file: '.github/markdown-link-check.json'
+          # 跳过 upstream-docs（不入主分支但本地可能存在）
+          folder-path: '.'
+          file-path: ''
+          # 排除路径
+          base-branch: 'main'
+          file-extension: '.md'
+
+  lint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          globs: |
+            **/*.md
+            !upstream-docs/**
+            !node_modules/**
+          config: '.github/markdownlint.json'

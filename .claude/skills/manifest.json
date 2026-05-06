@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "name": "harmonyos-ai-workspace",
+  "version": "1.0.0",
+  "description": "鸿蒙开发参考工作区的 Claude Skills 集合，按需触发，可独立分发为 Plugin",
+  "license": "MIT",
+  "homepage": "https://github.com/Octo-o-o-o/harmonyos-ai-workspace",
+  "platform": {
+    "harmonyos": {
+      "min_api": 12,
+      "target_api": 21,
+      "current_consumer": 22,
+      "developer_beta": "6.1"
+    }
+  },
+  "skills": [
+    {
+      "id": "arkts-rules",
+      "path": "arkts-rules/SKILL.md",
+      "title": "ArkTS 严格规则",
+      "triggers": ["写或改 .ets/.ts 鸿蒙文件", "迁移 TS 代码到 ArkTS", "arkts-no-* 编译错误"],
+      "category": "language",
+      "criticality": "high"
+    },
+    {
+      "id": "state-management",
+      "path": "state-management/SKILL.md",
+      "title": "ArkUI V1/V2 状态管理",
+      "triggers": ["状态装饰器", "UI 不刷新", "V1/V2 选型"],
+      "category": "framework",
+      "criticality": "high"
+    },
+    {
+      "id": "harmonyos-build-debug",
+      "path": "build-debug/SKILL.md",
+      "title": "构建与调试",
+      "triggers": ["Hvigor", "OHPM", "hdc", "错误码诊断"],
+      "category": "tooling",
+      "criticality": "medium"
+    },
+    {
+      "id": "harmonyos-signing-publish",
+      "path": "signing-publish/SKILL.md",
+      "title": "签名与上架",
+      "triggers": ["签名三件套", "AppGallery Connect", "审核被拒"],
+      "category": "publishing",
+      "criticality": "medium"
+    },
+    {
+      "id": "harmonyos-review",
+      "path": "harmonyos-review/SKILL.md",
+      "title": "鸿蒙代码审查",
+      "triggers": ["代码审查", "PR review", "审计 .ets/.ts", "性能 / 安全 / 规范检查"],
+      "category": "review",
+      "criticality": "medium"
+    }
+  ],
+  "fanout_targets": {
+    "claude_code": ".claude/skills/*/SKILL.md",
+    "codex": "AGENTS.md",
+    "cursor": ".cursor/rules/harmonyos.mdc",
+    "copilot": ".github/copilot-instructions.md",
+    "windsurf": ".windsurfrules",
+    "gemini_cli": "GEMINI.md"
+  },
+  "_notes": {
+    "fanout_targets": "未来通过 tools/generate-ai-configs.sh 把同源规则导出到不同 AI 工具的约定路径",
+    "borrowed_from": [
+      "yibaiba/harmonyos-skills-pack — SKILLS_MANIFEST.json schema",
+      "agents.md — 跨工具规范"
+    ]
+  }
+}

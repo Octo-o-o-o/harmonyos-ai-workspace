@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "harmonyos": {
+      "command": "mcp-harmonyos",
+      "args": [],
+      "env": {}
+    }
+  }
+}

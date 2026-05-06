@@ -1,0 +1,56 @@
+# HarmonyOS AI Workspace
+
+> 面向 Claude Code / Codex CLI / Cursor / Aider 等 AI 编码助手的鸿蒙开发参考工作区。
+> HarmonyOS 6 系列（API 21 / 22）+ ArkTS + ArkUI，含官方文档镜像、严格语法规则、状态管理速查、构建调试 / 上架签名 Skills。
+
+## 入口（按 AI 工具）
+
+- [CLAUDE.md](CLAUDE.md): 项目级大宪章，含 14 节硬约束（ArkTS / ArkUI / 构建 / 调试 / 上架）
+- [AGENTS.md](AGENTS.md): Codex / Cursor / Aider 跨工具简版规则
+- [.claude/skills/manifest.json](.claude/skills/manifest.json): 5 个按需触发的 Claude Skills 元数据
+- [.mcp.json](.mcp.json): MCP-HarmonyOS 服务配置（设备 / 项目 / 构建查询）
+
+## 核心规则速查
+
+- [01-language-arkts/01-arkts-vs-typescript.md](01-language-arkts/01-arkts-vs-typescript.md): ArkTS vs TS 决策对照
+- [01-language-arkts/02-typescript-to-arkts-migration.md](01-language-arkts/02-typescript-to-arkts-migration.md): 25 条 `arkts-no-*` 规则与改写
+- [01-language-arkts/03-state-management-cheatsheet.md](01-language-arkts/03-state-management-cheatsheet.md): V1 / V2 状态管理完整模板 + 反模式
+- [09-quick-reference/README.md](09-quick-reference/README.md): 装饰器 / 命令 / 错误码 cheat sheet
+
+## 主题目录
+
+- [00-getting-started/](00-getting-started/): 环境搭建、第一个项目、签名、AI 协作
+- [02-framework-arkui/](02-framework-arkui/): 声明式 UI、布局、动画
+- [03-platform-apis/](03-platform-apis/): Kit 系统能力分类索引
+- [04-build-debug-tools/](04-build-debug-tools/): Hvigor / OHPM / hdc / Inspector / Profiler
+- [05-best-practices/](05-best-practices/): 性能 / 多端 / 安全 / 包大小
+- [06-design-guidelines/](06-design-guidelines/): 鸿蒙设计语言
+- [07-publishing/](07-publishing/): AppGallery 上架、签名证书
+- [08-resources-links/](08-resources-links/): 精选官方 / 社区链接
+
+## Skills（按需加载）
+
+- [.claude/skills/arkts-rules/SKILL.md](.claude/skills/arkts-rules/SKILL.md): ArkTS 严格语法规则
+- [.claude/skills/state-management/SKILL.md](.claude/skills/state-management/SKILL.md): V1 / V2 状态管理 + "替换引用" 铁律
+- [.claude/skills/build-debug/SKILL.md](.claude/skills/build-debug/SKILL.md): Hvigor / OHPM / hdc / 错误码
+- [.claude/skills/signing-publish/SKILL.md](.claude/skills/signing-publish/SKILL.md): 签名三件套 + AGC 上架
+- [.claude/skills/harmonyos-review/SKILL.md](.claude/skills/harmonyos-review/SKILL.md): 9 大类 60+ 规则代码审查 → 优先级报告
+
+## 上游文档
+
+- [upstream-docs/openharmony-docs/](upstream-docs/openharmony-docs/): OpenHarmony 官方文档完整镜像（约 5300 zh-cn / 5100 en；运行 `tools/bootstrap-upstream-docs.sh` 拉取，不入主分支，CC-BY-4.0）
+
+## 元信息
+
+- License: MIT（含独立的 CC-BY-4.0 上游文档）
+- Repository: https://github.com/Octo-o-o-o/harmonyos-ai-workspace
+- Strategy: [OPEN-SOURCE-STRATEGY.md](OPEN-SOURCE-STRATEGY.md)（Layer 1 工作区 / Layer 2 Skill 包 / Layer 3 项目模板）
+- Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
+
+## 关键事实（2026-05）
+
+- 当前消费稳定版：HarmonyOS 6.0.2 / API 22（2026-01-23 推送）
+- 首发稳定版：HarmonyOS 6.0.1 / API 21（2025-11-25）
+- 新项目 targetSDK 默认建议：API 21，minSDK API 12
+- API 20 是 2025-09-25 仅开发者版，**不要选作 targetSDK**
