@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash $CLAUDE_PROJECT_DIR/tools/hooks/post-edit.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/tools/hooks/post-edit.sh\""
           }
         ]
       }

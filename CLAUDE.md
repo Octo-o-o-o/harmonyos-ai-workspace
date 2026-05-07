@@ -67,7 +67,9 @@ import http from '@ohos.net.http';
 | 派生计算 | 手写 | `@Computed get x() { ... }` |
 | 全局存储 | `@StorageProp` / `@StorageLink` | 同 V1，未弃用 |
 
-**新项目用 V2 更安全**（编译期类型更严格）；**改老项目按现有装饰器风格延续**，不要混用。
+**默认 V1**（生态最成熟、DevEco 模板默认、AI 训练数据更充分）；**用户明确要求 V2** 或迁移老项目时再切 V2。改老项目按现有装饰器风格延续，**绝不混用**。
+
+> 与 [`AGENTS.md`](AGENTS.md) § 3 + [`.claude/skills/state-management/SKILL.md`](.claude/skills/state-management/SKILL.md) "第二铁律" 保持一致；V2 仍在演进中，无明确需求不主动切换。
 
 ### 0.3 生成代码后必跑的验证
 
@@ -152,7 +154,7 @@ this.cache = next;
   - **API 22（HarmonyOS 6.0.2）**：当前消费版稳定线，2026-01-23 起向 Mate 80 / Mate 70 / Pura 80 等推送
   - **API 21（HarmonyOS 6.0.1）**：2025-11-25 随 Mate 80 首发的稳定版
   - **API 20（HarmonyOS 6.0.0）**：2025-09-25 仅开发者版（developer release），非消费稳定版，不要在生产 app targetSDK 选它
-  - **HarmonyOS 6.1 开发者 Beta**：2026-02-07 对约 5 万名中国开发者开放，关注新特性可选用
+  - **HarmonyOS 开发者 Beta（API 23 起）**：华为下一波预览，跟随发布节奏（关注新特性可选用，**生产 app 不要选**）
   - **向下兼容 HarmonyOS 5（API 12+）**：仍是大部分应用的最低 minSDK
 - **开发设备**：Mac（Apple Silicon，macOS 26.5）
 - **主语言**：ArkTS（TypeScript 增强版）

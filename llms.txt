@@ -91,4 +91,4 @@
 - 首发稳定版：HarmonyOS 6.0.1 / API 21（2025-11-25）
 - 新项目 targetSDK 默认建议：API 21，minSDK API 12
 - API 20 是 2025-09-25 仅开发者版，**不要选作 targetSDK**
-- HarmonyOS 6.1 开发者 Beta：2026-02-07 对约 5 万开发者开放（关注新特性可选用，非生产 targetSDK）
+- HarmonyOS 开发者 Beta（API 23 起）：跟随华为发布节奏的下一波预览（关注新特性可选用，非生产 targetSDK）

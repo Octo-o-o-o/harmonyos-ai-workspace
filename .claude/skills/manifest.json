@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "name": "harmonyos-ai-workspace",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "鸿蒙开发参考工作区的 Claude Skills 集合，按需触发，可独立分发为 Plugin",
   "license": "MIT",
   "homepage": "https://github.com/Octo-o-o-o/harmonyos-ai-workspace",

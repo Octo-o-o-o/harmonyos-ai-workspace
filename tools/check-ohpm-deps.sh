@@ -138,15 +138,30 @@ while IFS= read -r pkg; do
   fi
 
   # 3) ohpm CLI 在场（DevEco 装好就有）
+  # v0.4 改：分类 ohpm view 的失败原因，避免 registry 502 / 网络问题被误判为
+  # OHPM-FAKE High 阻断 AI。失败时分三类：not-found / network / unknown。
   if [[ -n "$OHPM_CLI" ]]; then
-    if "$OHPM_CLI" view "$pkg" >/dev/null 2>&1; then
+    OHPM_RC=0
+    OHPM_OUT=$(timeout 15 "$OHPM_CLI" view "$pkg" 2>&1) || OHPM_RC=$?
+    if [[ "$OHPM_RC" == "0" ]]; then
       ok_count=$((ok_count + 1))
       continue
-    else
-      printf '[OHPM-FAKE · High] %s: 包名 "%s" 通过 ohpm CLI 查询失败，可能不存在\n' "$REL" "$pkg" >&2
+    fi
+    # timeout 自身的退出码 124 → 网络问题
+    if [[ "$OHPM_RC" == "124" ]] || echo "$OHPM_OUT" | grep -qiE "etimedout|econnrefused|enetunreach|getaddrinfo|connect.*failed|network|timeout|502|503|504|reset by peer|tls handshake|connection refused"; then
+      printf '[OHPM-NET · Low] %s: 包名 "%s" 因网络/registry 问题无法核验（ohpm view 网络错误，rc=%s）；不阻断，建议网通后重跑\n' "$REL" "$pkg" "$OHPM_RC" >&2
+      unknown_count=$((unknown_count + 1))
+      continue
+    fi
+    if echo "$OHPM_OUT" | grep -qiE "not found|404|does not exist|no such package|package.*not.*exist"; then
+      printf '[OHPM-FAKE · High] %s: 包名 "%s" 在 OHPM registry 上明确不存在（ohpm view 报 not-found）\n' "$REL" "$pkg" >&2
       fake_count=$((fake_count + 1))
       continue
     fi
+    # 其他失败（鉴权 / 配置 / ohpm 自身错）→ 保守降级为 UNKNOWN，不当假包
+    printf '[OHPM-UNKNOWN · Medium] %s: 包名 "%s" ohpm view 返回 rc=%s 但既非 not-found 也非网络错；请手动在 https://ohpm.openharmony.cn/ 核验\n' "$REL" "$pkg" "$OHPM_RC" >&2
+    unknown_count=$((unknown_count + 1))
+    continue
   fi
 
   # 4) 都没法判定 → 让 AI 主动确认

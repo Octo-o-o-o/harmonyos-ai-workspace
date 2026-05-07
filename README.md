@@ -7,16 +7,34 @@
 ## 版本契约（Version Contract）
 
 ```yaml
-targets:
-  harmonyos:      ">= 6.0.0  (API >= 12, 推荐 21/22)"
+# 鸿蒙系统侧（API 编号是单一权威，不同 API 对应不同 HarmonyOS 系统版本）
+harmonyos_system:
+  min_supported_api:        12       # API 12 = HarmonyOS 5（NEXT）时代起，本仓库规则适用最低线
+  current_consumer_stable:  22       # API 22 = HarmonyOS 6.0.2，2026-01-23 起对 Mate 80 / 70 / Pura 80 推送
+  first_stable_release:     21       # API 21 = HarmonyOS 6.0.1，2025-11-25 随 Mate 80 首发
+  developer_preview_api:    23       # API 23 Developer Beta（最新预览，跟随华为发布节奏 — 跑生产 app 别选）
+  recommended_target:       21       # 新项目推荐 targetSDK
+  recommended_min:          12       # 新项目推荐 minSDK
+
+# 工具链侧
+toolchain:
   arkts:          ">= 1.2.0"
   deveco_studio:  ">= 6.0"
+  ohpm:           ">= 1.4"
+
+# AI 助手侧
+ai_assistants:
   claude_code:    ">= 0.5"
   codex_cli:      ">= 0.1"
-last_verified: "2026-05-07"
+  cursor:         ">= 1.0"
+  copilot:        "ChatGPT-class instructions OK"
+
+last_verified_docs_snapshot: "2026-05-07"
 ```
 
-> 鸿蒙生态快速迭代（API 12 → 22 跨度大）。本仓库每次发版前在 `last_verified` 日期对齐一次"当前消费稳定版"。如果你的 SDK 比这更新，建议先跑 `bash tools/run-linter.sh` 自查规则是否仍适用，并在 issue 里反馈差异。
+> **如何读这张表**：API 编号才是单一权威——HarmonyOS 5 = API 12+ 时代，HarmonyOS 6 = API 21+ 时代。"6.0" / "6.0.2" / "6.1" 这种系统版本号会在不同发布节点指向不同 API 编号，直接看 API 数字最准。
+>
+> **生产应用选 API 22**（minSDK 12 / target 21–22 都行）；developer beta（API 23）当下仅尝鲜用。鸿蒙生态快速迭代：本仓库每次发版前在 `last_verified_docs_snapshot` 日期对齐一次"当前消费稳定版"。如果你的 SDK 比这更新，先跑 `bash tools/run-linter.sh` 自查规则是否仍适用，差异请提 issue。
 
 ## 它怎么工作（一图流）
 
@@ -227,6 +245,26 @@ npm install -g mcp-harmonyos
 ---
 
 ## 常见故障排查
+
+### 编译/构建失败时，怎么把信号传给 AI 让它修
+
+vibe coding 卡死的 90% 场景是"AI 写完看起来 OK 但 hvigorw 报错；我把错误贴给 AI，它瞎猜"。最高效路径：
+
+```bash
+# 1) 直接复制 hvigorw 的报错原文，包含错误码（如 ERROR: arkts-no-untyped-obj-literals）
+hvigorw assembleHap -p buildMode=debug 2>&1 | tail -30 | pbcopy   # macOS 直接进剪贴板
+
+# 2) 把这段贴给 Claude/Codex/Cursor，加一句：
+#    "请按 .claude/skills/arkts-rules/references/spec-quick-ref.md 里的稳定 ID
+#     找出违反的规则编号 + 给最小 diff，不要重写整个文件"
+#    AI 会在 spec-quick-ref.md 里查到对应 ARKTS-XXX 规则，给精确改写
+
+# 3) 装包失败贴 hilog（hdc 真机）
+hdc hilog | grep -E "FAULT|ERROR|9568" | tail -30
+
+# 4) 钩子已经写过的违规会落到这里——下一轮启动 AI 前先让它读
+cat .claude/.harmonyos-last-scan.txt 2>/dev/null
+```
 
 ### 钩子没反应（Edit `.ets` 后没看到扫描输出）
 

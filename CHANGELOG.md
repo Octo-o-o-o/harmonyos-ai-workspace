@@ -271,13 +271,77 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 
 详见本 CHANGELOG 同级条目「LCC 三轮实测反馈 · v0.6 修复」（v0.6 反馈未单独归档，全部内容已内联到本变更日志）。
 
+## [0.4.0] - 2026-05-07
+
+第六轮评审（Codex 视角）反馈驱动。**install 安全 + 真回归测试 + V1/V2 默认统一 + OHPM 网络错误分类**——这一轮的主题是把 v0.3.0 已经能跑的工具变成"敢在真实工程跑"的工具。
+
+### Breaking · install/uninstall 行为重构（评审 P1-1 + P1-2）
+
+v0.3 的 install 见已存在文件就跳过、uninstall 直接删——形成不对称：用户已有 CLAUDE.md 时 install 不接管（用户以为生效），uninstall 却把它删了（用户原配置丢失）。
+
+v0.4 修复：
+
+- 加 `.harmonyos-ai-workspace.manifest` 文件，install 时**逐文件记录** `<status>\\t<path>\\t<sha256>`：
+  - `written` —— 本工具实际写入
+  - `skipped` —— 已存在被跳过（绝不动）
+  - `failed` —— 下载失败
+- uninstall **只删 manifest 标记为 written 的文件**，且校验 sha256：
+  - sha256 不一致（用户改过该文件） → 保留并 warn（除非 `--force`）
+  - manifest 不存在 → 拒绝卸载（防误删用户原文件）
+- install 末尾出**安装报告**：明示哪些写入、哪些跳过、哪些失败；跳过列表附"如何接管这些文件"提示
+
+### 新功能
+
+- **`--dry-run`**：列出将要写入的文件清单不真写（CI 友好、新手验收）
+- **`--force`**：覆盖已存在文件（接管模式）
+- **`tools/test-suite.sh`**：真回归测试套件，`npm test` 调用，19 项断言（fixture exit / sample template / JSON / --stats / OHPM fixture / install dry-run）。v0.3 的 `bash xxx \|\| true` 只能证明脚本能跑，证明不了规则正确。
+
+### 修复
+
+- **PostToolUse 钩子路径加双引号**（评审 P1-3）—— `bash $CLAUDE_PROJECT_DIR/...` 在含空格的项目路径下会炸；`.claude/settings.json:10` 改为 `bash "$CLAUDE_PROJECT_DIR/..."`
+- **CLAUDE.md V1/V2 默认策略与 AGENTS.md / state-management SKILL 统一**（评审 P1-4）—— v0.3 时 CLAUDE.md 说"新项目用 V2 更安全"但其他 3 处入口都说"默认 V1"，AI 会读到矛盾指令。v0.4 把 CLAUDE.md 改为"默认 V1（生态最成熟、DevEco 模板默认）"；附跨文件 reference 链接保持一致性
+- **OHPM 网络错误分类**（评审 P2-2）—— v0.3 把 `ohpm view` 任何失败都归类 OHPM-FAKE High 阻断 AI；v0.4 区分 not-found / network / unknown：
+  - 含 `not found` / `404` / `does not exist` → `OHPM-FAKE · High`（真假包，阻断）
+  - 含 `etimedout` / `econnrefused` / `502` / `503` / `network` / `timeout` 或 `timeout` cli 退出 124 → `OHPM-NET · Low`（网络错，**不阻断**）
+  - 其他 → `OHPM-UNKNOWN · Medium`（保守降级）
+  - `ohpm view` 加 15 秒 timeout 防卡死
+
+### 文档
+
+- **README 版本契约重构**（评审 P2-1）—— v0.3 单行 `harmonyos: ">= 6.0.0  (API >= 12, 推荐 21/22)"` 让人误以为 API 12 属于 HarmonyOS 6。v0.4 拆为：
+  ```
+  min_supported_api / current_consumer_stable / first_stable_release /
+  developer_preview_api / recommended_target / recommended_min
+  ```
+  并加引导段说明"API 编号才是单一权威，看 API 数字最准"
+- **HarmonyOS 6.1 dev beta → API 23 Developer Beta**（评审 P2-1 配套）—— "6.1" 的措辞和华为发布节奏对齐性差；改为引用更稳定的 API 23 编号；CLAUDE.md / llms.txt 同步
+- **README 加"编译失败时怎么把信号传给 AI"段**（评审建议 5）—— vibe coding 用户最大痛点是 AI 拿到错误后瞎猜；给出复制 hvigorw 错误 + 引用 spec-quick-ref.md 的精确路径
+
+### 内部
+
+- `package.json` 0.3.0 → 0.4.0；files 数组加 `tools/test-suite.sh`
+- `tools/install.sh` 全面重写（约 100 → 270 行），保留所有 v0.3 入口参数
+
+### 评审采纳总览
+
+Codex 评审给的 7 项建议中：
+- P1-1 / P1-2 install 可信度：✅ 采纳，manifest + checksum + dry-run + 安全 uninstall
+- P1-3 hook 路径加引号：✅ 采纳
+- P1-4 V1/V2 矛盾：✅ 采纳，CLAUDE.md 改为默认 V1
+- P2-1 版本契约误读：✅ 采纳，拆开 + API 23 措辞
+- P2-2 OHPM 网络误判：✅ 采纳，分类 + timeout
+- P2-3 JSON5 启发式解析：⏸ v0.5 候选，工作量大且实际 oh-package.json5 99% 用引号 keys，marginal
+- 长期改进 1（manifest+checksum）/ 3（npm test 真断言）/ 5（vibe coding 入口）：✅ 全采纳
+- 长期改进 2（platform-matrix 单源）/ 4（CI 严格模式 / shellcheck）/ 6（API 索引）/ 7（样例可粘贴二次核对）/ 8（竞品矩阵 checked_at）：⏸ v0.5 候选
+
 ## [Unreleased]
 
 （无未发布变更。下次 release 周期的新增项将累积于此。）
 
+[0.4.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0
-[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.4.0...HEAD
 
 <!-- v0.1.0 没有 GitHub release（pre-tag 本地里程碑，详见顶部说明） -->
 [0.1.0]: #010---2026-05-06

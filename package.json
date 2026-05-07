@@ -1,12 +1,12 @@
 {
   "name": "harmonyos-ai-workspace",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Rule pack + PostToolUse hooks + skills for AI coding assistants (Claude Code / Codex CLI / Cursor / Copilot) writing HarmonyOS / ArkTS code that actually compiles.",
   "bin": {
     "harmonyos-ai-workspace": "bin/cli.js"
   },
   "scripts": {
-    "test": "bash tools/hooks/lib/scan-arkts.sh tools/hooks/test-fixtures/BadState.ets || true"
+    "test": "bash tools/test-suite.sh"
   },
   "keywords": [
     "harmonyos",
@@ -43,6 +43,7 @@
     "tools/data/",
     "tools/run-linter.sh",
     "tools/generate-ai-configs.sh",
+    "tools/test-suite.sh",
     "CLAUDE.md",
     "AGENTS.md",
     ".claude/",
