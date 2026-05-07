@@ -1,14 +1,55 @@
 # HarmonyOS AI Workspace
 
-> 面向 Claude Code / Codex CLI / Cursor / Aider 等 AI 编码助手的鸿蒙开发参考工作区。
-> HarmonyOS 6 系列（API 21 / 22）+ ArkTS + ArkUI，含官方文档镜像、严格语法规则、状态管理速查、构建调试 / 上架签名 Skills。
+> 面向 Claude Code / Codex CLI / Cursor / Copilot / Aider 等 24+ AI 编码助手（[agents.md 标准](https://agents.md/)）的鸿蒙开发参考工作区。
+> HarmonyOS 6 系列（API 21 / 22）+ ArkTS + ArkUI，含官方文档镜像、严格语法规则、状态管理速查、构建调试 / 上架签名 Skills、PostToolUse 自动校验钩子。
+> 当前版本：v0.3.0（2026-05-07）
 
 ## 入口（按 AI 工具）
 
-- [CLAUDE.md](CLAUDE.md): 项目级大宪章，含 14 节硬约束（ArkTS / ArkUI / 构建 / 调试 / 上架）
-- [AGENTS.md](AGENTS.md): Codex / Cursor / Aider 跨工具简版规则
-- [.claude/skills/manifest.json](.claude/skills/manifest.json): 5 个按需触发的 Claude Skills 元数据
+- [CLAUDE.md](CLAUDE.md): Claude Code 项目级大宪章
+- [AGENTS.md](AGENTS.md): 跨工具通用宪法（[agents.md 标准](https://agents.md/) 24+ 工具兼容；与 CLAUDE.md 冲突时以本文件为准）
+- [.cursor/rules/harmonyos.mdc](.cursor/rules/harmonyos.mdc): Cursor 规则（fan-out 生成）
+- [.github/copilot-instructions.md](.github/copilot-instructions.md): GitHub Copilot 指令（fan-out 生成）
+- [.claude/skills/manifest.json](.claude/skills/manifest.json): 8 个按需触发的 Claude Skills 元数据
 - [.mcp.json](.mcp.json): MCP-HarmonyOS 服务配置（设备 / 项目 / 构建查询）
+
+## Skills（按需加载，frontmatter 触发）
+
+语言 / 框架 / 工程层（首批 5 个）：
+
+- [.claude/skills/arkts-rules/SKILL.md](.claude/skills/arkts-rules/SKILL.md): ArkTS 严格语法规则（含 inline-suppress 文档）
+- [.claude/skills/state-management/SKILL.md](.claude/skills/state-management/SKILL.md): V1 / V2 状态管理 + "替换引用"铁律（含 V2 完整范例）
+- [.claude/skills/build-debug/SKILL.md](.claude/skills/build-debug/SKILL.md): Hvigor / OHPM / hdc / 错误码 / DEVECO_SDK_HOME
+- [.claude/skills/signing-publish/SKILL.md](.claude/skills/signing-publish/SKILL.md): 签名三件套 + AGC 上架 + Top 20 拒因
+- [.claude/skills/harmonyos-review/SKILL.md](.claude/skills/harmonyos-review/SKILL.md): 9 大类 60+ 规则代码审查 → 优先级报告
+
+工程装配 + 领域专项（v0.3 新增 3 个）：
+
+- [.claude/skills/runtime-pitfalls/SKILL.md](.claude/skills/runtime-pitfalls/SKILL.md): 7 类工程装配陷阱（主题切换 / `useNormalizedOHMUrl` / 模块改名三处同步 / `string.json` 空数组 / Web `javaScriptProxy` 稳定实例 / HUKS 加密 / `DEVECO_SDK_HOME`）
+- [.claude/skills/multimodal-llm/SKILL.md](.claude/skills/multimodal-llm/SKILL.md): LLM 客户端领域（OpenAI Vision / Whisper / DALL-E / SSE 流式解析 / union content 拆双字段）
+- [.claude/skills/web-bridge/SKILL.md](.claude/skills/web-bridge/SKILL.md): ArkUI Web 组件 + H5↔ArkTS 桥（`javaScriptProxy` 稳定实例 / `runJavaScript` 时序 / Markdown 离线渲染器）
+
+## Recipes（可粘贴的鸿蒙最小可用代码）
+
+- [samples/templates/permission/](samples/templates/permission/): 4 类敏感权限运行时申请 + UI 解释 + 拒绝兜底
+- [samples/templates/list/](samples/templates/list/): LazyForEach + IDataSource + 下拉刷新 + 上拉加载
+- [samples/templates/dark-mode/](samples/templates/dark-mode/): 系统主题跟随 + 资源限定符 + mediaquery 监听
+- [samples/templates/login/](samples/templates/login/): 华为账号 SSO 接入指引（不写完整代码，给约束 + 文档链接）
+
+> 所有 recipe 已通过 scan-arkts 全规则；可拷贝到自家项目 `entry/src/main/ets/` 下改 import 即用。
+
+## Case Studies（真实战疤）
+
+- [docs/case-studies/llm-chat-app.md](docs/case-studies/llm-chat-app.md): LCC（LLM Chat Client）M3-M12 多里程碑实战笔记，**症状 / 错误信息 / 修复 diff / 教训**四段式
+
+## 自动化校验工具
+
+- [tools/hooks/lib/scan-arkts.sh](tools/hooks/lib/scan-arkts.sh): 30 条规则 grep 扫描 + awk 装饰器上下文检测 + collapse 折叠 + `--stats` / `--json` 模式 + inline-suppress
+- [tools/check-ohpm-deps.sh](tools/check-ohpm-deps.sh): OHPM 包名黑/白名单 + ohpm CLI 三层校验
+- [tools/check-rename-module.sh](tools/check-rename-module.sh): build-profile.json5 × module.json5 × oh-package.json5 三处模块名一致性（perl `-0pe` slurp 处理跨行 JSON5 尾逗号）
+- [tools/run-linter.sh](tools/run-linter.sh): 离线 hvigorw codeLinter wrapper
+- [tools/install.sh](tools/install.sh): curl-pipeable 一行装到任意鸿蒙 app
+- [tools/generate-ai-configs.sh](tools/generate-ai-configs.sh): SKILL → Cursor / Copilot fan-out
 
 ## 核心规则速查
 
@@ -16,6 +57,7 @@
 - [01-language-arkts/02-typescript-to-arkts-migration.md](01-language-arkts/02-typescript-to-arkts-migration.md): 25 条 `arkts-no-*` 规则与改写
 - [01-language-arkts/03-state-management-cheatsheet.md](01-language-arkts/03-state-management-cheatsheet.md): V1 / V2 状态管理完整模板 + 反模式
 - [09-quick-reference/README.md](09-quick-reference/README.md): 装饰器 / 命令 / 错误码 cheat sheet
+- [.claude/skills/arkts-rules/references/spec-quick-ref.md](.claude/skills/arkts-rules/references/spec-quick-ref.md): 30+ 规则编号 → 官方规范条款映射
 
 ## 主题目录
 
@@ -25,16 +67,8 @@
 - [04-build-debug-tools/](04-build-debug-tools/): Hvigor / OHPM / hdc / Inspector / Profiler
 - [05-best-practices/](05-best-practices/): 性能 / 多端 / 安全 / 包大小
 - [06-design-guidelines/](06-design-guidelines/): 鸿蒙设计语言
-- [07-publishing/](07-publishing/): AppGallery 上架、签名证书
+- [07-publishing/](07-publishing/): AppGallery 上架、签名证书、Top 20 拒因
 - [08-resources-links/](08-resources-links/): 精选官方 / 社区链接
-
-## Skills（按需加载）
-
-- [.claude/skills/arkts-rules/SKILL.md](.claude/skills/arkts-rules/SKILL.md): ArkTS 严格语法规则
-- [.claude/skills/state-management/SKILL.md](.claude/skills/state-management/SKILL.md): V1 / V2 状态管理 + "替换引用" 铁律
-- [.claude/skills/build-debug/SKILL.md](.claude/skills/build-debug/SKILL.md): Hvigor / OHPM / hdc / 错误码
-- [.claude/skills/signing-publish/SKILL.md](.claude/skills/signing-publish/SKILL.md): 签名三件套 + AGC 上架
-- [.claude/skills/harmonyos-review/SKILL.md](.claude/skills/harmonyos-review/SKILL.md): 9 大类 60+ 规则代码审查 → 优先级报告
 
 ## 上游文档
 
@@ -47,6 +81,7 @@
 - Strategy: [OPEN-SOURCE-STRATEGY.md](docs/OPEN-SOURCE-STRATEGY.md)（Layer 1 工作区 / Layer 2 Skill 包 / Layer 3 项目模板）
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
+- Reviews archive: [docs/archive/reviews/README.md](docs/archive/reviews/README.md)（多轮评审循环 + LCC 4 轮实测反馈）
 
 ## 关键事实（2026-05）
 
@@ -54,3 +89,4 @@
 - 首发稳定版：HarmonyOS 6.0.1 / API 21（2025-11-25）
 - 新项目 targetSDK 默认建议：API 21，minSDK API 12
 - API 20 是 2025-09-25 仅开发者版，**不要选作 targetSDK**
+- HarmonyOS 6.1 开发者 Beta：2026-02-07 对约 5 万开发者开放（关注新特性可选用，非生产 targetSDK）

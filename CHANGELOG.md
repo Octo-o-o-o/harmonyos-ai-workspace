@@ -79,11 +79,11 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 - CHANGELOG `[Unreleased]` 段切到 `[0.3.0] - 2026-05-07`
 - 按 SemVer：scan-arkts 规则数 13 → 30、新增多个工具与 SKILL，向前兼容的功能扩展属 minor bump
 
-详见 [`docs/archive/reviews/`](docs/archive/reviews/README.md) 中 LCC 多轮反馈条目。
+### 历史累积分轮记录（v0.2 → v0.6 全部合并到 0.3.0）
 
-## [Unreleased]
+> 下面是 v0.3.0 release 之前的所有评审循环、PR 批次、第三方反馈的详细记录，按主题/轮次分组。新读者可跳过；评审审计 trail 用。
 
-### v0.2.x post-review patches
+#### v0.2.x post-review patches
 
 - **v2 评审响应**（详见 [`docs/REVIEW-2026-05-06-v2.md`](docs/REVIEW-2026-05-06-v2.md)）：
   - `scan-arkts.sh` 13 → 18 条规则（+ KIT-001 / PERF-001 / ARKTS-016 / STATE-009 / SEC-001 / COMPAT-001）+ `--json` 输出模式
@@ -111,7 +111,7 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
     - **E-2 ID 体系收口**：harmonyos-review report-template 强制要求所有 finding 用稳定 ID 引用；列出 9 大命名空间 88 条规则 + 引用格式示例
     - **X-2 README 一图流**：加 ASCII art 流程图：AI 启动 → 钩子触发 → stderr 反馈 → AI 自我修正
 
-### v0.2.x 后续 patch（v0.3 提前实施 · 2026-05-07）
+#### v0.2.x 后续 patch（v0.3 提前实施 · 2026-05-07）
 
 逐条评估 v0.3 候选清单后，**3 件"完全自主可控、对真实开发者立即有用"的提前做完**：
 
@@ -138,7 +138,7 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
   - Windows 检测：明示走 WSL，不试图在 native 上跑
   - npm publish 后等价 `npx harmonyos-ai-workspace`
 
-### v0.3 仍候选（依赖外部 / 内容工程半衰期短，等真用户反馈）
+#### v0.3 仍候选（依赖外部 / 内容工程半衰期短，等真用户反馈）
 
 - 接入动作型 MCP 默认装（替代 docs/MCP-INTEGRATION.md 指引）—— G 半年未更新
 - PowerShell 版本（Windows native）—— 多走 WSL
@@ -147,7 +147,7 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 - SDK recipe 第三方贡献规范 —— 需先有 1-2 真实 recipe
 - RAG MCP serving 13524 docs —— 独立项目级
 
-### LCC 二轮真工程实测反馈响应 · BUG 修 + 误报修 + 体验
+#### LCC 二轮真工程实测反馈响应 · BUG 修 + 误报修 + 体验
 
 二轮反馈来自评审者在 PrivateTalk 真工程跑 30 条扫描规则 + check-rename-module.sh 后的实测数据：1 个真 BUG / 3 条规则真误报（21% 假阳率）/ 3 类体验问题。**全部采纳**：
 
@@ -179,7 +179,7 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 
 - `tools/hooks/test-fixtures/GoodPrefStore.ets` —— 4 类合法代码（preferences.delete / Record 索引赋值 / 空 Record 字面量 / 带 scan-ignore 的资源清理 catch）应**全部 0 命中**，验证误报修复。
 
-### 真实战反馈响应 · LCC（LLM Chat Client）M3-M12 实战踩坑全采纳
+#### 真实战反馈响应 · LCC（LLM Chat Client）M3-M12 实战踩坑全采纳
 
 第一次真实用户反馈来自一个真鸿蒙 LLM 对话客户端 app 的 M3-M12 多里程碑实战。15 条具体踩坑里 12 条是真痛点，**全部采纳**：
 
@@ -215,7 +215,7 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 - llm-chat-mvp 完整脱敏脚手架 —— 需用户提供 LCC 脱敏代码，本仓库不能拍脑袋 AI 生成
 - `--auto-fix` 模式 —— DevEco IDE 已有；CLI 自动改写假阳性风险高
 
-### codex 评审响应（详见 [`docs/archive/reviews/2026-05-07-codex.md`](docs/archive/reviews/2026-05-07-codex.md)）
+#### codex 评审响应（详见 [`docs/archive/reviews/2026-05-07-codex.md`](docs/archive/reviews/2026-05-07-codex.md)）
 
 第三轮评审（codex 视角，源码 + WebFetch 八仓基线）。**P0 全部立即采纳**：
 
@@ -233,7 +233,7 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 
 详细处置决策见评审顶部 `## 处置决策表`。
 
-### LCC 三轮实测反馈 · v0.6 修复（2026-05-07）
+#### LCC 三轮实测反馈 · v0.6 修复（2026-05-07）
 
 第三轮 PrivateTalk 真工程实测反馈：v0.5 自查发现 **1 个 P0 真 BUG / 1 处 SKILL 自相矛盾 / 2 条规则系统性误报 / 1 处折叠形同虚设**。**全部采纳**：
 
@@ -268,6 +268,10 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 - 全 6 fixture（5 个 Bad + 1 个 Good）+ 4 个 sample template 全量回归通过。
 
 详见 [`docs/archive/reviews/2026-05-07-lcc-3.md`](docs/archive/reviews/2026-05-07-lcc-3.md)（如有归档）。
+
+## [Unreleased]
+
+（无未发布变更。下次 release 周期的新增项将累积于此。）
 
 [0.3.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0

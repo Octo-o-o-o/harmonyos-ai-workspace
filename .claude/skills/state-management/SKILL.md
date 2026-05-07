@@ -308,3 +308,4 @@ build() {
 - 完整模板：`01-language-arkts/03-state-management-cheatsheet.md`
 - V1 文档：`upstream-docs/.../ui/state-management/arkts-state-management-overview.md`
 - V2 文档：`upstream-docs/.../ui/state-management/arkts-new-state-management.md`
+- 实战 case study：[`docs/case-studies/llm-chat-app.md`](../../../docs/case-studies/llm-chat-app.md) —— 真实 LLM 对话 app 的状态管理踩坑（数组就地 mutation / @Trace 字段漏标 / Map 替换引用等）

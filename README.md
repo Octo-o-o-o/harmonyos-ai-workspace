@@ -102,7 +102,7 @@ bash tools/setup-from-scratch.sh
 - **多工具 fan-out** · 单源 `.claude/skills/*/SKILL.md` → Cursor `.mdc` + Copilot instructions
 - **CLI 工具集** · `install.sh`（一行装到 app）/ `run-linter.sh`（离线 codeLinter）/ `check-ohpm-deps.sh`（包名校验）/ `setup-from-scratch.sh`（新手向导）/ `bootstrap-upstream-docs.sh`（按需拉文档镜像）
 - **2026 提审 Top 20 拒因** · [`07-publishing/checklist-2026-rejection-top20.md`](07-publishing/checklist-2026-rejection-top20.md)，6 条高频项配可粘贴代码片段
-- **测试 fixture** · `tools/hooks/test-fixtures/` 4 个故意写错的文件，钩子回归保障
+- **测试 fixture** · `tools/hooks/test-fixtures/` 9 个回归 fixture（8 故意写错 + 1 应通过 + 反测试用例），覆盖 inline 装饰器 / @CustomDialog / @Reusable / 普通工具类等边界
 - **MCP** · `.mcp.json` 接通 `mcp-harmonyos`（npx 自动）；动作型 MCP 接入指引见 [`docs/MCP-INTEGRATION.md`](docs/MCP-INTEGRATION.md)
 - **可选官方文档镜像** · 5300+ 中文 + 5100+ 英文 OpenHarmony md（按需 `bootstrap-upstream-docs.sh -y` 拉取，~2.7 GB）
 ### 真正独有的能力（vs 同类项目）
@@ -129,6 +129,23 @@ PostToolUse 钩子并非孤例（[`yibaiba/harmonyos-skills-pack`](https://githu
 | **OHPM 黑名单**（已知伪包） | ~25 项 | `tools/data/ohpm-blacklist.txt` + 脚本内联 | 防 AI 虚构包名 |
 
 合计 ~94 条编号规则，分布在四个层；它们用于不同场景。
+
+### Recipe Templates · 可粘贴的鸿蒙最小可用代码
+
+[`samples/templates/`](samples/templates/) 下 4 个完整 recipe，每个都已通过 scan-arkts 全规则——拷贝到自家 `entry/src/main/ets/` 改 import 即用：
+
+| Recipe | 含 | 何时用 |
+| --- | --- | --- |
+| [`permission/`](samples/templates/permission/) | 4 类敏感权限的运行时申请 + UI 解释 + 拒绝兜底（位置 / 相机 / 通知 / 麦克风） | 任何需要敏感权限的页面 |
+| [`list/`](samples/templates/list/) | LazyForEach + IDataSource 标准实现 + 下拉刷新 + 上拉加载 | 长列表（消息/会话/Feed），数据源 ≥ 50 项或来自 RDB / 网络分页 |
+| [`dark-mode/`](samples/templates/dark-mode/) | 系统主题跟随 + 资源限定符 + mediaquery 监听 | 上架要求支持深色模式（AGC-RJ-006） |
+| [`login/`](samples/templates/login/) | 华为账号 SSO 接入指引（不写完整代码，给约束 + 文档链接 + 反模式提醒） | API 在 12 → 22 多次变化的模块；AI 训练数据是旧版，必须查官网 |
+
+详细 README 在 [`samples/templates/README.md`](samples/templates/README.md)。
+
+### Case Studies · 真实战疤
+
+[`docs/case-studies/llm-chat-app.md`](docs/case-studies/llm-chat-app.md) — 真鸿蒙 LLM 对话客户端（LCC）M3-M12 多里程碑实战笔记。**症状 / 错误信息 / 修复 diff / 教训** 四段式，覆盖：Configuration import 命名空间陷阱、union content 拆双字段、SSE 流式 buffer 拼接、`useNormalizedOHMUrl` 主题切换、HUKS 加密资源句柄释放等 11 节。
 
 ---
 
