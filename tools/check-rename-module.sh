@@ -35,9 +35,14 @@ fi
 # json5 比 json 容忍（注释、单引号、尾逗号）
 # 用 sed 做简单的 json5 → json 转换：
 #   - 删除 // 行注释（行尾后）
-#   - 不动其他（json5 多数特性 jq 都能容忍）
+#   - 删除 } 和 ] 前的尾逗号（DevEco 默认模板的 build-profile.json5 含
+#     `buildModeSet: [{ name: 'debug', }, ...]` 这种合法 JSON5 但非法 JSON）
+#   - 不动单引号（jq 在多数情况能容忍）
 json5_to_json() {
-  sed 's|//[^"]*$||g' "$1"
+  sed -e 's|//[^"]*$||g' \
+      -e 's/,\([[:space:]]*[}]\)/\1/g' \
+      -e 's/,\([[:space:]]*[]]\)/\1/g' \
+      "$1"
 }
 
 # 提取 build-profile.json5 中所有 modules[].name

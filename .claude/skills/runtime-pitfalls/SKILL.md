@@ -63,7 +63,7 @@ struct MyPage {
 ## 二、useNormalizedOHMUrl 强制 scope import
 
 ### 现象
-`build-profile.json5` 里 `useNormalizedOHMUrl: true`（HarmonyOS 5+ 默认开），跨模块 import 写 `import { Foo } from '../common/foo'` 报错"path resolution failed"。
+`build-profile.json5` 里 `useNormalizedOHMUrl: true`（HarmonyOS 6 IDE 模板 / DevEco 5.0+ 默认开启；HarmonyOS 5 时代多数模板也是 true，但可手动设 false 关闭），跨模块 import 写 `import { Foo } from '../common/foo'` 报错 "path resolution failed"。
 
 ### 原因
 启用规范化 OHM URL 后，模块间引用**必须走 `@ohos/<module-name>` scope**，不能用相对路径。
@@ -101,16 +101,28 @@ import { ChatStore } from '@ohos/common';
 ```
 build-profile.json5         modules[].name          ← 工程级模块声明
 <module>/module.json5       module.name             ← 运行时模块名
-<module>/oh-package.json5   name                    ← OHPM 名（@ohos/<这个>）
+<module>/oh-package.json5   name                    ← OHPM 包名（@ohos/<这个> 或不带前缀）
 ```
 
 漏改任意一处 → build 失败或运行时找不到模块。
+
+### ⚠️ 关键：build-profile 与 module.json5 是**字面量等于**关系
+
+`build-profile.json5` 中 `modules[].name` 是**模块标识**（不是 OHPM 包名），它必须 **逐字符等于** `<module>/src/main/module.json5` 中 `module.name`。
+
+报错原文（重命名漏改时）：
+
+```
+The module name conversation in build-profile.json5 must be same as moduleName in module.json5.
+```
+
+OHPM 包名（`@ohos/<name>`）是**另一层**，在 `oh-package.json5`，可与之独立（带 `@ohos/` 前缀或不带都行）。
 
 ### 自动化校验
 ```bash
 bash tools/check-rename-module.sh
 ```
-会对照三处 name 是否一致。
+会对照三处 name 是否一致。**v0.5 修复**：原版本对 DevEco 默认模板（含 JSON5 尾逗号 `{ "name": "debug", }`）会 jq 解析失败；现在已正确去尾逗号。
 
 ## 四、string.json "string" 数组不允许为空
 
@@ -277,14 +289,35 @@ import { ConfigurationConstant } from '@kit.AbilityKit';
 const orientation = ConfigurationConstant.Direction.DIRECTION_VERTICAL;
 ```
 
-### 常被误 import 的速查
+### 常用 Kit 类型 import 速查（v0.5 实战补充）
 
-| 误导路径 | 正确路径 |
-| --- | --- |
-| `Configuration` from `@kit.AbilityKit` | `ConfigurationConstant.*` |
-| `WindowMode` from `@kit.AbilityKit` | `wantConstant.WindowMode` from `@kit.AbilityKit` |
-| `LaunchReason` from `@kit.AbilityKit` | `AbilityConstant.LaunchReason` |
-| `AreaMode` from `@kit.ArkData` | `contextConstant.AreaMode` from `@kit.AbilityKit` |
+| 想用类型 | 应该 import 自 | 备注 |
+| --- | --- | --- |
+| `Configuration`（配置变更回调参数） | `@kit.AbilityKit`（顶层） | ⚠️ 不在 `ConfigurationConstant` 命名空间 |
+| `ConfigurationConstant.*`（配置常量） | `@kit.AbilityKit` | 用于 `ConfigurationConstant.Direction.DIRECTION_VERTICAL` 这种枚举值 |
+| `BusinessError` | `@kit.BasicServicesKit` | 鸿蒙 Promise 拒绝错误的标准类型 |
+| `Want` / `UIAbility` / `AbilityConstant` | `@kit.AbilityKit` | |
+| `Permissions`（权限名字面量类型） | `@kit.AbilityKit` | 不是普通 string，是字面量联合 |
+| `abilityAccessCtrl.AtManager` | `@kit.AbilityKit` | 权限授予 |
+| `webview.WebviewController` / `WebController` | `@kit.ArkWeb` | Web 组件控制器 |
+| `mediaquery.MediaQueryListener` | `@kit.ArkUI` | 主题 / 断点监听 |
+| `preferences.Preferences` | `@kit.ArkData` | KV 存储 |
+| `relationalStore.RdbStore` / `ResultSet` | `@kit.ArkData` | RDB |
+| `request.UploadConfig` | `@kit.BasicServicesKit` | 文件上传（不是 @kit.NetworkKit） |
+| `huks.HuksOptions` | `@kit.UniversalKeystoreKit` | HUKS 加密 |
+
+### 真踩坑示例
+
+```typescript
+// ❌ 实战中常见错误
+onConfigurationUpdate(newConfig: ConfigurationConstant.Configuration): void { /* ... */ }
+//                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//   ConfigurationConstant 没有 Configuration 类型，IDE 可能不立即报红但运行时崩
+
+// ✅ 正确
+import { Configuration } from '@kit.AbilityKit';
+onConfigurationUpdate(newConfig: Configuration): void { /* ... */ }
+```
 
 不确定？**Ctrl+点进类型定义**或在 `upstream-docs/.../reference/apis-ability-kit/` 搜。
 

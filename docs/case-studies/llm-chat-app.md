@@ -1,8 +1,10 @@
 # Case Study · LLM 对话客户端工程笔记
 
-> **来源**：本工作区在一个真实鸿蒙 LLM 对话 app（M3-M12 多个里程碑）实战中的踩坑总结。化名 LCC（LLM Chat Client）。
+> **来源声明**：本笔记基于一个真鸿蒙 LLM 对话 app（化名 LCC = LLM Chat Client）M3-M12 多个里程碑的反馈整理。**为可读性做了范型化处理**——具体里程碑章节的错误信息、修复 diff 是从真用户反馈中提炼的代表性案例，**不一定 1:1 对应该 app 的真实代码**。
 >
-> 每节一个具体场景：**症状 → 错误信息原文 → 修复 diff → 一句话教训**。比抽象规则更有说服力。
+> 个别章节（如 M9 BackupManager）讨论的是"工程上常见的此类问题"而非"该 app 真踩到了"。读者请把每节当作"领域里典型的一类问题 + 关联规则 + 修复方向"，而非考古实录。
+>
+> 每节结构：**症状 → 错误信息原文 → 修复 diff → 一句话教训**。比抽象规则更有说服力。
 >
 > 关联 SKILLS：[`runtime-pitfalls`](../../.claude/skills/runtime-pitfalls/SKILL.md) / [`multimodal-llm`](../../.claude/skills/multimodal-llm/SKILL.md) / [`web-bridge`](../../.claude/skills/web-bridge/SKILL.md) / [`arkts-rules`](../../.claude/skills/arkts-rules/SKILL.md) / [`state-management`](../../.claude/skills/state-management/SKILL.md)
 
@@ -195,12 +197,17 @@ bash tools/check-rename-module.sh
 
 ---
 
-## M9 · BackupManager · ResultSet 不 close
+## M9 · 资源句柄释放（DB-001 / KIT-001 / KIT-002 类问题）
 
-### 症状
-单元测试反复跑 backup → 报 "Too many open cursors"。
+> 注：LCC 当前 BackupManager 用 `preferences` KV 序列化实现，**没用 RDB / ResultSet**，因此本节实际不源自该 app 的真踩坑。但 DB-001 提示"未来切到 relationalStore 时必须 ResultSet.close()"是工程通用真理；同时同类问题（http 实例不 destroy / ImageSource 不 release）在 LCC 的多模态调用链路确实出现过。本节作为**资源句柄释放范式**保留。
 
-### 修复 diff
+### 范式问题
+鸿蒙原生句柄（ResultSet / RdbStore / ImageSource / http req / 文件 fd）若不 close/destroy/release，会触发：
+
+- 单元测试 / 长跑场景报 "Too many open cursors" / "FD leak"
+- AGC 提审稳定性测试 crash 率超 0.5% 阈值（被拒）
+
+### 修复范式（以 RDB 为例）
 
 ```diff
  async loadAll(store: relationalStore.RdbStore): Promise<Backup[]> {
@@ -223,8 +230,13 @@ bash tools/check-rename-module.sh
  }
 ```
 
+http / ImageSource 同样 try / finally。
+
 ### 教训
-ResultSet / RdbStore / ImageSource / http 实例 / 文件 fd 都是**鸿蒙原生句柄**——必须 close/destroy/release。AGC 提审稳定性测试会跑出来。本仓库新增 `DB-001`（ResultSet）/ `KIT-001`（http）/ `KIT-002`（image）三条自动扫描。
+任何"鸿蒙原生句柄"获取的瞬间都要规划释放。本仓库 scan-arkts 自动检测：
+- `DB-001` ResultSet/RdbStore 取出未 close
+- `KIT-001` `http.createHttp()` 用完未 destroy
+- `KIT-002` ImageSource 解码后未 release
 
 ---
 

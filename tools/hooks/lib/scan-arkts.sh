@@ -96,6 +96,36 @@ json_escape() {
     || printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/	/\\t/g'
 }
 
+# v0.5 inline-suppress：用户在违规上一行或同行写：
+#   // scan-ignore: <RULE-ID>           只跳过该规则
+#   // scan-ignore: <RULE1>,<RULE2>     跳过多条规则
+#   // scan-ignore-line                 跳过本行所有规则
+# 给用户一个"我已审、故意保留"的逃生口。
+should_suppress() {
+  local rule="$1" line="$2"
+  [[ -z "$line" || "$line" -lt 1 ]] && return 1
+  # 读"该行"和"上一行"原文（注意：这里读 $FILE 而非去注释后的 $TMP，
+  # 因为 // 注释正是抑制标记的载体）
+  local cur_line=""
+  local prev_line=""
+  cur_line=$(sed -n "${line}p" "$FILE" 2>/dev/null)
+  if [[ "$line" -gt 1 ]]; then
+    prev_line=$(sed -n "$((line - 1))p" "$FILE" 2>/dev/null)
+  fi
+  for l in "$prev_line" "$cur_line"; do
+    [[ -z "$l" ]] && continue
+    # scan-ignore-line：跳过本行所有规则
+    if echo "$l" | grep -qE '//[[:space:]]*scan-ignore-line\b'; then
+      return 0
+    fi
+    # scan-ignore: RULE 或 scan-ignore: RULE1, RULE2
+    if echo "$l" | grep -qE "//[[:space:]]*scan-ignore:[[:space:]]*[A-Z0-9-]*[[:space:],]*${rule}\b"; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 emit_record() {
   local rule="$1" sev="$2" line="$3" snippet="$4" reason="$5"
   if [[ "$JSON_MODE" == "1" ]]; then
@@ -116,11 +146,14 @@ emit_record() {
 }
 
 emit_high() {
+  # inline-suppress 检查上移到 emit_*：抑制时既不输出也不计数
+  if should_suppress "$1" "$2"; then return; fi
   emit_record "$1" "High" "$2" "$3" "$4"
   violations_high=$((violations_high + 1))
 }
 
 emit_med() {
+  if should_suppress "$1" "$2"; then return; fi
   emit_record "$1" "Medium" "$2" "$3" "$4"
   violations_med=$((violations_med + 1))
 }
@@ -218,11 +251,20 @@ while IFS= read -r match; do
 done < <(scan_lines '^\s*(const|let|var)\s*[\{\[]')
 
 # ARKTS-003: 字符串字面量索引访问 obj['key']
+# v0.5 修：评审反馈 PrivateTalk LlmClient 12 处误报——`Record<string, Object>` 上的索引赋值是合法的。
+# 提取被索引的变量名，看同文件有没有 `<varname>: Record<...>` 或 `: Map<` 声明；有则跳过。
 while IFS= read -r match; do
   [[ -z "$match" ]] && continue
   ln="${match%%:*}"
   content="${match#*:}"
-  # 跳过 Map / Record 标准访问（不会用 [] 访问）
+  # 提取被索引的变量名（如 `partObj['type']` → partObj）
+  var=$(echo "$content" | grep -oE '\b[a-zA-Z_]\w*\[["'\''][^"'\'']+["'\'']\]' | head -1 | sed 's/\[.*//')
+  if [[ -n "$var" ]]; then
+    # 同文件是否有 `var: Record<...>` 或 `var: Map<...>` 声明
+    if grep -qE "\b${var}\s*:\s*(Record<|Map<)" "$TMP" 2>/dev/null; then
+      continue
+    fi
+  fi
   emit_med "ARKTS-003" "$ln" "${content:0:80}" \
     "ArkTS 禁动态索引。如果是已知字段用 obj.field；动态键改用 Map<K,V>.get(k)"
 done < <(scan_lines '[a-zA-Z_]\w*\[["'\''][^"'\'']+["'\'']\]')
@@ -302,10 +344,18 @@ while IFS= read -r match; do
 done < <(scan_lines 'catch\s*\(' | head -20)
 
 # STATE-009: Map / Set 就地 set / delete / clear 但外层是 @State
+# v0.5 修：评审反馈 "this.prefs.delete()" / "this.rdbStore.delete()" 等 KV/DB API
+# 调用被误报。实测 PrivateTalk 100% 假阳率。排除常见非状态字段名前缀。
+EXCLUDE_NAMES='prefs|pref|store|rdb|cache|client|controller|ctx|context|db|registry|abilityCtx|httpReq|connection|listener'
 while IFS= read -r match; do
   [[ -z "$match" ]] && continue
   ln="${match%%:*}"
   content="${match#*:}"
+  # 提取字段名做白名单校验
+  field=$(echo "$content" | grep -oE 'this\.[a-zA-Z_]\w*\.' | head -1 | sed 's/this\.//; s/\.$//')
+  if [[ -n "$field" ]] && echo "$field" | grep -qE "^($EXCLUDE_NAMES)$"; then
+    continue   # 是已知 KV/DB/MCP API 持有者，跳过
+  fi
   emit_high "STATE-009" "$ln" "${content:0:80}" \
     "Map / Set 就地 set / delete / clear 不触发重渲染。改写：const next = new Map(this.m); next.set(...); this.m = next;"
 done < <(scan_lines '\bthis\.[a-zA-Z_]\w*\.(set|delete|clear)\s*\(' | head -10)
@@ -392,33 +442,23 @@ if [[ "${foreach_lines:-0}" -gt 0 ]] && ! grep -qE 'LazyForEach' "$TMP" 2>/dev/n
 fi
 
 # STATE-006: V1 调用方双向绑定丢 $$
-# 检测：V1 子组件用 @Link，但调用方写 `Child({ x: this.y })` 而不是 `Child({ x: $$this.y })`
-# 简化：仅当文件含 @Link 时给提示，要求人核查
-if grep -qE '@Link\s+\w+' "$TMP" 2>/dev/null; then
-  # 查所有形如 SomeComponent({ ... }) 但未见 $$
-  while IFS= read -r match; do
-    [[ -z "$match" ]] && continue
-    ln="${match%%:*}"
-    content="${match#*:}"
-    # 排除已用 $$ 的行
-    if echo "$content" | grep -qvE '\$\$'; then
-      emit_med "STATE-006" "$ln" "${content:0:80}" \
-        "本文件含 @Link 装饰器，调用子组件时双向绑定字段必须用 \$\$x 而非 x，否则单向"
-    fi
-  done < <(scan_lines '^[[:space:]]*[A-Z][a-zA-Z0-9_]*\s*\(\s*\{' | head -5)
-fi
+# v0.5 删除：评审者实测此规则启发式不足——"看到 @Link 就把所有 SomeComponent({ ... })
+# 报"会刷屏。grep 跨语义不够，需要 AST。让 state-management SKILL 文档教即可，scanner
+# 不再扫这条。如需重新启用，须接 ts-morph / tree-sitter。
 
 # ─── v0.4 实战反馈新增（PrivateTalk M3-M12 真踩坑） ───────────────
 
-# ARKTS-RECORD-LITERAL: Record<K,V> 字面量初始化也违反 untyped-obj-literals
-# AI 常以为 "Record 已经有类型了" 就能直接 = { k: v }，但 ArkTS 仍要求显式 class
+# ARKTS-RECORD: Record<K,V> 字面量初始化触发 untyped-obj-literals
+# v0.5 修：评审反馈空字面量 `= {}` 在 ArkTS 中合法且常见（PrivateTalk BackupManager
+# 实际编译过）。规则真正想防的是含键值 `= { 'foo': 1 }` 的情况。
+# 模式改成要求至少一个键值对（'k': 或 "k": 或 字段名:）。
 while IFS= read -r match; do
   [[ -z "$match" ]] && continue
   ln="${match%%:*}"
   content="${match#*:}"
   emit_high "ARKTS-RECORD" "$ln" "${content:0:80}" \
-    "Record<K,V> 字面量初始化仍触发 arkts-no-untyped-obj-literals。改 Map<K,V>.set() 或先声明 class 再赋值"
-done < <(scan_lines ':\s*Record<[^>]+>\s*=\s*\{' | head -5)
+    "Record<K,V> 含键值字面量初始化仍触发 arkts-no-untyped-obj-literals。改 Map<K,V>.set() 或先声明 class 再赋值。空 = {} 是合法的"
+done < <(scan_lines ":\s*Record<[^>]+>\s*=\s*\{[[:space:]]*['\"a-zA-Z_]" | head -5)
 
 # ARKTS-AWAIT-TRY: 非 try 块内的 await 触发 hvigorw "Function may throw exceptions"
 # 简化检测：扫所有 await 行；如果**整个文件没有 try { ... }**，提示
@@ -481,12 +521,17 @@ if [[ "$JSON_MODE" == "1" ]]; then
   rm -f "$JSON_BUF"
 fi
 
-# 文本模式：summary
+# 文本模式：summary + 聚合提示（v0.5）
+# 评审反馈：i18n DICT 文件 53 条 AGC-RJ-014 命中会埋掉真信号。
+# JSON 模式不聚合（CI 要全数据）；文本模式给抑制 hint。
 if [[ "$JSON_MODE" != "1" ]]; then
   if [[ "$violations_high" -gt 0 ]]; then
     printf '\n[summary] %s · High: %d · Medium: %d\n' "$REL" "$violations_high" "$violations_med" >&2
   elif [[ "$violations_med" -gt 0 ]]; then
     printf '\n[summary] %s · Medium: %d\n' "$REL" "$violations_med" >&2
+  fi
+  if [[ $((violations_high + violations_med)) -ge 5 ]]; then
+    printf '[hint] 单规则刷屏？在违规上一行加 `// scan-ignore: <RULE-ID>` 抑制；或整行首加 `// scan-ignore-line`\n' >&2
   fi
 fi
 

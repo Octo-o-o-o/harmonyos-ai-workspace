@@ -114,20 +114,41 @@ hvigorw assembleApp -p buildMode=release \
 - 上架包必须用 **self-hosted macOS runner**（与 DevEco 同环境）
 - 缓存 `~/.ohpm` 和 `oh_modules/` 显著提速
 
-## 终端 hvigorw 的环境变量（必读）
+## 终端 hvigorw 的环境变量 · 必跑 sanity check（v0.5 实战补充）
 
-DevEco IDE 内 hvigorw 自动注入 `DEVECO_SDK_HOME`；终端跑必须自己设：
+DevEco IDE 内 hvigorw 自动注入环境变量；终端跑必须自己设。**典型崩溃**：
 
-```bash
-# macOS：写到 ~/.zshrc
-echo 'export DEVECO_SDK_HOME=$HOME/Library/Huawei/Sdk' >> ~/.zshrc
-source ~/.zshrc
-
-# 单次执行
-DEVECO_SDK_HOME=$HOME/Library/Huawei/Sdk hvigorw assembleHap
+```
+00303217 Configuration Error
+Error Message: Invalid value of 'DEVECO_SDK_HOME' in the system environment path.
 ```
 
-> `tools/install-deveco-prereqs.sh` 第 6 节会自动配；`tools/run-linter.sh` 也会自动定位 SDK。
+**5 个必设环境变量**：
+
+```bash
+# macOS / Linux：写到 ~/.zshrc 一劳永逸
+cat >> ~/.zshrc <<'ENV'
+export DEVECO_SDK_HOME=$HOME/Library/Huawei/Sdk
+export PATH=$DEVECO_SDK_HOME/HarmonyOS-NEXT-DB1/openharmony/toolchains/ohpm/bin:$PATH
+export PATH=$DEVECO_SDK_HOME/HarmonyOS-NEXT-DB1/openharmony/toolchains:$PATH
+# JAVA_HOME 鸿蒙 6 hvigor 默认走 IDE 内置 JBR，但 release 签名时若用外部 JDK 必须设
+# export JAVA_HOME=/Applications/DevEco-Studio.app/Contents/jbr/Contents/Home
+ENV
+source ~/.zshrc
+```
+
+### Sanity check（开新 shell 时跑一次）
+
+```bash
+echo "DEVECO_SDK_HOME = $DEVECO_SDK_HOME"
+which hvigorw && hvigorw --version
+which ohpm    && ohpm --version
+which hdc     && hdc --version
+```
+
+任何一项 not found / Invalid value → 重跑 `bash tools/install-deveco-prereqs.sh` 或 `source ~/.zshrc`。
+
+> `tools/install-deveco-prereqs.sh` 第 6 节会自动配；`tools/run-linter.sh` 也会自动定位 SDK；`tools/verify-environment.sh` 给详细诊断。
 
 ## OHPM 仓库 502 兜底（v0.4 实战补充）
 

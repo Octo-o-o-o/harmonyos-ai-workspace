@@ -93,6 +93,38 @@
 - SDK recipe 第三方贡献规范 —— 需先有 1-2 真实 recipe
 - RAG MCP serving 13524 docs —— 独立项目级
 
+### LCC 二轮真工程实测反馈响应 · BUG 修 + 误报修 + 体验
+
+二轮反馈来自评审者在 PrivateTalk 真工程跑 30 条扫描规则 + check-rename-module.sh 后的实测数据：1 个真 BUG / 3 条规则真误报（21% 假阳率）/ 3 类体验问题。**全部采纳**：
+
+**P0 真 BUG**：
+
+- `check-rename-module.sh` json5_to_json 未处理尾逗号 → 在 DevEco 默认模板（`buildModeSet: [{ name: 'debug', }, ...]`）上 jq 直接 parse error 失败。**任何用 DevEco 6.x 模板的工程都触发**。修：sed 加两条规则去 `}` 和 `]` 前的尾逗号。
+
+**P1 真误报**（去 23/111 假阳，假阳率 21% → 接近 0）：
+
+- `STATE-009` 误把 `this.prefs.delete()` / `this.rdbStore.delete()` 当 Map/Set 状态 mutation 报。修：排除常见非状态字段名前缀 `prefs|store|rdb|cache|client|controller|ctx|context|db|registry|abilityCtx|httpReq|connection|listener` —— 这些是已知的 KV/DB/MCP API 持有者。
+- `ARKTS-003` 在 `Record<string, Object>` 上的索引赋值（OpenAI Vision payload 标准模式）误报 12 处。修：扫到 `obj['k']` 时检查同文件有无 `var: Record<...>` 或 `var: Map<...>` 声明，有则跳过。
+- `ARKTS-RECORD` 把空字面量 `: Record<...> = {}` 误报为违规（实际编译过）。修：模式从 `\{` 改成要求至少一个键值字符 `\{\s*['"a-zA-Z_]`，仅含键值对的字面量才报。
+
+**P2 体验**：
+
+- **inline-suppress 机制**：用户可在违规上一行或同行写 `// scan-ignore: <RULE-ID>` 抑制该次命中（也支持 `scan-ignore-line` 跳过整行所有规则；`scan-ignore: RULE1, RULE2` 跳过多条）。emit_high/emit_med 入口检查，被抑制的不计数也不输出 → 真"逃生口"。
+- **删除 STATE-006**：评审者实测此规则启发式不足（"看 @Link 就把所有 SomeComponent({...}) 报"），grep 跨语义不够。删掉规则；让 state-management SKILL 文档教即可。如需重新启用须接 ts-morph / tree-sitter。
+- **collapse hint**：单文件命中 ≥5 条时自动给"加 scan-ignore 抑制"提示。JSON 模式（CI）不影响完整数据。
+
+**P3 文档**：
+
+- `runtime-pitfalls` § 二 措辞修正：`useNormalizedOHMUrl` "HarmonyOS 5+ 默认开启" → "HarmonyOS 6 IDE 模板 / DevEco 5.0+ 默认开启；HarmonyOS 5 时代多数模板也是 true，可手动设 false"。
+- `runtime-pitfalls` § 三 强调 build-profile.json5 `modules[].name` 与 module.json5 `module.name` **逐字符等于**关系（含报错原文 + OHPM 包名是另一层的澄清）。
+- `runtime-pitfalls` § 九 重写"常用 Kit 类型 import 速查表"：12 类常用类型对应 import 来源，含 `Configuration` 在 `@kit.AbilityKit` 顶层（不在 ConfigurationConstant 命名空间）。
+- `build-debug` 终端环境变量段升级为"5 个必设 + sanity check"，含报错原文 `00303217 Configuration Error`。
+- `case-studies/llm-chat-app.md` 顶部加"范型化声明"——明确"具体里程碑章节是从真用户反馈中提炼的代表性案例，不一定 1:1 对应"，避免读者把 case study 当考古实录。M9 章节标题改为"资源句柄释放范式"，明示 LCC 当前 BackupManager 走 KV 而非 RDB。
+
+**新 fixture**：
+
+- `tools/hooks/test-fixtures/GoodPrefStore.ets` —— 4 类合法代码（preferences.delete / Record 索引赋值 / 空 Record 字面量 / 带 scan-ignore 的资源清理 catch）应**全部 0 命中**，验证误报修复。
+
 ### 真实战反馈响应 · LCC（LLM Chat Client）M3-M12 实战踩坑全采纳
 
 第一次真实用户反馈来自一个真鸿蒙 LLM 对话客户端 app 的 M3-M12 多里程碑实战。15 条具体踩坑里 12 条是真痛点，**全部采纳**：
