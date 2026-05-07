@@ -269,7 +269,7 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 - `samples/templates/dark-mode/theme-aware-page.ets` 与 `samples/templates/list/infinite-list.ets` 的硬编码中文示例改为 `$r('app.string.xxx')` —— 模板自身从此通过 AGC-RJ-014（"自家 recipe 不能被自家 lint 拒"）。
 - 全 6 fixture（5 个 Bad + 1 个 Good）+ 4 个 sample template 全量回归通过。
 
-详见 [`docs/archive/reviews/2026-05-07-lcc-3.md`](docs/archive/reviews/2026-05-07-lcc-3.md)（如有归档）。
+详见本 CHANGELOG 同级条目「LCC 三轮实测反馈 · v0.6 修复」（v0.6 反馈未单独归档，全部内容已内联到本变更日志）。
 
 ## [Unreleased]
 
