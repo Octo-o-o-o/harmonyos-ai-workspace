@@ -271,6 +271,14 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 
 详见本 CHANGELOG 同级条目「LCC 三轮实测反馈 · v0.6 修复」（v0.6 反馈未单独归档，全部内容已内联到本变更日志）。
 
+## [0.4.2] - 2026-05-07
+
+uninstall 兼容性 patch（v0.4.1 真用户路径测试时发现）：
+
+- **修变量边界 BUG**：`tools/install.sh:174` 与 `:339` 的 `$VAR紧贴中文` 在某些 bash 版本下会把全角字符当成变量名一部分（实测 npx 跑时报 `MANIFEST_FILE�: unbound variable`）。改用 `${VAR}` 显式定界。
+- **uninstall 后 .claude/ 空目录残留**：v0.4 用一组硬编码 `rmdir` 列表，但子目录如 `.claude/skills/X/references/` 删完文件后仍有空目录链导致父 rmdir 失败。改用 `find ... -depth -type d -empty -delete` 递归清空。
+- 实测：装 + 卸载后只剩用户原 CLAUDE.md，所有本工具写入的文件 + 空目录全清。
+
 ## [0.4.1] - 2026-05-07
 
 打包卫生 patch（v0.4.0 npm publish 时被 OTP 拦下顺手发现）：
@@ -346,11 +354,12 @@ Codex 评审给的 7 项建议中：
 
 （无未发布变更。下次 release 周期的新增项将累积于此。）
 
+[0.4.2]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.2
 [0.4.1]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.1
 [0.4.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0
-[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.4.2...HEAD
 
 <!-- v0.1.0 没有 GitHub release（pre-tag 本地里程碑，详见顶部说明） -->
 [0.1.0]: #010---2026-05-06

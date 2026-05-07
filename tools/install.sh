@@ -171,7 +171,7 @@ uninstall() {
   fi
 
   info "卸载 HarmonyOS AI Workspace from $INSTALL_DIR"
-  info "依据：$MANIFEST_FILE（仅删本工具实际写入且未被本地修改的文件）"
+  info "依据：${MANIFEST_FILE}（仅删本工具实际写入且未被本地修改的文件）"
   echo
 
   local removed=0 modified=0 missing=0 skipped_kept=0
@@ -208,13 +208,13 @@ uninstall() {
 
   # 把空目录递归清理掉
   if [[ "$DRY_RUN" != "1" ]]; then
-    for d in .cursor/rules .cursor .github tools/data tools/hooks/lib tools/hooks tools .claude/skills .claude; do
-      [[ -d "$d" ]] && rmdir "$d" 2>/dev/null || true
-    done
-    # last-scan.txt 是钩子运行时产物，一并清
+    # 先删运行时产物（钩子写入的，manifest 不跟踪）
     rm -f .claude/.harmonyos-last-scan.txt 2>/dev/null || true
-    [[ -d .claude ]] && rmdir .claude 2>/dev/null || true
-    rm -f "$MANIFEST_FILE"
+    # 用 find 递归删空目录（比一一列稳，处理任意嵌套深度）
+    for root in .claude .cursor .github tools; do
+      [[ -d "$root" ]] && find "$root" -depth -type d -empty -delete 2>/dev/null || true
+    done
+    rm -f "${MANIFEST_FILE}"
   fi
 
   echo
@@ -336,7 +336,7 @@ install() {
   echo "  · Codex CLI:    codex        （AGENTS.md 自动加载）"
   echo "  · 卸载：        bash tools/install.sh --uninstall  （安全：只删本工具写入的）"
   echo
-  info "故障排查 / 完整文档： https://github.com/$REPO_OWNER/$REPO_NAME#常见故障排查"
+  info "故障排查 / 完整文档： https://github.com/${REPO_OWNER}/${REPO_NAME}#常见故障排查"
   echo
   if ! command -v claude >/dev/null 2>&1 && ! command -v codex >/dev/null 2>&1; then
     warn "未检测到 Claude Code 或 Codex CLI——本仓库的规则需要它们才生效"
