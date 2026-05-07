@@ -86,6 +86,18 @@ hvigorw assembleHap -p buildMode=debug  # 真编译验证
 2. 找不到再上 [developer.huawei.com](https://developer.huawei.com/consumer/cn/)
 3. 仍不确定就告诉用户「我无法验证此 API 当前形态，建议你在 IDE 里 Ctrl+点进类型定义确认」
 
+## 高频踩坑 · AI 必读
+
+下面 5 条是真鸿蒙 app 实战中**最常被 AI 写错**的——不是语法层、是写代码时的"惯性盲区"：
+
+1. **`Record<K,V>` 字面量初始化也违反 `arkts-no-untyped-obj-literals`** —— AI 容易认为"Record 已经声明类型了"就直接 `: Record<string, X> = { k: v }`。**改 `Map<K,V>.set()` 或先 `class`**。规则 `ARKTS-RECORD`。
+2. **任何 `await` 行不在 try 块内 → codeLinter 报 "Function may throw exceptions"** —— ArkTS 严格模式。规则 `ARKTS-AWAIT-TRY`。
+3. **`picker.PhotoViewPicker` / `decodeWithStream` 等 HarmonyOS 6 已弃用** —— AI 训练数据里多是旧版。规则 `ARKTS-DEPRECATED-PICKER` / `ARKTS-DEPRECATED-DECODE`。
+4. **ArkTS 不支持 union（如 `string | object[]`）** —— OpenAI Vision 等 API 的 `content` 字段必须拆双字段 + 自定义序列化。规则 `ARKTS-NO-UNION-CONTENT`。详见 [`multimodal-llm`](../multimodal-llm/SKILL.md)。
+5. **`@kit.AbilityKit` 命名空间易混** —— `Configuration` 不在顶层（在 `ConfigurationConstant.*`）；不确定就 Ctrl+点进类型定义。
+
+工程层装配陷阱（grep 扫不出来的）见 [`runtime-pitfalls`](../runtime-pitfalls/SKILL.md)。
+
 ## 引用稳定 ID（强制）
 
 **所有 ArkTS / 状态 / Kit 反模式都有稳定 ID**——回答用户时必须引用。完整映射表：[`references/spec-quick-ref.md`](references/spec-quick-ref.md)。

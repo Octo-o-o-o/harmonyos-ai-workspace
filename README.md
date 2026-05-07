@@ -97,7 +97,7 @@ bash tools/setup-from-scratch.sh
 
 ## 内置内容
 
-- **AI 规则集** · `CLAUDE.md`（Claude）+ `AGENTS.md`（24+ 工具通用）+ 5 个按需触发的 [`.claude/skills/`](.claude/skills/)
+- **AI 规则集** · `CLAUDE.md`（Claude）+ `AGENTS.md`（24+ 工具通用）+ 8 个按需触发的 [`.claude/skills/`](.claude/skills/)（含 runtime-pitfalls 工程装配陷阱、multimodal-llm / web-bridge 领域专项）
 - **PostToolUse 钩子链路** · Edit `.ets`/`.ts`/`oh-package.json5` 后自动跑 ArkTS 反模式扫描 + OHPM 包名核验 + 权限提示
 - **多工具 fan-out** · 单源 `.claude/skills/*/SKILL.md` → Cursor `.mdc` + Copilot instructions
 - **CLI 工具集** · `install.sh`（一行装到 app）/ `run-linter.sh`（离线 codeLinter）/ `check-ohpm-deps.sh`（包名校验）/ `setup-from-scratch.sh`（新手向导）/ `bootstrap-upstream-docs.sh`（按需拉文档镜像）

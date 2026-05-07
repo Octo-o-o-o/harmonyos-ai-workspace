@@ -47,7 +47,9 @@ Icon
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.shared.json
-.cursor/
+# .cursor/* 通常是 IDE 私有；但本仓库的 .cursor/rules/ 是 fan-out 产物（给 install.sh 拉的），必须入库
+.cursor/*
+!.cursor/rules/
 *.swp
 *.swo
 *~

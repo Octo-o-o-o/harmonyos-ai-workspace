@@ -1,4 +1,15 @@
-# HarmonyOS / ArkTS / ArkUI 开发规则（GitHub Copilot 版）
+---
+description: HarmonyOS / ArkTS / ArkUI 开发规则。在编辑 .ets / .ts / module.json5 / oh-package.json5 时自动激活。
+globs:
+  - "**/*.ets"
+  - "**/*.ts"
+  - "**/module.json5"
+  - "**/oh-package.json5"
+  - "**/AppScope/app.json5"
+alwaysApply: false
+---
+
+# HarmonyOS / ArkTS / ArkUI 开发硬约束
 
 > 平台：HarmonyOS 6 系列（API 21 / 22 现行稳定线，6.1 dev beta），ArkTS + ArkUI 声明式。
 > 训练数据缺失提醒：你（AI）默认会写出 TypeScript 风格但 ArkTS 编译器拒绝的代码。**先读完本文再写代码**。

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "name": "harmonyos-ai-workspace",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "鸿蒙开发参考工作区的 Claude Skills 集合，按需触发，可独立分发为 Plugin",
   "license": "MIT",
   "homepage": "https://github.com/Octo-o-o-o/harmonyos-ai-workspace",
@@ -52,6 +52,30 @@
       "title": "鸿蒙代码审查",
       "triggers": ["代码审查", "PR review", "审计 .ets/.ts", "性能 / 安全 / 规范检查"],
       "category": "review",
+      "criticality": "medium"
+    },
+    {
+      "id": "runtime-pitfalls",
+      "path": "runtime-pitfalls/SKILL.md",
+      "title": "运行时装配陷阱",
+      "triggers": ["build-profile.json5 / module.json5 / oh-package.json5 改动", "string.json 改动", "主题切换", "Web 组件 javaScriptProxy", "多模块改名", "HUKS 加密", "DEVECO_SDK_HOME"],
+      "category": "engineering",
+      "criticality": "high"
+    },
+    {
+      "id": "multimodal-llm",
+      "path": "multimodal-llm/SKILL.md",
+      "title": "多模态 LLM 调用",
+      "triggers": ["GPT-4 Vision / Claude Vision / Gemini", "Whisper 语音识别", "DALL-E 图像生成", "SSE 流式解析", "ChatMessage union content"],
+      "category": "domain",
+      "criticality": "medium"
+    },
+    {
+      "id": "web-bridge",
+      "path": "web-bridge/SKILL.md",
+      "title": "ArkUI Web 组件 H5 桥",
+      "triggers": ["Web 组件 / 嵌入 H5", "javaScriptProxy", "runJavaScript", "Markdown 离线渲染器", "ResizeObserver 高度自适应"],
+      "category": "domain",
       "criticality": "medium"
     }
   ],

@@ -114,6 +114,34 @@ hvigorw assembleApp -p buildMode=release \
 - 上架包必须用 **self-hosted macOS runner**（与 DevEco 同环境）
 - 缓存 `~/.ohpm` 和 `oh_modules/` 显著提速
 
+## 终端 hvigorw 的环境变量（必读）
+
+DevEco IDE 内 hvigorw 自动注入 `DEVECO_SDK_HOME`；终端跑必须自己设：
+
+```bash
+# macOS：写到 ~/.zshrc
+echo 'export DEVECO_SDK_HOME=$HOME/Library/Huawei/Sdk' >> ~/.zshrc
+source ~/.zshrc
+
+# 单次执行
+DEVECO_SDK_HOME=$HOME/Library/Huawei/Sdk hvigorw assembleHap
+```
+
+> `tools/install-deveco-prereqs.sh` 第 6 节会自动配；`tools/run-linter.sh` 也会自动定位 SDK。
+
+## OHPM 仓库 502 兜底（v0.4 实战补充）
+
+`ohpm install` 偶发 502 时：
+
+1. **临时注释非阻塞 devDependencies**（如 hammertest）让 build 通过
+2. 切镜像：`ohpm config set registry https://ohpm.openharmony.cn/ohpm/`
+3. 走本地缓存：`ohpm install --offline`
+4. 实在不通：直接 `hvigorw assembleHap`（已装的依赖仍可用）
+
+## 多模块工程改名 · 三处必须同步
+
+详见 [`runtime-pitfalls`](../runtime-pitfalls/SKILL.md) § 三 + `tools/check-rename-module.sh` 自动校验。
+
 ## 进一步参考
 
 - 完整指南：`04-build-debug-tools/README.md`

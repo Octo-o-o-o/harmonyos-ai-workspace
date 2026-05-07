@@ -408,6 +408,65 @@ if grep -qE '@Link\s+\w+' "$TMP" 2>/dev/null; then
   done < <(scan_lines '^[[:space:]]*[A-Z][a-zA-Z0-9_]*\s*\(\s*\{' | head -5)
 fi
 
+# ─── v0.4 实战反馈新增（PrivateTalk M3-M12 真踩坑） ───────────────
+
+# ARKTS-RECORD-LITERAL: Record<K,V> 字面量初始化也违反 untyped-obj-literals
+# AI 常以为 "Record 已经有类型了" 就能直接 = { k: v }，但 ArkTS 仍要求显式 class
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  emit_high "ARKTS-RECORD" "$ln" "${content:0:80}" \
+    "Record<K,V> 字面量初始化仍触发 arkts-no-untyped-obj-literals。改 Map<K,V>.set() 或先声明 class 再赋值"
+done < <(scan_lines ':\s*Record<[^>]+>\s*=\s*\{' | head -5)
+
+# ARKTS-AWAIT-TRY: 非 try 块内的 await 触发 hvigorw "Function may throw exceptions"
+# 简化检测：扫所有 await 行；如果**整个文件没有 try { ... }**，提示
+if grep -qE '\bawait\s' "$TMP" 2>/dev/null && ! grep -qE '\btry\s*\{' "$TMP" 2>/dev/null; then
+  ln_aw=$(grep -nE '\bawait\s' "$TMP" | head -1 | cut -d: -f1)
+  emit_med "ARKTS-AWAIT-TRY" "${ln_aw:-1}" "$(grep -E '\bawait\s' "$TMP" | head -1 | sed 's/^[[:space:]]*//' | head -c 80)" \
+    "本文件含 await 但全文无 try 块。ArkTS 严格模式下 codeLinter 会报 'Function may throw exceptions'"
+fi
+
+# ARKTS-DEPRECATED-PICKER: HarmonyOS 6 起 picker.PhotoViewPicker 已弃用
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  emit_high "ARKTS-DEPRECATED-PICKER" "$ln" "${content:0:80}" \
+    "picker.PhotoViewPicker 在 HarmonyOS 6 已弃用。改用 photoAccessHelper.PhotoViewPicker（@kit.MediaLibraryKit）"
+done < <(scan_lines '\bpicker\.PhotoViewPicker\b' | head -3)
+
+# ARKTS-DEPRECATED-DECODE: util.TextDecoder.decodeWithStream 已弃用
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  emit_high "ARKTS-DEPRECATED-DECODE" "$ln" "${content:0:80}" \
+    "decodeWithStream 已弃用。改用 decoder.decodeToString(buf, { stream: true })"
+done < <(scan_lines '\.decodeWithStream\s*\(' | head -3)
+
+# ARKTS-NO-UNION-CONTENT: ArkTS 不允许 string | array 这类 union 字段（如 OpenAI Vision content）
+# 检测：interface/class 字段写 `: string | <T>[]` 或 `: string | object[]`
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  emit_high "ARKTS-NO-UNION-CONTENT" "$ln" "${content:0:80}" \
+    "ArkTS 不支持 string|object[] 这类 union 字段。改用双字段（contentText / contentParts）+ 自定义序列化"
+done < <(scan_lines ':\s*string\s*\|\s*[A-Za-z]+\s*\[' | head -5)
+
+# STRING-JSON-EMPTY: string.json 空数组（删冲突项后留空数组会编译失败）
+case "$FILE" in
+  */resources/*/element/string.json)
+    if grep -qE '"string"\s*:\s*\[\s*\]' "$TMP" 2>/dev/null; then
+      ln_sj=$(grep -nE '"string"\s*:\s*\[' "$TMP" | head -1 | cut -d: -f1)
+      emit_high "STRING-JSON-EMPTY" "${ln_sj:-1}" '"string": []' \
+        'string.json 的 "string" 数组不允许为空。删冲突项后必须留至少一个 placeholder 条目'
+    fi
+    ;;
+esac
+
 # ─── 总结 ───────────────────────────────────────────
 
 # JSON 模式：把累积的 record 拼成数组输出到 stdout

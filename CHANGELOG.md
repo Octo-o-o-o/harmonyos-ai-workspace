@@ -93,6 +93,42 @@
 - SDK recipe 第三方贡献规范 —— 需先有 1-2 真实 recipe
 - RAG MCP serving 13524 docs —— 独立项目级
 
+### 真实战反馈响应 · LCC（LLM Chat Client）M3-M12 实战踩坑全采纳
+
+第一次真实用户反馈来自一个真鸿蒙 LLM 对话客户端 app 的 M3-M12 多里程碑实战。15 条具体踩坑里 12 条是真痛点，**全部采纳**：
+
+- **scan-arkts.sh 25 → 30 条**（5 条新增高把握 grep）：
+  - `ARKTS-RECORD` · `Record<K,V>` 字面量初始化也违反 `arkts-no-untyped-obj-literals`
+  - `ARKTS-AWAIT-TRY` · 文件含 await 但全文无 try 块（codeLinter 报"Function may throw"）
+  - `ARKTS-DEPRECATED-PICKER` · `picker.PhotoViewPicker` 在 HarmonyOS 6 已弃用
+  - `ARKTS-DEPRECATED-DECODE` · `util.TextDecoder.decodeWithStream` 已弃用
+  - `ARKTS-NO-UNION-CONTENT` · ArkTS 不支持 `string | object[]` union（OpenAI Vision 类场景）
+  - 加 `STRING-JSON-EMPTY` · `string.json` 数组不允许为空（仅命中该路径文件）
+  - 配套 fixture：`tools/hooks/test-fixtures/BadRuntimePitfalls.ets`
+
+- **新增 3 个 SKILL**：
+  - **runtime-pitfalls** · 7 类工程装配陷阱（主题切换 / `useNormalizedOHMUrl` / 模块改名 3 处同步 / `string.json` 空数组 / Web `javaScriptProxy` 稳定实例 / HUKS 加密 / `DEVECO_SDK_HOME`）
+  - **multimodal-llm** · LLM 客户端领域专项（union content 拆双字段 / SSE 流式 buffer 拼接 / multipart 上传 / DALL-E base64）
+  - **web-bridge** · ArkUI Web 组件 + H5↔ArkTS 桥（`javaScriptProxy` 稳定实例 / `runJavaScript` 时序 / Markdown 离线渲染器 / `ResizeObserver` 高度自适应）
+
+- **新增工具**：
+  - `tools/check-rename-module.sh` —— 自动校验 `build-profile.json5` × `module.json5` × `oh-package.json5` 三处模块名一致
+
+- **新增文档**：
+  - `docs/case-studies/llm-chat-app.md` —— LCC M3-M12 实战工程笔记（**症状 / 错误信息 / 修复 diff / 教训** 四段式）
+
+- **同步更新**：
+  - `arkts-rules SKILL.md` 加"高频踩坑 5 条"段（Record 字面量 / await 不在 try / Configuration 命名空间 / union 字段 / 弃用 API）
+  - `build-debug SKILL.md` 加 `DEVECO_SDK_HOME` 配置 + OHPM 502 兜底
+  - `manifest.json` 注册 3 个新 skills，version 1.0.0 → 1.1.0
+  - `install.sh` 装机时拉新 skills + references
+  - `tools/generate-ai-configs.sh` fan-out 把 runtime-pitfalls 加入（领域专项保持按需触发不强制 fan-out）
+  - `.cursor/rules/harmonyos.mdc` + `.github/copilot-instructions.md` 重新生成（505 → 733 行）
+
+**未采纳**（明确 v0.3+）：
+- llm-chat-mvp 完整脱敏脚手架 —— 需用户提供 LCC 脱敏代码，本仓库不能拍脑袋 AI 生成
+- `--auto-fix` 模式 —— DevEco IDE 已有；CLI 自动改写假阳性风险高
+
 ### codex 评审响应（详见 [`docs/archive/reviews/2026-05-07-codex.md`](docs/archive/reviews/2026-05-07-codex.md)）
 
 第三轮评审（codex 视角，源码 + WebFetch 八仓基线）。**P0 全部立即采纳**：

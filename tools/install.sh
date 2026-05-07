@@ -159,12 +159,14 @@ install() {
     fetch "$BASE_URL/.claude/settings.json"                                 ".claude/settings.json"
     fetch "$BASE_URL/.claude/skills/manifest.json"                          ".claude/skills/manifest.json"
     fetch "$BASE_URL/.claude/skills/README.md"                              ".claude/skills/README.md"
-    for skill in arkts-rules state-management build-debug signing-publish harmonyos-review; do
-      fetch "$BASE_URL/.claude/skills/$skill/SKILL.md"                      ".claude/skills/$skill/SKILL.md"
+    for skill in arkts-rules state-management build-debug signing-publish harmonyos-review runtime-pitfalls multimodal-llm web-bridge; do
+      fetch "$BASE_URL/.claude/skills/$skill/SKILL.md"                      ".claude/skills/$skill/SKILL.md" || true
     done
-    fetch "$BASE_URL/.claude/skills/harmonyos-review/references/checklist.md"        ".claude/skills/harmonyos-review/references/checklist.md"
-    fetch "$BASE_URL/.claude/skills/harmonyos-review/references/report-template.md"  ".claude/skills/harmonyos-review/references/report-template.md"
-    fetch "$BASE_URL/.claude/skills/harmonyos-review/references/official-docs.md"    ".claude/skills/harmonyos-review/references/official-docs.md"
+    fetch "$BASE_URL/.claude/skills/harmonyos-review/references/checklist.md"        ".claude/skills/harmonyos-review/references/checklist.md" || true
+    fetch "$BASE_URL/.claude/skills/harmonyos-review/references/report-template.md"  ".claude/skills/harmonyos-review/references/report-template.md" || true
+    fetch "$BASE_URL/.claude/skills/harmonyos-review/references/official-docs.md"    ".claude/skills/harmonyos-review/references/official-docs.md" || true
+    fetch "$BASE_URL/.claude/skills/arkts-rules/references/spec-quick-ref.md"        ".claude/skills/arkts-rules/references/spec-quick-ref.md" || true
+    fetch "$BASE_URL/.claude/skills/build-debug/references/develop-debug-build.md"   ".claude/skills/build-debug/references/develop-debug-build.md" || true
   fi
 
   # 4) Cursor 专属

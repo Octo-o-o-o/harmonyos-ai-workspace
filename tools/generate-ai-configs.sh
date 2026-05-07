@@ -42,9 +42,12 @@ SKILL_ARKTS=".claude/skills/arkts-rules/SKILL.md"
 SKILL_STATE=".claude/skills/state-management/SKILL.md"
 SKILL_BUILD=".claude/skills/build-debug/SKILL.md"
 SKILL_SIGN=".claude/skills/signing-publish/SKILL.md"
+SKILL_RUNTIME=".claude/skills/runtime-pitfalls/SKILL.md"
 AGENTS_MD="AGENTS.md"
 
-REQUIRED_SOURCES=("$SKILL_ARKTS" "$SKILL_STATE" "$SKILL_BUILD" "$SKILL_SIGN" "$AGENTS_MD")
+# 不全部 fan-out：multimodal-llm / web-bridge / harmonyos-review 是领域专项，
+# Claude Code 按 frontmatter 自动激活；其他 AI 工具用户用到时手动 read 即可
+REQUIRED_SOURCES=("$SKILL_ARKTS" "$SKILL_STATE" "$SKILL_BUILD" "$SKILL_SIGN" "$SKILL_RUNTIME" "$AGENTS_MD")
 
 # 校验源都存在
 missing=0
@@ -89,6 +92,11 @@ EOF
   echo "## 二、ArkUI 状态管理（来源：.claude/skills/state-management/SKILL.md）"
   echo
   strip_frontmatter "$SKILL_STATE"
+  echo
+
+  echo "## 二点五、运行时装配陷阱（来源：.claude/skills/runtime-pitfalls/SKILL.md，工程层 grep 扫不出来的坑）"
+  echo
+  strip_frontmatter "$SKILL_RUNTIME"
   echo
 
   echo "## 三、构建与调试（来源：.claude/skills/build-debug/SKILL.md，按需展开）"
