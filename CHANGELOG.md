@@ -87,7 +87,7 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 
 #### v0.2.x post-review patches
 
-- **v2 评审响应**（详见 [`docs/REVIEW-2026-05-06-v2.md`](docs/REVIEW-2026-05-06-v2.md)）：
+- **v2 评审响应**（详见 [`docs/archive/reviews/2026-05-06-v2-claude.md`](docs/archive/reviews/2026-05-06-v2-claude.md)）：
   - `scan-arkts.sh` 13 → 18 条规则（+ KIT-001 / PERF-001 / ARKTS-016 / STATE-009 / SEC-001 / COMPAT-001）+ `--json` 输出模式
   - OHPM 黑/白名单拆到 `tools/data/ohpm-{blacklist,whitelist}.txt`（26+22 项）
   - `tools/hooks/examples/` 跨工具 hook 接入示例（Codex/Cursor pre-commit / Copilot 占位 / GitHub Action CI）
@@ -99,7 +99,7 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
   - `docs/SETUP-FROM-SCRATCH.md` 详细引导文档（macOS 干净到 hello world，30-60 分钟）
   - `verify-environment.sh` 每个失败项给"下一步建议"，OpenHarmony 文档镜像降为可选
   - `install.sh` 装完检测 Claude Code / DevEco 缺失并提示
-- **v3 评审响应**（详见 [`docs/REVIEW-2026-05-07.md`](docs/REVIEW-2026-05-07.md)）：
+- **v3 评审响应**（详见 [`docs/archive/reviews/2026-05-07-claude.md`](docs/archive/reviews/2026-05-07-claude.md)）：
   - **第一轮**（B-fix + C-3）：
     - `post-edit.sh` 退出码语义修正：High → exit 2（block + 反馈给 AI），Medium → exit 0（让 AI 看见但不阻塞），消除"Medium 级 exit 1 让 Claude 看不到反馈"的隐性 bug
     - `.mcp.json` 改 `npx -y mcp-harmonyos@latest`：fresh clone 不再需要先全局装 npm 包
