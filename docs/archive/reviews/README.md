@@ -8,6 +8,8 @@
 
 | 日期 | 文件 | 评审者类型 | 关键贡献 | 处置 |
 | --- | --- | --- | --- | --- |
+| 2026-05-07 | [`2026-05-07-privatetalk-v0.4.2-acceptance.md`](2026-05-07-privatetalk-v0.4.2-acceptance.md) | PrivateTalk 真工程实测验收（v0.4.2 npm 发布版） | 全 8 项验证通过：dry-run / 真安装 / 钩子触发 / 全工程 scanner 0 命中 / build 不退化 / OHPM 校验 / 用户原文件保护 / 源码 0 改动 | v0.4.2 真世界对照基准建立 |
+| 2026-05-07 | v0.3.0 → v0.4.x 系列 codex 评审（CHANGELOG 内联） | Codex 视角，源码 + WebFetch 八仓基线 + vibe coding 用户路径 | install/uninstall 不对称 + V1/V2 矛盾 + OHPM 网络误判 + 版本契约误读 + npm test 真断言 | v0.4.0 全部 P1/P2 + 长期项采纳；v0.4.1/v0.4.2 patch 修真用户测试发现的 brace BUG + 空目录残留 |
 | 2026-05-07 | LCC v0.6→v0.7 四轮反馈（CHANGELOG 内联） | PrivateTalk 真工程 v0.6 实测回归（假阳率 0%）+ 边界 BUG 挖掘 | 同行 `@Entry @Component struct` awk 漏识别 / @CustomDialog/@Reusable 名单缺失 / inline-suppress 0 处文档 / 版本号未 bump | v0.7（0.3.0）全部采纳 |
 | 2026-05-07 | LCC v0.5→v0.6 三轮反馈（CHANGELOG 内联） | PrivateTalk 真工程实测 | check-rename-module perl 跨行修复 / runtime-pitfalls §九 ❌/✅ 互换 / 装饰器上下文检测 / PERF-002 91% FPR 启发式 / 真 collapse / ARKTS-016 降级 / --stats 模式 | v0.6 全部采纳 |
 | 2026-05-07 | LCC v0.4→v0.5 二轮反馈（CHANGELOG 内联） | PrivateTalk 真工程跑 30 条规则 + check-rename | 1 真 BUG（json5 尾逗号 sed 失败） + 3 真误报（STATE-009 prefs.delete / ARKTS-003 Record 索引 / ARKTS-RECORD 空字面量）+ inline-suppress 机制 | v0.5 全部采纳 |
