@@ -31,7 +31,7 @@
 
 ## [0.3.0] - 2026-05-07
 
-跨 v0.2 → v0.6 的累积发布：scan-arkts 13 → 30 条规则、新增 PostToolUse 钩子 + 装饰器上下文检测 + 真 collapse + inline-suppress + `--stats` 模式 + 多个新 SKILL（runtime-pitfalls / multimodal-llm / web-bridge / harmonyos-review）+ 4 recipe template + check-rename-module 工具。详见下方分轮记录。
+跨 v0.2 → v0.7 的首个 SemVer 干净 release：scan-arkts 13 → 31 条规则、新增 PostToolUse 钩子 + 装饰器上下文检测 + 真 collapse + inline-suppress + `--stats` 模式 + 多个新 SKILL（runtime-pitfalls / multimodal-llm / web-bridge / harmonyos-review）+ 4 recipe template + check-rename-module 工具。详见下方分轮记录。
 
 ### LCC 四轮实测反馈 · v0.7 修复（2026-05-07）
 
@@ -79,7 +79,7 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 
 - `package.json` 0.2.5 → 0.3.0（v0.2.x 后续 patch 合到 v0.3.0 minor）
 - CHANGELOG `[Unreleased]` 段切到 `[0.3.0] - 2026-05-07`
-- 按 SemVer：scan-arkts 规则数 13 → 30、新增多个工具与 SKILL，向前兼容的功能扩展属 minor bump
+- 按 SemVer：scan-arkts 规则数 13 → 31、新增多个工具与 SKILL，向前兼容的功能扩展属 minor bump
 
 ### 历史累积分轮记录（v0.2 → v0.6 全部合并到 0.3.0）
 

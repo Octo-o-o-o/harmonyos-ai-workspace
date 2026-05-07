@@ -44,7 +44,7 @@
 
 ## 自动化校验工具
 
-- [tools/hooks/lib/scan-arkts.sh](tools/hooks/lib/scan-arkts.sh): 30 条规则 grep 扫描 + awk 装饰器上下文检测 + collapse 折叠 + `--stats` / `--json` 模式 + inline-suppress
+- [tools/hooks/lib/scan-arkts.sh](tools/hooks/lib/scan-arkts.sh): 31 条规则 grep 扫描 + awk 装饰器上下文检测 + collapse 折叠 + `--stats` / `--json` 模式 + inline-suppress
 - [tools/check-ohpm-deps.sh](tools/check-ohpm-deps.sh): OHPM 包名黑/白名单 + ohpm CLI 三层校验
 - [tools/check-rename-module.sh](tools/check-rename-module.sh): build-profile.json5 × module.json5 × oh-package.json5 三处模块名一致性（perl `-0pe` slurp 处理跨行 JSON5 尾逗号）
 - [tools/run-linter.sh](tools/run-linter.sh): 离线 hvigorw codeLinter wrapper

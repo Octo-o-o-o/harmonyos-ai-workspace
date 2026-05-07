@@ -8,15 +8,18 @@
 
 ## 0. Skills 触发索引
 
-`.claude/skills/` 下 5 个 SKILL.md 按 frontmatter 自动激活。手动判断索引：
+`.claude/skills/` 下 8 个 SKILL.md 按 frontmatter 自动激活。手动判断索引：
 
 | 用户场景 | skill | 内容 |
 | --- | --- | --- |
-| 写 / 改 `.ets` / `.ts` / TS 迁移 / `arkts-no-*` | `arkts-rules` | ArkTS 严格规则 |
+| 写 / 改 `.ets` / `.ts` / TS 迁移 / `arkts-no-*` | `arkts-rules` | ArkTS 严格规则 + inline-suppress |
 | 状态装饰器 / "UI 不刷新" / V1 vs V2 | `state-management` | 替换引用铁律 + V1/V2 |
 | Hvigor / OHPM / hdc / 错误码 | `harmonyos-build-debug` | 命令速查 + 错误码 |
 | 签名 / AGC 上架 / 审核被拒 | `harmonyos-signing-publish` | 三件套 + Top 20 拒因 |
 | review 代码 / PR 审查 / 上架前自查 | `harmonyos-review` | 9 大类 60+ 编号规则 |
+| 主题切换 / 模块改名 / `string.json` 空数组 / HUKS 加密 / `DEVECO_SDK_HOME` | `runtime-pitfalls` | 7 类工程装配陷阱 |
+| OpenAI Vision / Whisper / DALL-E / SSE 流式 / `string\|object[]` union | `multimodal-llm` | LLM 客户端领域 |
+| ArkUI Web 组件 / `javaScriptProxy` / `runJavaScript` / Markdown 离线渲染 | `web-bridge` | H5↔ArkTS 桥 |
 
 ## 0.5 Edit 后实时校验
 

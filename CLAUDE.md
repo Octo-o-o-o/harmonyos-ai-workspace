@@ -187,15 +187,18 @@ this.cache = next;
 
 ## 2.5 Skills 触发索引
 
-`.claude/skills/` 下的 5 个 SKILL.md 由 Claude Code 按 frontmatter 自动激活。下表是手动判断时的索引：
+`.claude/skills/` 下的 8 个 SKILL.md 由 Claude Code 按 frontmatter 自动激活。下表是手动判断时的索引：
 
 | 用户场景 | 应激活的 skill | 核心内容 |
 | --- | --- | --- |
-| 写 / 改 `.ets` / `.ts` 鸿蒙文件 / 迁 TS 代码 / `arkts-no-*` 报错 | `arkts-rules` | ArkTS 严格规则、TS 反模式改写 |
+| 写 / 改 `.ets` / `.ts` 鸿蒙文件 / 迁 TS 代码 / `arkts-no-*` 报错 | `arkts-rules` | ArkTS 严格规则、TS 反模式改写、inline-suppress |
 | 用状态装饰器 / "UI 不刷新" / V1 vs V2 选型 | `state-management` | 替换引用铁律、V1/V2 对照、错误诊断 |
 | 打包 / Hvigor / OHPM / hdc / 错误码诊断 | `harmonyos-build-debug` | 三种产物、命令速查、错误码 |
 | 配签名 / 申请证书 / AGC 上架 / 审核被拒 | `harmonyos-signing-publish` | 三件套、AGC 流程、Top 20 拒因 |
 | review 鸿蒙代码 / PR 审查 / 上架前自查 | `harmonyos-review` | 9 大类 60+ 编号规则扫描 + 报告模板 |
+| 主题切换 / 模块改名 / `string.json` 空数组 / HUKS 加密 / `DEVECO_SDK_HOME` 工程装配 | `runtime-pitfalls` | 7 类工程层装配陷阱（grep 扫不出来的运行期 BUG） |
+| OpenAI Vision / Whisper / DALL-E / SSE 流式 / `string\|object[]` union content | `multimodal-llm` | LLM 客户端领域专项 |
+| ArkUI Web 组件 / `javaScriptProxy` 稳定实例 / `runJavaScript` 时序 / Markdown 离线渲染器 | `web-bridge` | H5↔ArkTS 桥 |
 
 **Edit 后自动校验**：本仓库已配 PostToolUse 钩子（`.claude/settings.json`）。每次 `Edit` / `Write` / `MultiEdit` 完 `.ets` / `.ts` / `oh-package.json5` 后会自动跑 `tools/hooks/post-edit.sh`：
 

@@ -80,12 +80,16 @@
     }
   ],
   "fanout_targets": {
-    "claude_code": ".claude/skills/*/SKILL.md",
-    "codex": "AGENTS.md",
-    "cursor": ".cursor/rules/harmonyos.mdc",
-    "copilot": ".github/copilot-instructions.md",
-    "windsurf": ".windsurfrules",
-    "gemini_cli": "GEMINI.md"
+    "implemented": {
+      "claude_code": ".claude/skills/*/SKILL.md",
+      "codex": "AGENTS.md",
+      "cursor": ".cursor/rules/harmonyos.mdc",
+      "copilot": ".github/copilot-instructions.md"
+    },
+    "planned": {
+      "windsurf": ".windsurfrules",
+      "gemini_cli": "GEMINI.md"
+    }
   },
   "_notes": {
     "fanout_targets": "未来通过 tools/generate-ai-configs.sh 把同源规则导出到不同 AI 工具的约定路径",
