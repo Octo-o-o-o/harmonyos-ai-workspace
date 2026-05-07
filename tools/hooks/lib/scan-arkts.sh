@@ -14,13 +14,15 @@
 
 set -u
 
-# 解析参数：--json 切到 JSON 输出模式，其余视为文件路径
+# 解析参数
 JSON_MODE="0"
+STATS_MODE="0"
 FILE=""
 for arg in "$@"; do
   case "$arg" in
     --json) JSON_MODE="1" ;;
-    --help|-h) sed -n '2,15p' "$0"; exit 0 ;;
+    --stats) STATS_MODE="1" ;;
+    --help|-h) sed -n '2,17p' "$0"; exit 0 ;;
     *) [[ -z "$FILE" ]] && FILE="$arg" ;;
   esac
 done
@@ -87,6 +89,39 @@ TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
 strip_comments "$FILE" > "$TMP"
 
+# v0.6: 提取 "ArkUI 类内部" 的行号集合
+# STATE-002/009/008 等响应式相关规则只应在 @Component / @ComponentV2 / @Entry /
+# @Observed / @ObservedV2 装饰过的 class 或 struct 内部触发——普通工具类
+# （IDataSource / Store / EventBus / SecretStore 等）的 `this.X.push()` 不是
+# 状态变更，是普通数组操作。
+ARKUI_LINES_FILE="$(mktemp)"
+trap 'rm -f "$TMP" "$ARKUI_LINES_FILE"' EXIT
+awk '
+  BEGIN { in_arkui = 0; pending = 0; depth = 0 }
+  /^[[:space:]]*@(Component|ComponentV2|Observed|ObservedV2|Entry)([[:space:]]|$|\()/ { pending = 1; next }
+  /^[[:space:]]*(export[[:space:]]+)?(struct|class)[[:space:]]+[A-Z]/ {
+    if (pending) { in_arkui = 1; pending = 0; depth = 0 }
+    else { in_arkui = 0 }
+  }
+  {
+    if (in_arkui) print NR
+    # 跟踪花括号深度，离开类时清状态
+    n = length($0)
+    for (i = 1; i <= n; i++) {
+      c = substr($0, i, 1)
+      if (c == "{") depth++
+      else if (c == "}") { depth--; if (depth == 0) in_arkui = 0 }
+    }
+  }
+' "$TMP" > "$ARKUI_LINES_FILE"
+
+# 检查指定行号是否属于 ArkUI 类
+in_arkui_class() {
+  local ln="$1"
+  [[ -z "$ln" ]] && return 1
+  grep -qx "$ln" "$ARKUI_LINES_FILE" 2>/dev/null
+}
+
 # JSON 累积器（仅 JSON 模式使用；用临时文件避免 here-string + JQ 依赖）
 JSON_BUF="$(mktemp)"
 
@@ -112,13 +147,13 @@ should_suppress() {
   if [[ "$line" -gt 1 ]]; then
     prev_line=$(sed -n "$((line - 1))p" "$FILE" 2>/dev/null)
   fi
+  # scan-ignore-line 只匹配同行（顾名思义），不沿用到下一行
+  if [[ -n "$cur_line" ]] && echo "$cur_line" | grep -qE '//[[:space:]]*scan-ignore-line\b'; then
+    return 0
+  fi
+  # scan-ignore: RULE 既可以写同行（行尾注释），也可以写上一行
   for l in "$prev_line" "$cur_line"; do
     [[ -z "$l" ]] && continue
-    # scan-ignore-line：跳过本行所有规则
-    if echo "$l" | grep -qE '//[[:space:]]*scan-ignore-line\b'; then
-      return 0
-    fi
-    # scan-ignore: RULE 或 scan-ignore: RULE1, RULE2
     if echo "$l" | grep -qE "//[[:space:]]*scan-ignore:[[:space:]]*[A-Z0-9-]*[[:space:],]*${rule}\b"; then
       return 0
     fi
@@ -145,16 +180,62 @@ emit_record() {
   fi
 }
 
+# v0.6 collapse: 同文件同规则前 N 条原文输出，后续聚合
+# 评审反馈：v0.5 只加了 hint 没真折叠。i18n DICT 文件 53 条 AGC-RJ-014 全输出
+# 仍会埋掉真信号。
+# JSON 模式不动（CI 要全部数据）；文本模式同规则前 COLLAPSE_THRESHOLD 条原文，
+# 后续累加到 collapse counter，文件结束时统一输出"+N more"。
+COLLAPSE_THRESHOLD=3
+declare -A COLLAPSE_COUNT 2>/dev/null || COLLAPSE_COUNT=()
+
+# 用临时文件兜底（macOS 的 bash 3.2 不支持 declare -A）
+COLLAPSE_FILE="$(mktemp)"
+trap 'rm -f "$TMP" "$ARKUI_LINES_FILE" "$COLLAPSE_FILE" "$JSON_BUF" 2>/dev/null' EXIT
+
+count_for_rule() {
+  local rule="$1" cnt=0
+  if [[ -s "$COLLAPSE_FILE" ]]; then
+    cnt=$(grep -c "^${rule} " "$COLLAPSE_FILE" 2>/dev/null) || cnt=0
+  fi
+  # 防御：grep 在某些 shell 下输出含换行
+  cnt=${cnt//$'\n'/}
+  printf '%d\n' "${cnt:-0}"
+}
+
+bump_rule() {
+  local rule="$1"
+  echo "${rule} 1" >> "$COLLAPSE_FILE"
+}
+
+# 决定是否输出本次命中的原文：
+#   --json     总是 emit（CI 要全部数据）
+#   --stats    永不 emit（仅汇总）
+#   文本模式   同文件同规则前 COLLAPSE_THRESHOLD 条 emit；之后聚合
+should_print_record() {
+  local rule="$1"
+  [[ "$JSON_MODE" == "1" ]] && return 0
+  [[ "$STATS_MODE" == "1" ]] && return 1
+  local seen
+  seen=$(count_for_rule "$rule")
+  [[ "$seen" -lt "$COLLAPSE_THRESHOLD" ]]
+}
+
 emit_high() {
   # inline-suppress 检查上移到 emit_*：抑制时既不输出也不计数
   if should_suppress "$1" "$2"; then return; fi
-  emit_record "$1" "High" "$2" "$3" "$4"
+  if should_print_record "$1"; then
+    emit_record "$1" "High" "$2" "$3" "$4"
+  fi
+  bump_rule "$1"
   violations_high=$((violations_high + 1))
 }
 
 emit_med() {
   if should_suppress "$1" "$2"; then return; fi
-  emit_record "$1" "Medium" "$2" "$3" "$4"
+  if should_print_record "$1"; then
+    emit_record "$1" "Medium" "$2" "$3" "$4"
+  fi
+  bump_rule "$1"
   violations_med=$((violations_med + 1))
 }
 
@@ -167,10 +248,17 @@ scan_lines() {
 # ─── 规则集 ───────────────────────────────────────────
 
 # STATE-002: 数组就地 mutation（push/pop/shift/unshift/splice/sort/reverse）
+# v0.6: 仅在 @Component / @ComponentV2 / @Entry / @Observed / @ObservedV2 装饰的
+# class 或 struct 内部触发——普通工具类（IDataSource / Store / EventBus 等）的
+# `this.X.push()` 不是状态变更，是普通数组操作。评审者实测 scanner 自己的
+# samples/templates/list/item-data-source.ets（IDataSource 标准实现）被误报。
 while IFS= read -r match; do
   [[ -z "$match" ]] && continue
   ln="${match%%:*}"
   content="${match#*:}"
+  if ! in_arkui_class "$ln"; then
+    continue   # 非 ArkUI 类内部：普通数组操作，不报
+  fi
   emit_high "STATE-002" "$ln" "${content:0:80}" \
     "数组就地 mutation 不触发重渲染。改写：this.X = [...this.X, item] / this.X.filter(...) / this.X.map(...)"
 done < <(scan_lines '\bthis\.[a-zA-Z_][a-zA-Z0-9_]*\.(push|pop|shift|unshift|splice|sort|reverse)\s*\(')
@@ -330,31 +418,33 @@ while IFS= read -r match; do
     "forEach 内 await 既不并发也不保序。要并发用 Promise.all(arr.map(...))；要顺序用 for-of"
 done < <(scan_lines '\.forEach\s*\(\s*async' | head -10)
 
-# ARKTS-013: console.log 但不带 hilog 形式
-# （ARKTS-012 已检 console.*，此条更细：检 throw new Error 后丢弃 stack）
-while IFS= read -r match; do
-  [[ -z "$match" ]] && continue
-  ln="${match%%:*}"
-  content="${match#*:}"
-  # 排除 throw new Error("...") 这种正常用法；只命中 catch 内吞错
-  if echo "$content" | grep -qE 'catch\s*\([^)]*\)\s*\{\s*\}'; then
-    emit_high "ARKTS-016" "$ln" "${content:0:80}" \
-      "空 catch 块吞掉异常会让上架审核失败稳定性测试。最少打 hilog.error 或重抛"
-  fi
-done < <(scan_lines 'catch\s*\(' | head -20)
+# ARKTS-016: 空 catch 块吞错
+# v0.6 调整：评审者实测 15 处中 ~10 处是 cleanup/destroy/unlink 容错（合理），
+# ~3 处 JSON.parse fallback（合理），仅 ~2 处真问题。
+# 改为：只在文件**确含 await** 的场景报（说明在异步上下文，吞错风险更高）；
+# 严重度从 High 降到 Medium；reason 加"如果是 cleanup 容错可加 scan-ignore"。
+if grep -qE '\bawait\s' "$TMP" 2>/dev/null; then
+  while IFS= read -r match; do
+    [[ -z "$match" ]] && continue
+    ln="${match%%:*}"
+    content="${match#*:}"
+    if echo "$content" | grep -qE 'catch\s*\([^)]*\)\s*\{\s*\}'; then
+      emit_med "ARKTS-016" "$ln" "${content:0:80}" \
+        "异步上下文中空 catch 吞错可能漏处理失败。如确认是 cleanup/destroy 容错可加 // scan-ignore: ARKTS-016"
+    fi
+  done < <(scan_lines 'catch\s*\(' | head -20)
+fi
 
 # STATE-009: Map / Set 就地 set / delete / clear 但外层是 @State
-# v0.5 修：评审反馈 "this.prefs.delete()" / "this.rdbStore.delete()" 等 KV/DB API
-# 调用被误报。实测 PrivateTalk 100% 假阳率。排除常见非状态字段名前缀。
-EXCLUDE_NAMES='prefs|pref|store|rdb|cache|client|controller|ctx|context|db|registry|abilityCtx|httpReq|connection|listener'
+# v0.6 升级：原 v0.5 的 EXCLUDE_NAMES 前缀白名单是补丁。改用 in_arkui_class
+# 上下文检查——只在 ArkUI 类内部触发。普通 class（PrefStore / SecretStore /
+# RdbAdapter）的 `this.prefs.delete()` 是 KV/DB API 调用，永远不该报。
 while IFS= read -r match; do
   [[ -z "$match" ]] && continue
   ln="${match%%:*}"
   content="${match#*:}"
-  # 提取字段名做白名单校验
-  field=$(echo "$content" | grep -oE 'this\.[a-zA-Z_]\w*\.' | head -1 | sed 's/this\.//; s/\.$//')
-  if [[ -n "$field" ]] && echo "$field" | grep -qE "^($EXCLUDE_NAMES)$"; then
-    continue   # 是已知 KV/DB/MCP API 持有者，跳过
+  if ! in_arkui_class "$ln"; then
+    continue
   fi
   emit_high "STATE-009" "$ln" "${content:0:80}" \
     "Map / Set 就地 set / delete / clear 不触发重渲染。改写：const next = new Map(this.m); next.set(...); this.m = next;"
@@ -430,16 +520,26 @@ while IFS= read -r match; do
     "UI 中含硬编码中文字符串。AGC 审核要求走资源 \$r('app.string.xxx') 以支持国际化"
 done < <(scan_lines 'Text\s*\(\s*['\''"][^'\''"\$]*[一-鿿]' | head -10)
 
-# PERF-002: 使用了 ForEach 但数据源是 Array 类型且行数 > 50（提示用 LazyForEach）
-foreach_lines=$(grep -cE '\bForEach\s*\(' "$TMP" 2>/dev/null) || foreach_lines=0
-if [[ "${foreach_lines:-0}" -gt 0 ]] && ! grep -qE 'LazyForEach' "$TMP" 2>/dev/null; then
-  total_lines=$(wc -l < "$TMP")
-  if [[ "$total_lines" -gt 80 ]]; then
-    ln_fe=$(grep -nE '\bForEach\s*\(' "$TMP" | head -1 | cut -d: -f1)
-    emit_med "PERF-002" "${ln_fe:-1}" "$(grep -E '\bForEach\s*\(' "$TMP" | head -1 | sed 's/^[[:space:]]*//')" \
-      "ForEach 适合短列表；超过 50 项时用 LazyForEach + IDataSource 才不会一次性渲染所有项"
+# PERF-002: ForEach 在长列表场景应用 LazyForEach
+# v0.6 升级：评审者实测原"文件 > 80 行"判据 91% 误报率（settings 子页文件 200 行
+# 但数据源只有 3-5 项）。改为数据源名启发式——只匹配暗示长列表的标识符。
+# 数据源 ≥ 50 项 / 不可预知长度 / 来自 RDB / 网络分页 才该用 LazyForEach。
+LONG_LIST_HINTS='messages|conversations|posts|feed|items|logs|records|history|comments|threads|notifications|chats|users|contacts'
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  # 提取 ForEach 第一个参数的标识符（数据源）
+  source_var=$(echo "$content" | grep -oE 'ForEach\s*\(\s*(this\.)?[a-zA-Z_][a-zA-Z0-9_]*' | sed -E 's/.*\(\s*(this\.)?//')
+  # 仅当数据源名暗示长列表时报
+  if [[ -n "$source_var" ]] && echo "$source_var" | grep -qiE "^($LONG_LIST_HINTS)$"; then
+    # 同文件含 LazyForEach 才算"已经用了"——如果完全没有，但数据源名是长列表则报
+    if ! grep -qE 'LazyForEach' "$TMP" 2>/dev/null; then
+      emit_med "PERF-002" "$ln" "${content:0:80}" \
+        "数据源名 \"$source_var\" 暗示长列表。如条目 ≥ 50 / 来自 RDB / 网络分页，请改 LazyForEach + IDataSource"
+    fi
   fi
-fi
+done < <(scan_lines '\bForEach\s*\(' | head -10)
 
 # STATE-006: V1 调用方双向绑定丢 $$
 # v0.5 删除：评审者实测此规则启发式不足——"看到 @Link 就把所有 SomeComponent({ ... })
@@ -521,17 +621,40 @@ if [[ "$JSON_MODE" == "1" ]]; then
   rm -f "$JSON_BUF"
 fi
 
-# 文本模式：summary + 聚合提示（v0.5）
-# 评审反馈：i18n DICT 文件 53 条 AGC-RJ-014 命中会埋掉真信号。
-# JSON 模式不聚合（CI 要全数据）；文本模式给抑制 hint。
+# --stats 模式：仅按规则汇总命中数（CI 友好）
+if [[ "$STATS_MODE" == "1" ]]; then
+  if [[ -s "$COLLAPSE_FILE" ]]; then
+    echo "By rule (file: $REL):"
+    awk '{print $1}' "$COLLAPSE_FILE" | sort | uniq -c | sort -rn | sed 's/^/  /'
+  else
+    echo "No violations: $REL"
+  fi
+  if [[ "$violations_high" -gt 0 ]]; then exit 2
+  elif [[ "$violations_med" -gt 0 ]]; then exit 1
+  fi
+  exit 0
+fi
+
+# 文本模式：collapse 汇总 + summary
+# v0.6: 真 collapse —— 同文件同规则 ≥ COLLAPSE_THRESHOLD 条时，前几条原文已在 emit_*
+# 输出，剩余的在这里聚合输出 "[+RULE-ID] N more in this file"。
+# JSON 模式不动（CI 要全部数据）。
 if [[ "$JSON_MODE" != "1" ]]; then
+  # 按规则汇总，找出超过 threshold 的
+  if [[ -s "$COLLAPSE_FILE" ]]; then
+    awk '{print $1}' "$COLLAPSE_FILE" | sort | uniq -c | while read -r cnt rule; do
+      if [[ "$cnt" -gt "$COLLAPSE_THRESHOLD" ]]; then
+        more=$((cnt - COLLAPSE_THRESHOLD))
+        printf '[+%s] %d more in this file (use `// scan-ignore: %s` to silence)\n' \
+          "$rule" "$more" "$rule" >&2
+      fi
+    done
+  fi
+
   if [[ "$violations_high" -gt 0 ]]; then
     printf '\n[summary] %s · High: %d · Medium: %d\n' "$REL" "$violations_high" "$violations_med" >&2
   elif [[ "$violations_med" -gt 0 ]]; then
     printf '\n[summary] %s · Medium: %d\n' "$REL" "$violations_med" >&2
-  fi
-  if [[ $((violations_high + violations_med)) -ge 5 ]]; then
-    printf '[hint] 单规则刷屏？在违规上一行加 `// scan-ignore: <RULE-ID>` 抑制；或整行首加 `// scan-ignore-line`\n' >&2
   fi
 fi
 

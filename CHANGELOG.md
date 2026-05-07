@@ -179,6 +179,42 @@
 
 详细处置决策见评审顶部 `## 处置决策表`。
 
+### LCC 三轮实测反馈 · v0.6 修复（2026-05-07）
+
+第三轮 PrivateTalk 真工程实测反馈：v0.5 自查发现 **1 个 P0 真 BUG / 1 处 SKILL 自相矛盾 / 2 条规则系统性误报 / 1 处折叠形同虚设**。**全部采纳**：
+
+**P0 真 BUG**：
+
+- `check-rename-module.sh` v0.5 用 BSD sed 处理尾逗号无法跨行 → 实测对默认 DevEco 模板 0 用（`,\n },\n ],\n}` 这种合法 JSON5 仍 jq parse error）。**任何用 DevEco 6.x 模板的工程都触发**。修：换成 `perl -0pe`（slurp 模式让 `\s` 匹配换行）一行解决；perl 缺席时 fallback GNU sed 多行模式。验证：在合成模板上正确解析含跨行尾逗号的 build-profile.json5。
+
+**SKILL 自相矛盾**：
+
+- `runtime-pitfalls` § 九 "Configuration 类型 import" 段 ❌/✅ 互换 —— 顶部说"❌ Configuration 来自 @kit.AbilityKit 顶层"，但同一 SKILL 的速查表又说"Configuration 在 @kit.AbilityKit 顶层"。实测编译器报错原文：`Namespace 'ConfigurationConstant' has no exported member 'Configuration'`。修：重写该段，明确 `Configuration` 是 @kit.AbilityKit **顶层** export，**不在** ConfigurationConstant 命名空间下。
+
+**P1 系统性误报**：
+
+- `STATE-002` / `STATE-009` 误把**普通工具类**（IDataSource / Store / EventBus / SecretStore / RdbAdapter）的 `this.X.push()` / `this.prefs.delete()` 当 ArkUI 状态 mutation 报。讽刺：项目自家 `samples/templates/list/item-data-source.ets`（标准 IDataSource 实现）被自家 lint 拒绝。v0.5 用 EXCLUDE_NAMES 前缀白名单是补丁；v0.6 改用**装饰器上下文检测**——awk 状态机扫文件，记录 `@Component / @ComponentV2 / @Entry / @Observed / @ObservedV2` 装饰的 class/struct **完整花括号区间**。STATE-002/009 仅在 ArkUI 类内部触发，普通 class 永不报。
+
+- `PERF-002` 原"文件 > 80 行"启发式 91% 假阳率（评审者实测：12 个 ForEach 仅 1 个值得换 LazyForEach；setting 子页文件 200 行但数据源只有 3-5 项）。改为**数据源名启发式**：仅当 ForEach 第一参数标识符匹配 `messages|conversations|posts|feed|items|logs|records|history|comments|threads|notifications|chats|users|contacts` 时报，且要求文件不含 LazyForEach。
+
+- `ARKTS-016` 空 catch 块 v0.5 报 High 级，实测 15 处仅 ~2 处真问题（其余是 cleanup/destroy/unlink 容错或 JSON.parse fallback）。降为 Medium；仅在文件**含 await** 时触发（异步上下文吞错风险更高）；reason 加"如果是 cleanup 容错可加 scan-ignore: ARKTS-016"。
+
+**P2 折叠**：
+
+- v0.5 加了 collapse hint 但**没真折叠** —— i18n DICT 文件 53 条 AGC-RJ-014 全输出仍刷屏。v0.6 实现真折叠：同文件同规则前 3 条原文输出，后续聚合为 `[+RULE-ID] N more in this file (use scan-ignore: ... to silence)`。JSON 模式不动（CI 要全部数据）。
+
+**P3 体验**：
+
+- 新增 `--stats` 模式：仅按规则汇总命中数（CI 友好）。退出码与文本模式一致。
+- inline-suppress 边角修复：`scan-ignore-line` 现在严格只匹配同行，不再因为前一行有 `scan-ignore-line` 误抑制下一行；`scan-ignore: RULE` 仍支持上一行/同行（命名注释一般写在上方）。
+
+**模板自检**：
+
+- `samples/templates/dark-mode/theme-aware-page.ets` 与 `samples/templates/list/infinite-list.ets` 的硬编码中文示例改为 `$r('app.string.xxx')` —— 模板自身从此通过 AGC-RJ-014（"自家 recipe 不能被自家 lint 拒"）。
+- 全 6 fixture（5 个 Bad + 1 个 Good）+ 4 个 sample template 全量回归通过。
+
+详见 [`docs/archive/reviews/2026-05-07-lcc-3.md`](docs/archive/reviews/2026-05-07-lcc-3.md)（如有归档）。
+
 [0.2.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.1.0
 [Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.2.0...HEAD

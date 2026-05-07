@@ -280,13 +280,25 @@ DEVECO_SDK_HOME=$HOME/Library/Huawei/Sdk hvigorw assembleHap
 ## 九、@kit.AbilityKit 命名空间易混
 
 ### 现象
-```typescript
-// ❌ 错的：Configuration 不在 @kit.AbilityKit 顶层
-import { Configuration } from '@kit.AbilityKit';
 
-// ✅ 对的：在 ConfigurationConstant 命名空间下
+`Configuration` 类型（用作 `onConfigurationUpdate(newConfig: ...)` 的参数类型）**直接从 `@kit.AbilityKit` 顶层导出**，**不在** `ConfigurationConstant` 命名空间下。AI 训练数据里常把它误归到 `ConfigurationConstant` 下，编译器会报：
+
+```
+Namespace 'ConfigurationConstant' has no exported member 'Configuration'.
+```
+
+```typescript
+// ❌ AI 习惯误写（误以为 Configuration 在 ConfigurationConstant 命名空间下）
 import { ConfigurationConstant } from '@kit.AbilityKit';
-const orientation = ConfigurationConstant.Direction.DIRECTION_VERTICAL;
+onConfigurationUpdate(newConfig: ConfigurationConstant.Configuration): void { /* ... */ }
+
+// ✅ 正确：Configuration 直接从 @kit.AbilityKit 顶层导入
+import { Configuration } from '@kit.AbilityKit';
+onConfigurationUpdate(newConfig: Configuration): void { /* ... */ }
+
+// ConfigurationConstant 是另一回事——它是常量类，用于枚举值访问：
+import { ConfigurationConstant } from '@kit.AbilityKit';
+const dir = ConfigurationConstant.Direction.DIRECTION_VERTICAL;
 ```
 
 ### 常用 Kit 类型 import 速查（v0.5 实战补充）

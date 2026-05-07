@@ -85,14 +85,14 @@ export struct InfiniteList {
           }
         }, (item: Item) => item.id)
 
-        // 上拉加载提示
+        // 上拉加载提示——生产代码改用 $r('app.string.loading_more') 走 i18n
         if (this.loadingMore) {
           ListItem() {
-            Text('加载中...').padding(12).fontSize(12).fontColor($r('sys.color.ohos_id_color_text_secondary'))
+            Text($r('app.string.loading_more')).padding(12).fontSize(12).fontColor($r('sys.color.ohos_id_color_text_secondary'))
           }
         } else if (!this.hasMore) {
           ListItem() {
-            Text('— 到底了 —').padding(12).fontSize(12).fontColor($r('sys.color.ohos_id_color_text_secondary'))
+            Text($r('app.string.no_more_data')).padding(12).fontSize(12).fontColor($r('sys.color.ohos_id_color_text_secondary'))
           }
         }
       }

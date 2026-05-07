@@ -33,16 +33,16 @@ if [[ ! -f "$ROOT/build-profile.json5" ]]; then
 fi
 
 # json5 比 json 容忍（注释、单引号、尾逗号）
-# 用 sed 做简单的 json5 → json 转换：
-#   - 删除 // 行注释（行尾后）
-#   - 删除 } 和 ] 前的尾逗号（DevEco 默认模板的 build-profile.json5 含
-#     `buildModeSet: [{ name: 'debug', }, ...]` 这种合法 JSON5 但非法 JSON）
-#   - 不动单引号（jq 在多数情况能容忍）
+# v0.6 修：v0.5 用 sed 做的逐行替换，对 BSD sed（macOS 默认）跨行不工作——
+# `"name": "debug",\n },` 这种 DevEco 模板生成的合法 JSON5 仍让 jq 报 parse error。
+# 改用 perl `-0pe`（slurp 模式）让 \s 包含换行，一行解决。
 json5_to_json() {
-  sed -e 's|//[^"]*$||g' \
-      -e 's/,\([[:space:]]*[}]\)/\1/g' \
-      -e 's/,\([[:space:]]*[]]\)/\1/g' \
-      "$1"
+  if command -v perl >/dev/null 2>&1; then
+    perl -0pe 's|//[^"\n]*\n|\n|g; s/,(\s*[}\]])/$1/g' "$1"
+  else
+    # 极少 perl 不在 PATH 的环境：退回 GNU sed 多行模式（macOS 上 sed -E 也支持）
+    sed -E ':a; N; $!ba; s|//[^"\n]*\n|\n|g; s/,([[:space:]]*[}\]])/\1/g' "$1"
+  fi
 }
 
 # 提取 build-profile.json5 中所有 modules[].name

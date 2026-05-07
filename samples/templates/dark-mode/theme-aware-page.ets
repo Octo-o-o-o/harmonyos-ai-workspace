@@ -31,16 +31,17 @@ struct ThemeAwarePage {
   build() {
     Column({ space: 12 }) {
       // ✅ 推荐：用 app 资源色（跟随浅 / 深资源文件自动切换）
-      Text('标题')
+      // 文案也走 $r('app.string.xxx')，自动满足 i18n
+      Text($r('app.string.title'))
         .fontSize(24)
         .fontColor($r('app.color.text_primary'))
 
-      Text('副标题')
+      Text($r('app.string.subtitle'))
         .fontSize(14)
         .fontColor($r('app.color.text_secondary'))
 
       // ✅ 推荐：直接用系统色（更省心，但可定制性低）
-      Text('系统色版本')
+      Text($r('app.string.system_color_version'))
         .fontSize(14)
         .fontColor($r('sys.color.ohos_id_color_text_primary'))
 

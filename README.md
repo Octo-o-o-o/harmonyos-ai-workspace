@@ -36,7 +36,7 @@ last_verified: "2026-05-07"
 │        ▼ ⚡ 钩子触发（仅 Claude Code 强校验）                    │
 │   ┌─────────────────────────────────────────────────────┐        │
 │   │ tools/hooks/post-edit.sh                            │        │
-│   │  ├─ scan-arkts.sh   18 条 ArkTS 反模式 grep         │        │
+│   │  ├─ scan-arkts.sh   30 条规则 + 装饰器上下文 + 折叠   │        │
 │   │  ├─ check-ohpm-deps.sh  OHPM 包名黑/白/CLI 三层     │        │
 │   │  └─ module.json5    权限提示                        │        │
 │   └─────────────────────────────────────────────────────┘        │
