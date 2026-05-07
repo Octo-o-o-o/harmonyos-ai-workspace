@@ -8,7 +8,8 @@
 
 | 日期 | 文件 | 评审者类型 | 关键贡献 | 处置 |
 | --- | --- | --- | --- | --- |
-| 2026-05-07 | LCC v0.5→v0.6 三轮反馈（CHANGELOG 内联） | PrivateTalk 真工程实测 | check-rename-module perl 跨行修复 / runtime-pitfalls §九 ❌/✅ 互换 / 装饰器上下文检测 / PERF-002 91% FPR 启发式 / 真 collapse / ARKTS-016 降级 / --stats 模式 | v0.6 全部采纳（本 commit） |
+| 2026-05-07 | LCC v0.6→v0.7 四轮反馈（CHANGELOG 内联） | PrivateTalk 真工程 v0.6 实测回归（假阳率 0%）+ 边界 BUG 挖掘 | 同行 `@Entry @Component struct` awk 漏识别 / @CustomDialog/@Reusable 名单缺失 / inline-suppress 0 处文档 / 版本号未 bump | v0.7（0.3.0）全部采纳 |
+| 2026-05-07 | LCC v0.5→v0.6 三轮反馈（CHANGELOG 内联） | PrivateTalk 真工程实测 | check-rename-module perl 跨行修复 / runtime-pitfalls §九 ❌/✅ 互换 / 装饰器上下文检测 / PERF-002 91% FPR 启发式 / 真 collapse / ARKTS-016 降级 / --stats 模式 | v0.6 全部采纳 |
 | 2026-05-07 | LCC v0.4→v0.5 二轮反馈（CHANGELOG 内联） | PrivateTalk 真工程跑 30 条规则 + check-rename | 1 真 BUG（json5 尾逗号 sed 失败） + 3 真误报（STATE-009 prefs.delete / ARKTS-003 Record 索引 / ARKTS-RECORD 空字面量）+ inline-suppress 机制 | v0.5 全部采纳 |
 | 2026-05-07 | LCC v0.3 一轮反馈（CHANGELOG 内联） | PrivateTalk M3-M12 多里程碑实战 | 5 条新 ArkTS 规则 / 3 个新 SKILL（runtime-pitfalls / multimodal-llm / web-bridge）/ check-rename-module 工具 | v0.4 全部采纳 |
 | 2026-05-07 | [`2026-05-07-codex.md`](2026-05-07-codex.md) | Codex 视角，基于源码 + WebFetch 八仓 | README curl 占位 / install 补拉 ohpm 数据 / 评审归档 / .DS_Store 清理 / 4 recipes 提案 / 动作 MCP 安全包装 | P0/P1 项已在 commit `d7xxx` 全部采纳 |

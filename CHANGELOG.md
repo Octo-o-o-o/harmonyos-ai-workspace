@@ -27,6 +27,60 @@
 - 版本叙述校正（API 21 = 2025-11-25 首发 / API 22 = 2026-01-23 推送）
 - ArkEval 数据驱动：「数组就地 mutation」提到 CLAUDE.md § 0.5 最高优先级
 
+## [0.3.0] - 2026-05-07
+
+跨 v0.2 → v0.6 的累积发布：scan-arkts 13 → 30 条规则、新增 PostToolUse 钩子 + 装饰器上下文检测 + 真 collapse + inline-suppress + `--stats` 模式 + 多个新 SKILL（runtime-pitfalls / multimodal-llm / web-bridge / harmonyos-review）+ 4 recipe template + check-rename-module 工具。详见下方分轮记录。
+
+### LCC 四轮实测反馈 · v0.7 修复（2026-05-07）
+
+第四轮 PrivateTalk 真工程实测 v0.6 7 项修复全部生效（假阳率 21% → 0%），但发现 **2 处装饰器边界漏报 + 1 处文档空白**。**全部采纳**：
+
+**P0 漏报**（v0.6 awk 状态机覆盖不全）：
+
+- **同行装饰器 + struct 漏识别** —— `@Entry @Component struct Page {` 这种 DevEco 模板/简写常见形式，v0.6 awk 第一条规则 `next` 跳过该行让 struct/class 检测永不命中，导致整个 ArkUI 类被识别为普通类，类内 `this.X.push()` 全部漏报。修：去 `next`，新增 `inline_re` 同行复合规则；保留单独装饰器行的旧路径。
+- **`@CustomDialog` / `@Reusable` 不在白名单** —— 这两类装饰器修饰的 struct 同样是响应式的（弹窗参与重渲染、Reusable 池化时需状态同步），v0.6 漏白名单导致组件内 mutation 不报。修：装饰器名单从 5 个扩到 7 个，提到顶部变量 `ARKUI_DECORATORS` 便于后续扩展。
+
+合并修法（一次性补两处缺口）：
+
+```awk
+ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|Reusable'
+# 同行装饰器 + struct/class 直接 set in_arkui（不 next）
+($0 ~ /^[[:space:]]*@/) && ($0 ~ sc_re) {
+  if ($0 ~ arkui_re) { in_arkui = 1; pending = 0; depth = 0 }
+}
+# 单独装饰器行（仅当本行没有 struct/class 时 next）
+($0 ~ dec_re) && ($0 !~ sc_re) { pending = 1; next }
+```
+
+**P1 文档空白**：
+
+- **inline-suppress 机制全仓库 0 处文档** —— v0.5 加了 `// scan-ignore: <RULE-ID>` / `// scan-ignore-line` 两种标记，v0.6 才把 `scan-ignore-line` 严格隔离为同行匹配，但 README / AGENTS / CLAUDE / 任何 SKILL 都没说明用法和差异，用户只能读源码发现。修：`arkts-rules/SKILL.md` 新增 § "抑制 scanner 误报（inline-suppress）" 段，含完整对照表 + 例子；README 规则编号体系表格加锚点链接。
+- 同步修正 `arkts-rules/SKILL.md` 第 97 行的 Configuration import 复述错误（之前还说"Configuration 不在顶层"，与 v0.6 已修正的 runtime-pitfalls §九 自相矛盾）。
+
+**inline-suppress 行为决策**：
+
+评审者建议两选——A 让 `scan-ignore-line` 也支持上一行（统一行为）/ B 改名 + 文档。**采纳 B 的"补文档"路径，不动行为**：
+
+- v0.6 才修过 v0.5 的串行 BUG（前一行有 `scan-ignore-line` 误抑制下一行），回退会重新引入
+- `scan-ignore-line` 字面"line" 指当前行最自然，跨行抑制本就该用具名 `scan-ignore: <RULE-ID>`
+- 命名歧义靠文档解决——SKILL 表格 + 例子 + 一段⚠️ 说明清楚
+
+**新增 fixture**（验证回归）：
+
+- `tools/hooks/test-fixtures/InlineDecorators.ets` —— `@Entry @Component struct` 同行写法
+- `tools/hooks/test-fixtures/CustomDialogState.ets` —— `@CustomDialog struct` 类内 mutation
+- `tools/hooks/test-fixtures/ReusableState.ets` —— `@Reusable @Component struct` 同行 + 类内 mutation
+
+回归覆盖：9 个 fixture（8 Bad + 1 Good，全部 exit 符合预期）+ 4 个 sample template（全部 clean）+ 2 个反测试（普通 class / 非 ArkUI 装饰器，正确不误报）。
+
+**版本号同步**（评审 #4）：
+
+- `package.json` 0.2.5 → 0.3.0（v0.2.x 后续 patch 合到 v0.3.0 minor）
+- CHANGELOG `[Unreleased]` 段切到 `[0.3.0] - 2026-05-07`
+- 按 SemVer：scan-arkts 规则数 13 → 30、新增多个工具与 SKILL，向前兼容的功能扩展属 minor bump
+
+详见 [`docs/archive/reviews/`](docs/archive/reviews/README.md) 中 LCC 多轮反馈条目。
+
 ## [Unreleased]
 
 ### v0.2.x post-review patches
@@ -215,6 +269,7 @@
 
 详见 [`docs/archive/reviews/2026-05-07-lcc-3.md`](docs/archive/reviews/2026-05-07-lcc-3.md)（如有归档）。
 
+[0.3.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.1.0
-[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.3.0...HEAD

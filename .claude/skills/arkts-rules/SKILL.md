@@ -94,9 +94,34 @@ hvigorw assembleHap -p buildMode=debug  # 真编译验证
 2. **任何 `await` 行不在 try 块内 → codeLinter 报 "Function may throw exceptions"** —— ArkTS 严格模式。规则 `ARKTS-AWAIT-TRY`。
 3. **`picker.PhotoViewPicker` / `decodeWithStream` 等 HarmonyOS 6 已弃用** —— AI 训练数据里多是旧版。规则 `ARKTS-DEPRECATED-PICKER` / `ARKTS-DEPRECATED-DECODE`。
 4. **ArkTS 不支持 union（如 `string | object[]`）** —— OpenAI Vision 等 API 的 `content` 字段必须拆双字段 + 自定义序列化。规则 `ARKTS-NO-UNION-CONTENT`。详见 [`multimodal-llm`](../multimodal-llm/SKILL.md)。
-5. **`@kit.AbilityKit` 命名空间易混** —— `Configuration` 不在顶层（在 `ConfigurationConstant.*`）；不确定就 Ctrl+点进类型定义。
+5. **`@kit.AbilityKit` 命名空间易混** —— `Configuration` **在 @kit.AbilityKit 顶层** export，**不在** `ConfigurationConstant.*` 命名空间下。AI 常误写 `ConfigurationConstant.Configuration` → 编译器报 `Namespace 'ConfigurationConstant' has no exported member 'Configuration'`。不确定就 Ctrl+点进类型定义。详见 [`runtime-pitfalls` § 九](../runtime-pitfalls/SKILL.md)。
 
 工程层装配陷阱（grep 扫不出来的）见 [`runtime-pitfalls`](../runtime-pitfalls/SKILL.md)。
+
+## 抑制 scanner 误报（inline-suppress）
+
+scanner 偶有误报或你已审过的特殊情形——不需要改规则，用注释抑制即可：
+
+| 标记 | 写在 | 效果 |
+| --- | --- | --- |
+| `// scan-ignore: <RULE-ID>` | 同行（行尾）或上一行 | 抑制**该规则**的本次命中 |
+| `// scan-ignore: <RULE-ID-A>, <RULE-ID-B>` | 同上 | 一次抑制多条规则 |
+| `// scan-ignore-line` | **仅同行**（行尾） | 抑制本行**所有规则** |
+
+> ⚠️ `scan-ignore-line` 字面是"忽略此行"，**仅匹配同行**——把它写在违规上一行**不会**抑制下一行。需要跨行抑制就用具名 `scan-ignore: <RULE-ID>`（命名注释一般写在被抑制行上方更清晰）。
+
+例：
+
+```typescript
+// scan-ignore: STATE-009              ← 上一行抑制（推荐用于 KV/DB API 调用）
+this.prefs.delete('cached-token');
+
+this.cache.set('k', 'v');  // scan-ignore: STATE-009     ← 行尾抑制也行
+
+const next = JSON.parse(raw);  // scan-ignore-line       ← 抑制本行所有规则
+```
+
+被抑制的命中**既不输出也不计数**——属于真正的"逃生口"，不会让你的 exit code 假装通过。
 
 ## 引用稳定 ID（强制）
 

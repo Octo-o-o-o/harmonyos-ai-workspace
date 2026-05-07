@@ -123,7 +123,7 @@ PostToolUse 钩子并非孤例（[`yibaiba/harmonyos-skills-pack`](https://githu
 
 | 层 | 数量 | 位置 | 用途 |
 | --- | --- | --- | --- |
-| **自动化扫描**（钩子触发） | 13 条 | `tools/hooks/lib/scan-arkts.sh` 内联（v0.2 → 扩展中） | grep-based 快扫，毫秒级反馈 |
+| **自动化扫描**（钩子触发） | 30 条（v0.7） | `tools/hooks/lib/scan-arkts.sh` 内联 + awk 装饰器上下文检测 | grep-based 快扫，毫秒级反馈；支持 [inline-suppress](.claude/skills/arkts-rules/SKILL.md#抑制-scanner-误报inline-suppress) |
 | **代码审查清单** | 36 条（9 大类） | `.claude/skills/harmonyos-review/references/checklist.md` | review skill 引用的稳定 ID（`SEC-001` / `STATE-002` / `KIT-003` 等） |
 | **AGC 提审拒因** | 20 条 | `07-publishing/checklist-2026-rejection-top20.md` | 上架审核拒因映射，含 `AGC-RJ-*` 稳定 ID |
 | **OHPM 黑名单**（已知伪包） | ~25 项 | `tools/data/ohpm-blacklist.txt` + 脚本内联 | 防 AI 虚构包名 |

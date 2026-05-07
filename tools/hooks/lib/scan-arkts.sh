@@ -90,16 +90,42 @@ trap 'rm -f "$TMP"' EXIT
 strip_comments "$FILE" > "$TMP"
 
 # v0.6: 提取 "ArkUI 类内部" 的行号集合
-# STATE-002/009/008 等响应式相关规则只应在 @Component / @ComponentV2 / @Entry /
-# @Observed / @ObservedV2 装饰过的 class 或 struct 内部触发——普通工具类
-# （IDataSource / Store / EventBus / SecretStore 等）的 `this.X.push()` 不是
-# 状态变更，是普通数组操作。
+# STATE-002/009/008 等响应式相关规则只应在 ArkUI 装饰过的 class/struct 内部触发——
+# 普通工具类（IDataSource / Store / EventBus / SecretStore 等）的 `this.X.push()`
+# 不是状态变更，是普通数组操作。
+#
+# v0.7 修复（合并第四轮反馈）：
+#   - 同行 `@Entry @Component struct Page {` v0.6 因 next 跳过被漏识别
+#   - @CustomDialog / @Reusable v0.6 不在白名单
+#   - 装饰器名单提到顶部变量便于扩展
+ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|Reusable'
 ARKUI_LINES_FILE="$(mktemp)"
 trap 'rm -f "$TMP" "$ARKUI_LINES_FILE"' EXIT
-awk '
-  BEGIN { in_arkui = 0; pending = 0; depth = 0 }
-  /^[[:space:]]*@(Component|ComponentV2|Observed|ObservedV2|Entry)([[:space:]]|$|\()/ { pending = 1; next }
-  /^[[:space:]]*(export[[:space:]]+)?(struct|class)[[:space:]]+[A-Z]/ {
+awk -v decs="$ARKUI_DECORATORS" '
+  BEGIN {
+    in_arkui = 0; pending = 0; depth = 0
+    arkui_re = "@(" decs ")"
+    dec_re   = "^[[:space:]]*@(" decs ")([[:space:]]|$|\\()"
+    sc_re    = "(struct|class)[[:space:]]+[A-Z]"
+    ssc_re   = "^[[:space:]]*(export[[:space:]]+)?(struct|class)[[:space:]]+[A-Z]"
+  }
+  # 同行装饰器 + struct/class（v0.7 新增）
+  # 例：`@Entry @Component struct Page {`、`@CustomDialog struct Dialog {`
+  # 注意：不 next，让默认规则在该行做 brace tracking
+  ($0 ~ /^[[:space:]]*@/) && ($0 ~ sc_re) {
+    if ($0 ~ arkui_re) {
+      in_arkui = 1; pending = 0; depth = 0
+    } else {
+      in_arkui = 0; pending = 0
+    }
+  }
+  # 单独装饰器行（next 跳过 brace tracking——该行无 struct/class）
+  ($0 ~ dec_re) && ($0 !~ sc_re) {
+    pending = 1
+    next
+  }
+  # struct/class 单独行（前一行可能是装饰器）
+  $0 ~ ssc_re {
     if (pending) { in_arkui = 1; pending = 0; depth = 0 }
     else { in_arkui = 0 }
   }
