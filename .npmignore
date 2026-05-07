@@ -1,0 +1,37 @@
+# 运行时产物（钩子写入的最近一次扫描结果），不该进 npm 包
+.claude/.harmonyos-last-scan.txt
+.claude/cache/
+
+# 系统垃圾
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# 评审 / 维护者文档（npm 用户拿不到也无所谓；GitHub 上有完整版）
+docs/archive/
+docs/REVIEW-*.md
+docs/PLAN.md
+docs/RESEARCH-*.md
+docs/SETUP-FROM-SCRATCH.md
+docs/MCP-INTEGRATION.md
+docs/USAGE-GUIDE.md
+docs/OPEN-SOURCE-STRATEGY.md
+docs/case-studies/
+
+# 本地 / 测试产物
+tools/hooks/test-fixtures/
+.harmonyos-ai-workspace.manifest
+
+# 上游文档镜像（2.7 GB，绝不打进 npm 包；用 bootstrap-upstream-docs.sh 自取）
+upstream-docs/
+
+# git
+.git/
+.github/workflows/
+
+# 评审 / 临时文件
+samples/
+
+# 注意：package.json 的 files 字段是允许列表（whitelist），优先级高于本文件
+# 这里的 .npmignore 仅做二次防护——例如 .claude/ 在 files 里被允许后，本文件
+# 仍能精确排除 .claude/.harmonyos-last-scan.txt 等子文件

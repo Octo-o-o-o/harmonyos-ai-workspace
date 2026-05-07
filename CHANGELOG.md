@@ -271,6 +271,14 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 
 详见本 CHANGELOG 同级条目「LCC 三轮实测反馈 · v0.6 修复」（v0.6 反馈未单独归档，全部内容已内联到本变更日志）。
 
+## [0.4.1] - 2026-05-07
+
+打包卫生 patch（v0.4.0 npm publish 时被 OTP 拦下顺手发现）：
+
+- 加 `.npmignore` 排除运行时产物 `.claude/.harmonyos-last-scan.txt`（钩子写入的临时文件，不该进 npm 包）
+- 精化 `package.json` `files` 字段：`.claude/` → `.claude/settings.json + .claude/skills/`、`tools/hooks/` 按子项明列；GitHub 上 npm 用户拿不到 docs/archive、upstream-docs、samples（这些通过 git clone 获取）
+- 包大小不变（113 kB），但 51 文件（v0.4.0 包是 52，少 1 个 last-scan.txt）
+
 ## [0.4.0] - 2026-05-07
 
 第六轮评审（Codex 视角）反馈驱动。**install 安全 + 真回归测试 + V1/V2 默认统一 + OHPM 网络错误分类**——这一轮的主题是把 v0.3.0 已经能跑的工具变成"敢在真实工程跑"的工具。
@@ -338,10 +346,11 @@ Codex 评审给的 7 项建议中：
 
 （无未发布变更。下次 release 周期的新增项将累积于此。）
 
+[0.4.1]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.1
 [0.4.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0
-[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.4.1...HEAD
 
 <!-- v0.1.0 没有 GitHub release（pre-tag 本地里程碑，详见顶部说明） -->
 [0.1.0]: #010---2026-05-06

@@ -1,6 +1,6 @@
 {
   "name": "harmonyos-ai-workspace",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Rule pack + PostToolUse hooks + skills for AI coding assistants (Claude Code / Codex CLI / Cursor / Copilot) writing HarmonyOS / ArkTS code that actually compiles.",
   "bin": {
     "harmonyos-ai-workspace": "bin/cli.js"
@@ -37,16 +37,20 @@
   "files": [
     "bin/",
     "tools/install.sh",
-    "tools/hooks/",
     "tools/check-ohpm-deps.sh",
     "tools/check-rename-module.sh",
-    "tools/data/",
     "tools/run-linter.sh",
     "tools/generate-ai-configs.sh",
     "tools/test-suite.sh",
+    "tools/data/",
+    "tools/hooks/post-edit.sh",
+    "tools/hooks/lib/",
+    "tools/hooks/examples/",
+    "tools/hooks/test-fixtures/",
     "CLAUDE.md",
     "AGENTS.md",
-    ".claude/",
+    ".claude/settings.json",
+    ".claude/skills/",
     ".cursor/",
     ".github/copilot-instructions.md",
     ".mcp.json",
