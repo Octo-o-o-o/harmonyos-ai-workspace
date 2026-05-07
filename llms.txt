@@ -15,6 +15,8 @@
 
 ## Skills（按需加载，frontmatter 触发）
 
+`.claude/skills/` 下共 8 个 SKILL.md，按用户场景分两组：
+
 语言 / 框架 / 工程层（首批 5 个）：
 
 - [.claude/skills/arkts-rules/SKILL.md](.claude/skills/arkts-rules/SKILL.md): ArkTS 严格语法规则（含 inline-suppress 文档）
