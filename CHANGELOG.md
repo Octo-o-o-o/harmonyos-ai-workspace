@@ -2,6 +2,8 @@
 
 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) + [SemVer](https://semver.org/lang/zh-CN/)。版本节奏跟随 HarmonyOS 大版本。
 
+> **Git tag 历史**：本仓库 git tag 从 [v0.2.0](https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0) 起（GitHub initial commit `83a71b2` 即名为 "Initial release v0.2.0"）。**v0.1.0 是 v0.2.0 之前的本地阶段性里程碑**（仓库雏形：10 主题目录 + 4 SKILL + LICENSE 等），无独立 git snapshot——保留 changelog 段是为了完整记录构建路径，但**没有对应 GitHub release**。
+
 ## [0.2.0] - 2026-05-06
 
 完整施工方案与决策记录见 [`PLAN.md`](docs/PLAN.md)。本版完成 P0+P1 全套：
@@ -275,5 +277,7 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 
 [0.3.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0
-[0.1.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.1.0
 [Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.3.0...HEAD
+
+<!-- v0.1.0 没有 GitHub release（pre-tag 本地里程碑，详见顶部说明） -->
+[0.1.0]: #010---2026-05-06
