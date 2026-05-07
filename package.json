@@ -1,6 +1,6 @@
 {
   "name": "harmonyos-ai-workspace",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Rule pack + PostToolUse hooks + skills for AI coding assistants (Claude Code / Codex CLI / Cursor / Copilot) writing HarmonyOS / ArkTS code that actually compiles.",
   "bin": {
     "harmonyos-ai-workspace": "bin/cli.js"

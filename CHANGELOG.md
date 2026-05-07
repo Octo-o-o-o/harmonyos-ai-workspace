@@ -271,6 +271,31 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 
 详见本 CHANGELOG 同级条目「LCC 三轮实测反馈 · v0.6 修复」（v0.6 反馈未单独归档，全部内容已内联到本变更日志）。
 
+## [0.4.3] - 2026-05-07
+
+文档用户友好性 patch（无代码 / 行为变更）：
+
+- **README 重写**：第一屏从 30 行版本契约 yaml 改为"价值 + persona + 一行装命令"
+  - 新增 "这个项目对谁有帮助？" 段（vibe coder / 老开发者 / 团队 lead 三类 persona）
+  - 新增 "装了能解决什么问题？" Before/After 对比表（6 项可量化痛点：ArkEval 3.13% 基线、21%→0% 假阳率、AI 瞎编 OHPM 包、状态不刷新等）
+  - "30 秒装好" + "5 分钟试一下（验收装好）" 提到第一屏
+  - 版本契约 yaml 后置到 § 8
+- **新文档 `docs/USER-GUIDE.md`**（583 行使用说明书）：
+  - 1. 首次使用：5 分钟验收
+  - 2. 第一次让 AI 改一个页面（3 种 AI 助手 prompt 模板）
+  - 3. 日常工作流（Claude Code / Codex CLI / Cursor / Copilot / 纯手写）
+  - 4. 典型任务怎么做（8 场景：写新页面 / 加权限 / 接 LLM API / 长列表 / 深色模式 / 编译失败处理 / scanner 误报 / OHPM 告警）
+  - 5. AI 协作"魔法咒语"（7 个 prompt 模式让 AI 充分用规则）
+  - 6. 故障排查（7 类常见问题）
+  - 7. 团队协作 / CI（git 入库 / GitHub Actions / pre-commit / 自定义规则）
+  - 8. 升级与卸载（manifest 安全模式 + 强制模式说明）
+- **`docs/USAGE-GUIDE.md`** 顶部加引导，明示三份文档关系：
+  - `README.md` = 装好 + 5 分钟验
+  - `USER-GUIDE.md` = 日常使用说明书
+  - `USAGE-GUIDE.md` = 进阶（多 app 共享 / 三层发布 / 同类对比）
+
+让 npm 用户在 npmjs.com 看到新封面 README + USER-GUIDE 引导（v0.4.2 npm 上仍是旧文档，v0.4.3 publish 后同步）。
+
 ## [0.4.2] - 2026-05-07
 
 uninstall 兼容性 patch（v0.4.1 真用户路径测试时发现）：
@@ -354,12 +379,13 @@ Codex 评审给的 7 项建议中：
 
 （无未发布变更。下次 release 周期的新增项将累积于此。）
 
+[0.4.3]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.3
 [0.4.2]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.2
 [0.4.1]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.1
 [0.4.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0
-[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.4.3...HEAD
 
 <!-- v0.1.0 没有 GitHub release（pre-tag 本地里程碑，详见顶部说明） -->
 [0.1.0]: #010---2026-05-06
