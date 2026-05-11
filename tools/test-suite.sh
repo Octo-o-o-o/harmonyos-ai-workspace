@@ -26,7 +26,7 @@ echo "═══ HarmonyOS AI Workspace · regression test suite ═══"
 echo
 
 # ─── 1) fixture exit code 断言 ────────────────────────────
-echo "[1/6] fixture exit code"
+echo "[1/7] fixture exit code"
 declare -A EXPECTED=(
   [BadState]=2 [BadArkTS]=2 [BadDecorators]=2 [BadSecurityKit]=2
   [BadRuntimePitfalls]=2 [InlineDecorators]=2 [CustomDialogState]=2 [ReusableState]=2
@@ -45,7 +45,7 @@ done
 
 # ─── 2) sample templates 必须全 clean ─────────────────────
 echo
-echo "[2/6] sample templates"
+echo "[2/7] sample templates"
 for f in $(find samples/templates -name '*.ets' -o -name '*.ts' 2>/dev/null); do
   bash tools/hooks/lib/scan-arkts.sh "$f" >/dev/null 2>&1
   rc=$?
@@ -58,7 +58,7 @@ done
 
 # ─── 3) JSON 模式产出合法 JSON 含具体规则 ID ─────────────
 echo
-echo "[3/6] --json mode"
+echo "[3/7] --json mode"
 JSON=$(bash tools/hooks/lib/scan-arkts.sh --json tools/hooks/test-fixtures/BadArkTS.ets 2>/dev/null)
 if echo "$JSON" | python3 -m json.tool >/dev/null 2>&1; then
   assert_pass "BadArkTS.ets --json valid JSON"
@@ -73,7 +73,7 @@ fi
 
 # ─── 4) --stats 模式 ─────────────────────────────────────
 echo
-echo "[4/6] --stats mode"
+echo "[4/7] --stats mode"
 STATS=$(bash tools/hooks/lib/scan-arkts.sh --stats tools/hooks/test-fixtures/BadSecurityKit.ets 2>&1)
 if echo "$STATS" | grep -qE "By rule"; then
   assert_pass "BadSecurityKit --stats 输出 By rule 段"
@@ -83,7 +83,7 @@ fi
 
 # ─── 5) check-ohpm-deps 假包 fixture 必须 exit=2 ──────────
 echo
-echo "[5/6] check-ohpm-deps"
+echo "[5/7] check-ohpm-deps"
 bash tools/check-ohpm-deps.sh tools/hooks/test-fixtures/bad-oh-package.json5 >/dev/null 2>&1
 rc=$?
 if [[ "$rc" == "2" ]]; then
@@ -92,9 +92,45 @@ else
   assert_fail "bad-oh-package.json5 → exit=$rc (expected 2)"
 fi
 
-# ─── 6) install.sh --dry-run 不写文件 + generate-configs --check ─
+# ─── 6) harmony-dev-cycle.sh 轻量入口不依赖 DevEco ─────────
 echo
-echo "[6/6] install/generate sanity"
+echo "[6/7] harmony-dev-cycle"
+if bash -n tools/harmony-dev-cycle.sh; then
+  assert_pass "harmony-dev-cycle.sh bash -n 通过"
+else
+  assert_fail "harmony-dev-cycle.sh bash -n 失败"
+fi
+
+TMP_APP=$(mktemp -d)
+mkdir -p "$TMP_APP/AppScope" "$TMP_APP/entry/src/main/ets/pages"
+cat > "$TMP_APP/AppScope/app.json5" <<'EOF'
+{
+  "app": {
+    "bundleName": "com.example.quickcheck"
+  }
+}
+EOF
+cat > "$TMP_APP/entry/src/main/ets/pages/Index.ets" <<'EOF'
+@Entry
+@Component
+struct Index {
+  build() {
+    Column() {
+      Text($r('app.string.app_name'))
+    }
+  }
+}
+EOF
+if bash tools/harmony-dev-cycle.sh quick-check --dir "$TMP_APP" >/dev/null 2>&1; then
+  assert_pass "harmony-dev-cycle quick-check 不依赖 DevEco 且 clean"
+else
+  assert_fail "harmony-dev-cycle quick-check 失败"
+fi
+rm -rf "$TMP_APP"
+
+# ─── 7) install.sh --dry-run 不写文件 + generate-configs --check ─
+echo
+echo "[7/7] install/generate sanity"
 TMP=$(mktemp -d)
 HOAW_REPO_OWNER="" \
   bash tools/install.sh --dry-run --dir="$TMP" >/dev/null 2>&1 || true

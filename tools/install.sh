@@ -29,6 +29,7 @@
 #   .github/copilot-instructions.md          （--targets 含 copilot）
 #   tools/hooks/                             （所有 target 都装）
 #   tools/check-ohpm-deps.sh                 （所有 target 都装）
+#   tools/harmony-dev-cycle.sh               （所有 target 都装；AI CLI build/install/run/log 闭环）
 #
 # 安全设计（v0.4 起）：
 #   1. 每次 install 写 .harmonyos-ai-workspace.manifest，记录所有写入文件 + sha256
@@ -254,8 +255,11 @@ install() {
   fetch "$BASE_URL/tools/hooks/lib/parse-hook-input.sh" "tools/hooks/lib/parse-hook-input.sh"
   fetch "$BASE_URL/tools/hooks/lib/scan-arkts.sh"       "tools/hooks/lib/scan-arkts.sh"
   fetch "$BASE_URL/tools/check-ohpm-deps.sh"            "tools/check-ohpm-deps.sh"
+  fetch "$BASE_URL/tools/harmony-dev-cycle.sh"          "tools/harmony-dev-cycle.sh"
+  fetch "$BASE_URL/tools/run-linter.sh"                 "tools/run-linter.sh"
   if [[ "$DRY_RUN" != "1" ]]; then
-    chmod +x tools/hooks/post-edit.sh tools/hooks/lib/*.sh tools/check-ohpm-deps.sh 2>/dev/null || true
+    chmod +x tools/hooks/post-edit.sh tools/hooks/lib/*.sh \
+      tools/check-ohpm-deps.sh tools/harmony-dev-cycle.sh tools/run-linter.sh 2>/dev/null || true
   fi
 
   # 2b) OHPM 黑/白名单数据（脚本会自动加载这些外部文件 → 不拉就退化为内联兜底）
@@ -334,6 +338,8 @@ install() {
   info "下一步："
   echo "  · Claude Code:  claude       （CLAUDE.md 自动加载，钩子已就绪）"
   echo "  · Codex CLI:    codex        （AGENTS.md 自动加载）"
+  echo "  · CLI 调试闭环： bash tools/harmony-dev-cycle.sh cycle-once"
+  echo "                  # build → install → run → 抓 8s hilog 给 AI 分析"
   echo "  · 卸载：        bash tools/install.sh --uninstall  （安全：只删本工具写入的）"
   echo
   info "故障排查 / 完整文档： https://github.com/${REPO_OWNER}/${REPO_NAME}#常见故障排查"

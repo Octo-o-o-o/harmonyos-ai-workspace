@@ -176,6 +176,7 @@ bash tools/hooks/lib/scan-arkts.sh path/to/your.ets   # 反模式扫描
 bash tools/run-linter.sh                              # 跑 hvigorw codeLinter
 bash tools/check-ohpm-deps.sh oh-package.json5        # OHPM 包名校验
 hvigorw assembleHap -p buildMode=debug                # 真编译
+bash tools/harmony-dev-cycle.sh cycle-once            # 编译、安装、启动、抓 hilog
 ```
 
 ---
@@ -259,6 +260,15 @@ hvigorw assembleHap -p buildMode=debug                # 真编译
 # 步骤 1: 复制 hvigorw 完整输出（macOS 直接进剪贴板）
 hvigorw assembleHap -p buildMode=debug 2>&1 | tail -30 | pbcopy
 ```
+
+如果已经装了 v0.4.4+ 的调试闭环脚本，优先让 AI 直接跑：
+
+```bash
+bash tools/harmony-dev-cycle.sh build-check
+bash tools/harmony-dev-cycle.sh cycle-once
+```
+
+`cycle-once` 会 build、安装、启动并抓取有限时长的 hilog，适合 Claude Code / Codex 读取，不会卡在无限日志流里。
 
 把这段贴给 Claude / Codex，附**这一句**（关键）：
 

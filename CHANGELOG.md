@@ -375,17 +375,32 @@ Codex 评审给的 7 项建议中：
 - 长期改进 1（manifest+checksum）/ 3（npm test 真断言）/ 5（vibe coding 入口）：✅ 全采纳
 - 长期改进 2（platform-matrix 单源）/ 4（CI 严格模式 / shellcheck）/ 6（API 索引）/ 7（样例可粘贴二次核对）/ 8（竞品矩阵 checked_at）：⏸ v0.5 候选
 
+## [0.4.4] - 2026-05-11
+
+AI Agent CLI 调试闭环 patch：
+
+- **`tools/harmony-dev-cycle.sh` 分层命令**：
+  - `quick-check`：轻量 ArkTS/OHPM 扫描，不依赖 DevEco
+  - `build-check`：`ohpm install → hvigorw codeLinter → assembleHap`
+  - `cycle-once`：`build → install → run → 抓有限时长 hilog`，默认 8 秒，适合 Claude Code / Codex 读取
+  - `device-check`：复用已有 HAP，安装、启动并抓 hilog
+  - `cycle` 保留长流日志模式，给人工调试用
+- **安装链路补齐**：`tools/install.sh` 现在会把 `harmony-dev-cycle.sh` 和 `run-linter.sh` 一起安装到用户 app 项目，安装完成提示 CLI 调试闭环命令。
+- **npm 包补齐**：`package.json` `files` 加入 `tools/harmony-dev-cycle.sh` 与 `tools/scaffold-deveco-project.sh`，避免 npm/npx 用户拿不到 README 宣称的核心脚本。
+- **文档同步**：README、`04-build-debug-tools/README.md`、`docs/USER-GUIDE.md` 同步说明 `quick-check / build-check / cycle-once / device-check` 的推荐用法。
+
 ## [Unreleased]
 
 （无未发布变更。下次 release 周期的新增项将累积于此。）
 
+[0.4.4]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.4
 [0.4.3]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.3
 [0.4.2]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.2
 [0.4.1]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.1
 [0.4.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0
-[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.4.4...HEAD
 
 <!-- v0.1.0 没有 GitHub release（pre-tag 本地里程碑，详见顶部说明） -->
 [0.1.0]: #010---2026-05-06

@@ -13,12 +13,16 @@
 # which is the real productivity multiplier for AI-driven HarmonyOS work.
 #
 # Usage:
+#   harmony-dev-cycle.sh quick-check        # lightweight ArkTS/OHPM scan, no DevEco required
+#   harmony-dev-cycle.sh build-check        # ohpm install → codeLinter → build HAP
+#   harmony-dev-cycle.sh device-check       # install → launch → grab finite hilog
+#   harmony-dev-cycle.sh cycle-once         # build → install → launch → grab finite hilog
+#   harmony-dev-cycle.sh cycle              # build → install → launch → tail hilog until Ctrl+C
 #   harmony-dev-cycle.sh build              # compile + package HAP
 #   harmony-dev-cycle.sh install            # install latest HAP to attached emulator/device
 #   harmony-dev-cycle.sh run                # launch mainElement ability
 #   harmony-dev-cycle.sh logs [filter]      # tail hilog (with optional grep filter)
 #   harmony-dev-cycle.sh logs-grab [secs]   # non-interactive: capture N seconds of hilog to /tmp
-#   harmony-dev-cycle.sh cycle              # build → install → run → tail logs
 #   harmony-dev-cycle.sh devices            # list connected emulators/devices
 #   harmony-dev-cycle.sh clean              # hvigor clean
 #   harmony-dev-cycle.sh --help             # show this help
@@ -29,6 +33,7 @@
 #   --ability <name>  ability name (default: auto-read from entry/src/main/module.json5)
 #   --module <name>   module name (default: entry)
 #   --target <tgt>    hdc target (default: only target if exactly one connected)
+#   --logs-secs <n>   seconds to capture for device-check / cycle-once (default: 8)
 #
 # Required env (with sensible auto-probe on macOS):
 #   DEVECO_HOME       points at "/Applications/DevEco-Studio.app/Contents" (or your install)
@@ -50,7 +55,7 @@
 #   $ harmony-dev-cycle.sh build 2>&1 | tee /tmp/last-build.log
 #   $ grep "ArkTS Compiler Error" /tmp/last-build.log    # find compile errors
 #   ... AI fixes source ...
-#   $ harmony-dev-cycle.sh cycle                          # build + install + run + tail logs
+#   $ harmony-dev-cycle.sh cycle-once                     # build + install + run + finite logs
 #   $ harmony-dev-cycle.sh logs-grab 5                    # snapshot 5s runtime log
 #   $ harmony-dev-cycle.sh logs ArkTS                     # filter to ArkTS-tagged lines
 #
@@ -63,12 +68,15 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # ---------- arg parsing ----------
 PROJECT_DIR=""
 BUNDLE=""
 ABILITY=""
 MODULE_NAME="entry"
 HDC_TARGET=""
+LOG_SECS="8"
 
 positional=()
 while [[ $# -gt 0 ]]; do
@@ -78,6 +86,7 @@ while [[ $# -gt 0 ]]; do
     --ability) ABILITY="$2"; shift 2 ;;
     --module) MODULE_NAME="$2"; shift 2 ;;
     --target) HDC_TARGET="$2"; shift 2 ;;
+    --logs-secs) LOG_SECS="$2"; shift 2 ;;
     -h|--help) HELP=1; shift ;;
     *) positional+=("$1"); shift ;;
   esac
@@ -89,7 +98,7 @@ if [[ "${HELP:-0}" == "1" ]]; then
 fi
 
 set -- "${positional[@]:-}"
-cmd="${1:-cycle}"
+cmd="${1:-cycle-once}"
 shift || true
 
 # ---------- project dir ----------
@@ -104,7 +113,16 @@ fi
 PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd)"
 
 # ---------- DevEco tooling auto-probe ----------
-if [[ -z "${DEVECO_HOME:-}" ]]; then
+NEEDS_DEVECO="1"
+case "$cmd" in
+  quick-check) NEEDS_DEVECO="0" ;;
+esac
+
+HVIGORW=""
+HDC=""
+OHPM="${OHPM:-}"
+
+if [[ "$NEEDS_DEVECO" == "1" && -z "${DEVECO_HOME:-}" ]]; then
   for candidate in \
     "/Applications/DevEco-Studio.app/Contents" \
     "$HOME/Applications/DevEco-Studio.app/Contents" \
@@ -116,25 +134,35 @@ if [[ -z "${DEVECO_HOME:-}" ]]; then
     fi
   done
 fi
-if [[ -z "${DEVECO_HOME:-}" ]]; then
+if [[ "$NEEDS_DEVECO" == "1" && -z "${DEVECO_HOME:-}" ]]; then
   echo "ERROR: DEVECO_HOME not set and not auto-detected." >&2
   echo "       Set it to your DevEco Studio install (Contents/) directory, e.g.:" >&2
   echo "         export DEVECO_HOME=/Applications/DevEco-Studio.app/Contents" >&2
   exit 1
 fi
 
-export DEVECO_SDK_HOME="${DEVECO_SDK_HOME:-$DEVECO_HOME/sdk}"
-export NODE_HOME="${NODE_HOME:-$DEVECO_HOME/tools/node}"
-HVIGORW="$DEVECO_HOME/tools/hvigor/bin/hvigorw"
-HDC="$DEVECO_SDK_HOME/default/openharmony/toolchains/hdc"
-[[ -x "$HVIGORW" ]] || { echo "ERROR: hvigorw not found at $HVIGORW" >&2; exit 1; }
-[[ -x "$HDC" ]] || { echo "ERROR: hdc not found at $HDC" >&2; exit 1; }
+if [[ "$NEEDS_DEVECO" == "1" ]]; then
+  export DEVECO_SDK_HOME="${DEVECO_SDK_HOME:-$DEVECO_HOME/sdk}"
+  export NODE_HOME="${NODE_HOME:-$DEVECO_HOME/tools/node}"
+  HVIGORW="$DEVECO_HOME/tools/hvigor/bin/hvigorw"
+  HDC="$DEVECO_SDK_HOME/default/openharmony/toolchains/hdc"
+  [[ -x "$HVIGORW" ]] || { echo "ERROR: hvigorw not found at $HVIGORW" >&2; exit 1; }
+  [[ -x "$HDC" ]] || { echo "ERROR: hdc not found at $HDC" >&2; exit 1; }
+
+  if [[ -z "$OHPM" ]]; then
+    if command -v ohpm >/dev/null 2>&1; then
+      OHPM="$(command -v ohpm)"
+    elif [[ -x "$DEVECO_HOME/tools/ohpm/bin/ohpm" ]]; then
+      OHPM="$DEVECO_HOME/tools/ohpm/bin/ohpm"
+    fi
+  fi
+fi
 
 # ---------- auto-detect bundle / ability ----------
 if [[ -z "$BUNDLE" ]]; then
   BUNDLE=$(grep -E '"bundleName"' "$PROJECT_DIR/AppScope/app.json5" \
     | head -1 \
-    | sed -E 's/.*"bundleName"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
+    | sed -E 's/.*"bundleName"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' || true)
 fi
 [[ -z "$BUNDLE" ]] && { echo "ERROR: couldn't auto-detect bundleName from AppScope/app.json5; pass --bundle <id>" >&2; exit 1; }
 
@@ -143,7 +171,7 @@ if [[ -z "$ABILITY" ]]; then
   if [[ -f "$MODULE_JSON" ]]; then
     ABILITY=$(grep -E '"mainElement"' "$MODULE_JSON" \
       | head -1 \
-      | sed -E 's/.*"mainElement"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
+      | sed -E 's/.*"mainElement"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' || true)
   fi
   ABILITY="${ABILITY:-EntryAbility}"
 fi
@@ -158,12 +186,88 @@ hdc_with_target() {
 }
 
 # ---------- command implementations ----------
+do_quick_check() {
+  local scan_script="$SCRIPT_DIR/hooks/lib/scan-arkts.sh"
+  local ohpm_script="$SCRIPT_DIR/check-ohpm-deps.sh"
+  local worst=0
+  local files=""
+  local f rc
+
+  [[ -f "$scan_script" ]] || { echo "ERROR: scan-arkts.sh not found at $scan_script" >&2; exit 1; }
+
+  if [[ "$#" -gt 0 ]]; then
+    files="$*"
+  elif [[ -d "$PROJECT_DIR/$MODULE_NAME/src/main" ]]; then
+    files=$(find "$PROJECT_DIR/$MODULE_NAME/src/main" -type f \( -name "*.ets" -o -name "*.ts" \) 2>/dev/null | sort)
+  fi
+
+  if [[ -n "$files" ]]; then
+    for f in $files; do
+      [[ -f "$f" ]] || continue
+      rc=0
+      bash "$scan_script" "$f" || rc=$?
+      [[ "$rc" -gt "$worst" ]] && worst="$rc"
+    done
+  else
+    echo ">>> no ArkTS/TS files found under $PROJECT_DIR/$MODULE_NAME/src/main"
+  fi
+
+  if [[ -f "$ohpm_script" ]]; then
+    for f in "$PROJECT_DIR/oh-package.json5" "$PROJECT_DIR/$MODULE_NAME/oh-package.json5"; do
+      [[ -f "$f" ]] || continue
+      rc=0
+      bash "$ohpm_script" "$f" || rc=$?
+      [[ "$rc" -gt "$worst" ]] && worst="$rc"
+    done
+  fi
+
+  return "$worst"
+}
+
+do_ohpm_install() {
+  if [[ ! -f "$PROJECT_DIR/oh-package.json5" && ! -f "$PROJECT_DIR/$MODULE_NAME/oh-package.json5" ]]; then
+    echo ">>> no oh-package.json5 found, skipping ohpm install"
+    return 0
+  fi
+  if [[ -z "$OHPM" ]]; then
+    echo "WARN: ohpm not found; skipping dependency install" >&2
+    return 0
+  fi
+
+  if [[ -f "$PROJECT_DIR/oh-package.json5" ]]; then
+    cd "$PROJECT_DIR"
+  else
+    cd "$PROJECT_DIR/$MODULE_NAME"
+  fi
+  echo ">>> running ohpm install"
+  "$OHPM" install
+}
+
+do_code_linter() {
+  cd "$PROJECT_DIR"
+  echo ">>> running hvigorw codeLinter"
+  "$HVIGORW" codeLinter --no-daemon
+}
+
 do_build() {
   cd "$PROJECT_DIR"
   "$HVIGORW" --mode module \
     -p module="$MODULE_NAME"@default \
     -p product=default \
+    -p buildMode=debug \
     assembleHap --no-daemon "$@"
+}
+
+do_build_check() {
+  local rc=0
+  do_quick_check || rc=$?
+  if [[ "$rc" -ge 2 ]]; then
+    echo "ERROR: quick-check found High severity issues; build-check stopped." >&2
+    exit "$rc"
+  fi
+  do_ohpm_install
+  do_code_linter
+  do_build "$@"
 }
 
 do_clean() {
@@ -175,7 +279,13 @@ do_clean() {
 }
 
 find_hap() {
-  find "$PROJECT_DIR/$MODULE_NAME/build" -name "*.hap" -type f 2>/dev/null | head -1
+  local signed
+  signed=$(find "$PROJECT_DIR/$MODULE_NAME/build" -name "*-signed.hap" -type f 2>/dev/null | sort | tail -1 || true)
+  if [[ -n "$signed" ]]; then
+    echo "$signed"
+  else
+    find "$PROJECT_DIR/$MODULE_NAME/build" -name "*.hap" -type f 2>/dev/null | sort | tail -1 || true
+  fi
 }
 
 do_install() {
@@ -192,6 +302,10 @@ do_install() {
 do_run() {
   echo ">>> launching bundle=$BUNDLE ability=$ABILITY"
   hdc_with_target shell aa start -a "$ABILITY" -b "$BUNDLE"
+}
+
+do_clear_logs() {
+  hdc_with_target shell hilog -r >/dev/null 2>&1 || true
 }
 
 do_logs() {
@@ -222,6 +336,23 @@ do_devices() {
   "$HDC" list targets
 }
 
+do_device_check() {
+  local secs="${1:-$LOG_SECS}"
+  do_install
+  do_clear_logs
+  do_run
+  do_logs_grab "$secs"
+}
+
+do_cycle_once() {
+  local secs="${1:-$LOG_SECS}"
+  do_build
+  do_install
+  do_clear_logs
+  do_run
+  do_logs_grab "$secs"
+}
+
 do_cycle() {
   do_build
   do_install
@@ -232,6 +363,10 @@ do_cycle() {
 
 # ---------- dispatch ----------
 case "$cmd" in
+  quick-check) do_quick_check "$@" ;;
+  build-check) do_build_check "$@" ;;
+  device-check) do_device_check "$@" ;;
+  cycle-once) do_cycle_once "$@" ;;
   build) do_build "$@" ;;
   install) do_install ;;
   run) do_run ;;
@@ -240,5 +375,5 @@ case "$cmd" in
   devices) do_devices ;;
   clean) do_clean ;;
   cycle) do_cycle ;;
-  *) echo "usage: $0 {build|install|run|logs [filter]|logs-grab [secs]|devices|clean|cycle} [--dir <path>] [--bundle <id>] [--ability <name>] [--module <name>] [--target <tgt>]" >&2; exit 1 ;;
+  *) echo "usage: $0 {quick-check|build-check|device-check|cycle-once|build|install|run|logs [filter]|logs-grab [secs]|devices|clean|cycle} [--dir <path>] [--bundle <id>] [--ability <name>] [--module <name>] [--target <tgt>] [--logs-secs <n>]" >&2; exit 1 ;;
 esac

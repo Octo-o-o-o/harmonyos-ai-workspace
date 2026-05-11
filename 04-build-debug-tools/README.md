@@ -71,13 +71,17 @@ hvigorw assembleHap   →   hdc install -r *.hap   →   hdc shell aa start   �
 ```bash
 cd ~/WorkSpace/apps/my-harmony-app
 
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh quick-check        # 轻量 ArkTS/OHPM 扫描（不依赖 DevEco）
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh build-check        # ohpm install → codeLinter → 编译 HAP
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh cycle-once         # build → install → run → 抓 8s hilog
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh device-check       # install → run → 抓 8s hilog（不重新 build）
 ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh build              # 编译 + 打包 HAP
 ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh install            # 装到已连接的模拟器/真机
 ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh run                # 启动 mainElement ability
 ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh logs               # tail hilog（Ctrl+C 停）
 ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh logs ArkTS         # 过滤 ArkTS-tagged 行
 ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh logs-grab 5        # 非交互式抓 5s 日志到 /tmp
-~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh cycle              # build → install → run → tail
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh cycle              # build → install → run → tail（长流，Ctrl+C 停）
 ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh devices            # 看连着的设备
 ```
 
@@ -88,6 +92,7 @@ cd ~/WorkSpace/apps/my-harmony-app
 ... --ability <name>         # 默认从 module.json5 mainElement 读
 ... --module <name>          # 默认 entry
 ... --target <hdc-target>    # 多模拟器/设备时指定（默认用唯一连接）
+... --logs-secs <n>          # cycle-once / device-check 抓日志秒数，默认 8
 ```
 
 可以把脚本 symlink 进 PATH 方便：
@@ -104,11 +109,11 @@ ln -s ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh ~/.local/bin/har
 ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh build 2>&1 | tee /tmp/last-build.log
 grep -E "(ERROR|ArkTS Compiler Error)" /tmp/last-build.log
 
-# 二、cycle 跑起来 + 抓 5s runtime log（AI 看页面是不是真起得来）
-~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh build && \
-  ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh install && \
-  ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh run && \
-  ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh logs-grab 5
+# 二、一次性闭环：build → install → run → 抓 8s runtime log
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh cycle-once
+
+# 三、已经 build 过时，只重装、启动、抓日志
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh device-check --logs-secs 5
 ```
 
 ### `hilog` 能看到什么
