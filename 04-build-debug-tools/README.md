@@ -9,6 +9,33 @@ HarmonyOS 项目的工具链：
 - **DevEco Profiler**：性能分析
 - **Inspector**：UI 树调试
 
+## 0. 项目脚手架自动生成
+
+如果你已经有一份 HarmonyOS 项目（自己写的 ArkTS 源码 + `AppScope/app.json5`），但
+DevEco Studio "Open Project" 不认得（缺 `hvigorfile.ts` / `oh-package.json5` /
+`hvigor/hvigor-config.json5` / `entry/build-profile.json5` 等），可以直接跑
+[`tools/scaffold-deveco-project.sh`](../tools/scaffold-deveco-project.sh) 补齐：
+
+```bash
+# 给已有项目补脚手架（保留已有 AppScope/app.json5、entry/src/main/ 源码）
+./tools/scaffold-deveco-project.sh \
+  --bundle com.your.app \
+  --dir /path/to/your/harmonyos-project
+
+# 从零起一个能跑的 hello-world 项目（含 EntryAbility + Index 页面）
+./tools/scaffold-deveco-project.sh \
+  --bundle com.your.app \
+  --dir /tmp/new-harmony-app \
+  --with-boilerplate
+```
+
+脚本会生成 11 个 DevEco 必需的脚手架文件，与 DevEco 6.1.x 用 `File → New → Project`
+建出来的一致。默认跳过已有文件，加 `--force` 才会覆盖。详细使用：
+
+```bash
+./tools/scaffold-deveco-project.sh --help
+```
+
 ## 1. Hvigor
 
 ### 常用命令
