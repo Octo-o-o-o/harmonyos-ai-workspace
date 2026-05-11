@@ -139,10 +139,15 @@ rm -rf test
 │   写入 .claude/.harmonyos-last-scan.txt（下一轮 AI 可读）        │
 │                                                                   │
 │   人类 → hvigorw assembleHap → 设备                              │
+│   或：AI agent → tools/harmony-dev-cycle.sh →                    │
+│       hvigorw build → hdc install → aa start → hilog → AI 分析   │
+│       （完整闭环，详见 04-build-debug-tools/README §⚡️）          │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-详细工作流见 [`docs/USER-GUIDE.md` § 3](docs/USER-GUIDE.md)。
+详细工作流见 [`docs/USER-GUIDE.md` § 3](docs/USER-GUIDE.md)。AI agent 自治调试闭环
+（让 Claude / Codex / OpenClaw 在终端完整跑 build→install→run→log，不再切 DevEco GUI）
+见 [`04-build-debug-tools/README.md` §⚡️](04-build-debug-tools/README.md#%EF%B8%8F-ai-agent-自治调试循环脱离-deveco-gui-的-build--install--run--log)。
 
 ---
 
@@ -154,7 +159,7 @@ rm -rf test
 | **8 个 SKILL** | `arkts-rules` / `state-management` / `build-debug` / `signing-publish` / `harmonyos-review` / `runtime-pitfalls` / `multimodal-llm` / `web-bridge` |
 | **PostToolUse 钩子链路** | Edit `.ets`/`.ts`/`oh-package.json5` 后自动跑 ArkTS 反模式扫描 + OHPM 包名核验 + 权限提示 |
 | **多工具 fan-out** | 单源 `.claude/skills/*/SKILL.md` → Cursor `.mdc` + Copilot instructions |
-| **CLI 工具集** | `install.sh`（manifest + sha256 安装）/ `run-linter.sh`（离线 codeLinter）/ `check-ohpm-deps.sh`（4 类校验）/ `check-rename-module.sh`（模块改名一致性）/ `test-suite.sh`（19 项回归断言） |
+| **CLI 工具集** | `install.sh`（manifest + sha256 安装）/ `run-linter.sh`（离线 codeLinter）/ `check-ohpm-deps.sh`（4 类校验）/ `check-rename-module.sh`（模块改名一致性）/ `test-suite.sh`（19 项回归断言）/ **`scaffold-deveco-project.sh`**（一键补 DevEco 脚手架 11 文件）/ **`harmony-dev-cycle.sh`**（AI agent 自治 build→install→run→hilog 闭环，绕开 DevEco GUI Run 按钮） |
 | **Recipe Templates** | 4 个可粘贴最小可用代码（`permission/` / `list/` / `dark-mode/` / `login/`） |
 | **2026 提审 Top 20 拒因** | [`07-publishing/checklist-2026-rejection-top20.md`](07-publishing/checklist-2026-rejection-top20.md)，含 `AGC-RJ-001..020` 稳定 ID + 6 条高频项配可粘贴代码 |
 | **Case Studies** | [`docs/case-studies/llm-chat-app.md`](docs/case-studies/llm-chat-app.md) — 真鸿蒙 LLM 对话 app M3-M12 实战，11 节"症状/错误信息/修复 diff/教训"四段式 |

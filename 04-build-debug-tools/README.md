@@ -36,6 +36,110 @@ DevEco Studio "Open Project" 不认得（缺 `hvigorfile.ts` / `oh-package.json5
 ./tools/scaffold-deveco-project.sh --help
 ```
 
+---
+
+## ⚡️ AI Agent 自治调试循环（脱离 DevEco GUI 的 build → install → run → log）
+
+让 Claude Code / Codex / OpenClaw 在终端完整闭环编辑→编译→安装→抓日志→分析→修改，
+**不再切到 DevEco 点 Run 看错误**。封装在 [`tools/harmony-dev-cycle.sh`](../tools/harmony-dev-cycle.sh)。
+
+### 为什么需要这个
+
+DevEco 的 "Run" 按钮本质只是包了：
+```
+hvigorw assembleHap   →   hdc install -r *.hap   →   hdc shell aa start   →   hilog panel
+```
+
+这四步全是 CLI 化的。surface 它们之后，**AI 改完 ArkTS 立刻能自己跑、自己读编译错误、
+自己读 runtime hilog**，不需要人切 IDE 粘贴日志。这是 AI 驱动 HarmonyOS 开发的真正
+生产力倍增点。
+
+### 用前必须做的两件事（GUI 替代不了的人工步骤）
+
+1. **DevEco 启模拟器**：Tools → Device Manager → Local Emulator → Start
+   （模拟器进程由 DevEco 管理，hdc 只能"连"模拟器，不能"启动"）
+2. **DevEco 做一次 Auto-Sign**：File → Project Structure → Project → Signing Configs →
+   ✅ Automatically generate signature → 登录华为账号
+   （把签名材料写进 `build-profile.json5` 的 `signingConfigs[]`，后续 CLI build 不再需要 GUI）
+
+### 用法
+
+脚本会**自动**从 `AppScope/app.json5` 读 `bundleName`、从 `entry/src/main/module.json5`
+读 `mainElement`、并 auto-probe macOS 下的 DevEco 安装路径，所以多数情况只 cd 到项目根
+目录直接跑就行：
+
+```bash
+cd ~/WorkSpace/apps/my-harmony-app
+
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh build              # 编译 + 打包 HAP
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh install            # 装到已连接的模拟器/真机
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh run                # 启动 mainElement ability
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh logs               # tail hilog（Ctrl+C 停）
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh logs ArkTS         # 过滤 ArkTS-tagged 行
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh logs-grab 5        # 非交互式抓 5s 日志到 /tmp
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh cycle              # build → install → run → tail
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh devices            # 看连着的设备
+```
+
+可选参数（多模块、自定义 bundle 时）：
+```bash
+... --dir <project-root>     # 默认当前目录（要含 AppScope/app.json5）
+... --bundle <bundleName>    # 默认从 AppScope/app.json5 读
+... --ability <name>         # 默认从 module.json5 mainElement 读
+... --module <name>          # 默认 entry
+... --target <hdc-target>    # 多模拟器/设备时指定（默认用唯一连接）
+```
+
+可以把脚本 symlink 进 PATH 方便：
+```bash
+ln -s ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh ~/.local/bin/harmony-cycle
+```
+
+### AI Agent 用法 cookbook
+
+最常见的两种用法（直接喂给 Claude Code / Codex / OpenClaw）：
+
+```bash
+# 一、build → grep 编译错误（AI 闭环里最高频的一步）
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh build 2>&1 | tee /tmp/last-build.log
+grep -E "(ERROR|ArkTS Compiler Error)" /tmp/last-build.log
+
+# 二、cycle 跑起来 + 抓 5s runtime log（AI 看页面是不是真起得来）
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh build && \
+  ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh install && \
+  ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh run && \
+  ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh logs-grab 5
+```
+
+### `hilog` 能看到什么
+
+这是 AI agent 闭环最关键的一段 —— DevEco 的 "Log" 面板本质就是 `hdc hilog` 包装：
+- ArkTS runtime exception（页面跑挂了，stack trace）
+- 页面生命周期（onCreate / onWindowStageCreate / aboutToAppear）
+- 网络错误（HMS / fetch 失败）
+- 权限被拒（用户没授权时）
+- Native crash
+- 自己写的 `hilog.info(0x0000, 'YourTag', '...')` 输出
+
+### 底层工具直接调用（不想用 wrapper 时）
+
+```bash
+# 1. 设置 env（hvigorw 缺这个会报 00303217 错）
+export DEVECO_SDK_HOME=/Applications/DevEco-Studio.app/Contents/sdk
+export NODE_HOME=/Applications/DevEco-Studio.app/Contents/tools/node
+
+# 2. 用 DevEco bundled 工具
+HVIGORW=/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw
+HDC=/Applications/DevEco-Studio.app/Contents/sdk/default/openharmony/toolchains/hdc
+
+$HVIGORW --mode module -p module=entry@default -p product=default \
+  assembleHap --no-daemon
+$HDC list targets
+$HDC install -r entry/build/default/outputs/default/*-signed.hap
+$HDC shell aa start -a EntryAbility -b com.your.app
+$HDC hilog | grep ArkTS
+```
+
 ## 1. Hvigor
 
 ### 常用命令
