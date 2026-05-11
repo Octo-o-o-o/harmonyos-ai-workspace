@@ -271,7 +271,7 @@ emit "AppScope/app.json5" <<EOF
     "description": "\$string:app_description",
     "minAPIVersion": ${API_MIN},
     "targetAPIVersion": ${API_TARGET},
-    "apiReleaseType": "Release"
+    "apiReleaseType": "Release1"
   }
 }
 EOF
