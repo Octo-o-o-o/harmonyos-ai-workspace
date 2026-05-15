@@ -391,7 +391,67 @@ AI Agent CLI 调试闭环 patch：
 
 ## [Unreleased]
 
-（无未发布变更。下次 release 周期的新增项将累积于此。）
+### 2026-05-15 · OctoDesk N2 / N3 二次反哺
+
+来自 OctoDesk Mobile Companion `ai-now-phase-4` / `ai-now-phase-7` / `ai-now-phase-8` 三轮 commit 实战教训（OctoDesk Phase 4 N3 跨平台 capability 一致性 + Phase 8 反哺）：
+
+- **`CSPRNG-002` scan-arkts 新规则**：`HUKS_TAG_IV` 同文件无 `cryptoFramework.createRandom` 时报 High。
+  - 触发条件：文件含 `huks.HuksTag.HUKS_TAG_IV` 或 `HuksTag.HUKS_TAG_IV` AND 同文件不含 `cryptoFramework.createRandom` 引用 AND 无 `// scan-ignore: CSPRNG-002`
+  - 来源：OctoDesk 2026-05-14 harmonyos-app-cleanup commit 修了一处 IV 从非 CSPRNG 取值的 SecureStore 实例。AES-GCM 的 IV 重复一次就完全 break，CSPRNG-001 只覆盖 `Math.random` 上下文，本规则补 HUKS IV 通道
+  - inline-suppress 支持：`// scan-ignore: CSPRNG-002`（适用于 IV 来自可信跨文件封装的场景）
+  - 实测：OctoDesk `apps/harmonyos/.../security/SecureStore.ets` PASS；反向构造（IV 来自 `Math.floor(Date.now())`）正确触发 High
+- **`05-best-practices/bridge-integration-pitfalls.md` §1 新增"三端 granted 集合的跨平台一致性"段**：
+  - 覆盖混合架构里 enum / granted / handler 三方在**单端**正确但**三端不一致**的 cross-cutting bug
+  - 修复模式：跨平台 lint 脚本 regex 解析三端源文件 + 比较集合相等；PR gate 跑此脚本
+  - "placeholder capability"（dispatcher fallthrough `CAPABILITY_UNAVAILABLE` 的）必须从 granted 显式剔除——即便 enum 里保留位
+  - 来源：OctoDesk N3 实战（`scripts/check-native-capability-coherence.cjs` 跑 PR gate），三端 10 项 granted 一致性已上线校验
+
+### 2026-05-14 · OctoDesk 实战教训沉淀
+
+来自 OctoDesk Mobile Companion (`apps/harmonyos/`) 真工程接入 + N2 安全评审反馈：
+
+- **`CSPRNG-001` scan-arkts 新规则**：`Math.random()` 在加密 / nonce / IV / signature 上下文里禁用。
+  - 三档严重度判定：路径含 `/security/` 或 `/crypto/` → High；文件含 `cryptoFramework` / `nonce` / `aesGcm` / `huks` / `randomBytes` / `signKey` / `hmac` 等关键字 → High；否则 Medium 仅提醒。
+  - 来源：OctoDesk N2 hard gate (`scripts/check-harmony-security.cjs`)，AES-GCM nonce 撞一次就完全 break，是评审中第一类阻断 issue。
+  - inline-suppress 支持：`// scan-ignore: CSPRNG-001`。
+- **`05-best-practices/bridge-integration-pitfalls.md` 新文档**：Web Bridge 接线层 8 类陷阱 + 反检查清单，scanner 抓不到但灰度才暴露的问题。覆盖：
+  - Capability 握手 fail-closed（granted 必须由 handler 注册表派生，不能从 enum 派生）
+  - `javaScriptProxy` / `WebMessageListener` 生命周期顺序
+  - Mutating message 强制 `idempotencyKey`
+  - Envelope schema 手工 validation（ArkTS 无 Zod）
+  - hilog / 错误回执的敏感字段 leak
+  - Picker URI 一次性、不要缓存（与 `ARKTS-DEPRECATED-PICKER` 联动）
+  - CSPRNG 实战要求
+  - 跨端注意（Android `WebMessageListener` 唯一通道、iOS `WKScriptMessageHandler` retain cycle）
+
+### 2026-05-14 · 下游接入参考
+
+OctoDesk 把 DevSpace 当**单一来源**接进了 monorepo，不复制脚本。集成方式可作为其他下游消费者的参考：
+
+- `OctoDesk/.claude/settings.json` 注册 PostToolUse hook → `scripts/harmony-post-edit.sh`（薄 wrapper，scope 到 `apps/harmonyos/**`，delegate 到 `$HARMONYOS_DEVSPACE/tools/hooks/post-edit.sh`）
+- `OctoDesk/scripts/harmony-dev-cycle.sh` 改为 `tools/harmony-dev-cycle.sh` 的 wrapper，注入 `--dir / --bundle / --ability` 默认值
+- 通过 `HARMONYOS_DEVSPACE` 环境变量覆盖 DevSpace 位置，便于换机器 / CI
+- OctoDesk `CLAUDE.md` Mobile Companion Boundary 段写明**反哺约定**：apps/harmonyos 开发中发现的可复用模式 / 规则 / 文档缺口必须当场反哺回 DevSpace（新增 scan-arkts 规则 / 追加 best-practices 段落 / 加 samples/templates），不积压到事后回顾。
+
+### 2026-05-14 · Graduation 调整（让 DevSpace 对所有人可用）
+
+诚实评估了首次反哺时混进的 OctoDesk-specific 字眼，做对外用通用化：
+
+- `05-best-practices/bridge-integration-pitfalls.md` 去掉 `OctoDesk` / `octodeskBridge` / `shared/contracts/native-shell.ts` / `mobile-companion-architecture-deep-review §N2` 等出处特定字眼；底部加一段透明的"来源"footer 标明经验沉淀自一个真实下游项目，不影响通用性。
+- `.claude/skills/arkts-rules/SKILL.md` 把 `CSPRNG-001` 加进规则 ID 速查段（之前只有 scan-arkts.sh 里有实现，下游 Cursor / Copilot 通过 SKILL.md 消费时拿不到）。
+- 新增 [`samples/integrations/monorepo-consumer/`](../samples/integrations/monorepo-consumer/) —— monorepo 子目录消费者接入指引：README + 两个 wrapper 模板（`harmony-post-edit.sh.template` / `harmony-dev-cycle.sh.template`），改 1-3 行 config 即可用；包含 token 成本实测数据与降噪方案。这是 OctoDesk 接入模式的脱敏抽取，原作为下游 best practice 参考。
+- README 加 monorepo-consumer 链接到"接线层陷阱"段同一区域，便于 monorepo 形态的访问者直接找到。
+
+### 2026-05-14 · 提案：autoresearch 启发式自动进化（discussion，未采纳）
+
+Draft RFC: [`docs/PROPOSAL-2026-05-14-autoresearch-style-evolution.md`](docs/PROPOSAL-2026-05-14-autoresearch-style-evolution.md)。诚实评估 DevSpace 各组件是否适合套 karpathy/autoresearch 的"单文件 mutation + 标量 fitness + git keep/discard"模式。结论：
+
+- **scan-arkts 规则进化**适配最好（F1 on labeled corpus 是清晰的 fitness）
+- **samples/templates 自动新增**次之（compile + scan-arkts clean 是离散布尔 fitness）
+- 基础设施脚本 / 知识库 / AI 指令文件**强烈不适配**（fitness 不可观测、破坏成本高）
+- 短期高 ROI 替代方案：codify 反哺约定（已做）+ 半自动候选规则建议脚本
+
+文档不锁定路径；待后续决定是否启动 Phase 1（语料标注 + evaluator 落地）。
 
 [0.4.4]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.4
 [0.4.3]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.3

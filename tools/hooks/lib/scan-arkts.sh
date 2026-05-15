@@ -367,6 +367,12 @@ done < <(scan_lines '^\s*(const|let|var)\s*[\{\[]')
 # ARKTS-003: 字符串字面量索引访问 obj['key']
 # v0.5 修：评审反馈 PrivateTalk LlmClient 12 处误报——`Record<string, Object>` 上的索引赋值是合法的。
 # 提取被索引的变量名，看同文件有没有 `<varname>: Record<...>` 或 `: Map<` 声明；有则跳过。
+# 2026-05-14 (来自 OctoDesk 75 处误报反哺)：
+#   补两条豁免——
+#   1) `ESObject` 类型：ArkTS 解 JSON 的官方 escape hatch，索引访问是合法用法
+#   2) `as Record<...>` / `as Map<...>` / `as ESObject` 类型断言形态：实际工程中
+#      `const obj = parsed as Record<string, ESObject>` 比 `obj : Record<>` 标注
+#      更常见，旧 regex 只看冒号标注会漏豁免
 while IFS= read -r match; do
   [[ -z "$match" ]] && continue
   ln="${match%%:*}"
@@ -374,8 +380,10 @@ while IFS= read -r match; do
   # 提取被索引的变量名（如 `partObj['type']` → partObj）
   var=$(echo "$content" | grep -oE '\b[a-zA-Z_]\w*\[["'\''][^"'\'']+["'\'']\]' | head -1 | sed 's/\[.*//')
   if [[ -n "$var" ]]; then
-    # 同文件是否有 `var: Record<...>` 或 `var: Map<...>` 声明
-    if grep -qE "\b${var}\s*:\s*(Record<|Map<)" "$TMP" 2>/dev/null; then
+    # 类型标注: `var : Record<...>` / `var : Map<...>` / `var : ESObject`
+    # 类型断言: `var = ... as Record<...>` / ... `as Map<...>` / ... `as ESObject`
+    if grep -qE "\b${var}\s*:\s*(Record<|Map<|ESObject\b)" "$TMP" 2>/dev/null \
+       || grep -qE "\b${var}\s*=.*\bas\s+(Record<|Map<|ESObject\b)" "$TMP" 2>/dev/null; then
       continue
     fi
   fi
@@ -520,6 +528,60 @@ while IFS= read -r match; do
   emit_med "SEC-007" "$ln" "${content:0:80}" \
     "MD5 / SHA1 / DES 是弱算法，AGC 审核会被拒。改 SHA-256+ / AES-GCM（@kit.CryptoArchitectureKit）"
 done < <(scan_lines '\b(MD5|SHA1|DES)\b' | grep -vE 'SHA1?256|SHA-?256|DESC|description' | head -10)
+
+# CSPRNG-001: Math.random() 在加密 / nonce / IV / key 上下文里
+# 来自 OctoDesk N2 hard gate 实战教训（2026-05-11）。
+# Math.random() 不是 CSPRNG —— AES-GCM nonce 撞一次就是完全 break；
+# 鸿蒙端 ArkTS 必须走 @kit.CryptoArchitectureKit cryptoFramework 或 HUKS。
+# 严重度判定：
+#   - 文件路径含 /security/ 或 /crypto/ → 一律 High（即便单看那一行像"普通"用法）
+#   - 文件全文出现 cryptoFramework / nonce / iv / aesGcm / signKey / hmac
+#     / generateKey / cipher / randomBytes / huks → High
+#   - 否则 → Medium（一般业务里 Math.random 没问题，但 ArkTS 移动端通用建议
+#     仍然是 cryptoFramework.createRandom；保留低噪提醒）
+CRYPTO_HINT_RE='(cryptoFramework|@kit\.CryptoArchitectureKit|huks|@kit\.UniversalKeystoreKit|nonce|aesGcm|aes-gcm|signKey|signature|hmac|generateKey|randomBytes|cipher|@kit\.CryptoKit)'
+csprng_severity="med"
+case "$FILE" in
+  */security/*|*/crypto/*) csprng_severity="high" ;;
+esac
+if [[ "$csprng_severity" == "med" ]]; then
+  if grep -qiE "$CRYPTO_HINT_RE" "$TMP" 2>/dev/null; then
+    csprng_severity="high"
+  fi
+fi
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  if [[ "$csprng_severity" == "high" ]]; then
+    emit_high "CSPRNG-001" "$ln" "${content:0:80}" \
+      "加密 / nonce / IV / key 上下文里禁用 Math.random()（不是 CSPRNG，AES-GCM nonce 撞一次就完全 break）。改 cryptoFramework.createRandom().generateRandomSync(N) 或 HUKS"
+  else
+    emit_med "CSPRNG-001" "$ln" "${content:0:80}" \
+      "ArkTS 移动端建议用 cryptoFramework.createRandom() 替代 Math.random()；如确认非加密用途可加 // scan-ignore: CSPRNG-001"
+  fi
+done < <(scan_lines '\bMath\.random\s*\(' | head -10)
+
+# CSPRNG-002: HUKS_TAG_IV value 必须来自 CSPRNG。
+# 来自 OctoDesk N2 实战教训（2026-05-14 harmonyos-app-cleanup commit）：
+# HUKS AES-GCM 的 IV 是密码学敏感字段，必须用 cryptoFramework.createRandom()
+# .generateRandomSync(...) 产生；曾出现 IV 来自 Math.random / Date.now /
+# 硬编码数组的实例，会让 AES-GCM 退化为可预测，单次 nonce 重复即完全 break。
+#
+# 检测启发式：
+#   - 文件出现 huks.HuksTag.HUKS_TAG_IV (或 HuksTag.HUKS_TAG_IV)
+#   - AND 同文件没有 cryptoFramework.createRandom 引用
+#   → emit_high CSPRNG-002（强提示：HUKS IV 似乎不是 CSPRNG）
+#
+# 用 scan-ignore: CSPRNG-002 跳过（如 IV 来自跨文件的可信封装函数）。
+if grep -qE '\b(huks\.)?HuksTag\.HUKS_TAG_IV\b' "$TMP" 2>/dev/null \
+   && ! grep -qE 'cryptoFramework\.createRandom' "$TMP" 2>/dev/null \
+   && ! grep -qE 'scan-ignore:\s*CSPRNG-002' "$TMP" 2>/dev/null; then
+  ln_iv=$(grep -nE '\b(huks\.)?HuksTag\.HUKS_TAG_IV\b' "$TMP" | head -1 | cut -d: -f1)
+  content_iv=$(grep -E '\b(huks\.)?HuksTag\.HUKS_TAG_IV\b' "$TMP" | head -1 | sed 's/^[[:space:]]*//')
+  emit_high "CSPRNG-002" "${ln_iv:-1}" "${content_iv:0:80}" \
+    "HUKS_TAG_IV 似乎不来自 CSPRNG（同文件没有 cryptoFramework.createRandom）。AES-GCM IV 必须用 cryptoFramework.createRandom().generateRandomSync(N).data，重复 IV 立即 break。如 IV 来自可信封装函数，加 // scan-ignore: CSPRNG-002"
+fi
 
 # DB-001: ResultSet / RdbStore 取出后无 close
 if grep -qE '\.getResultSet\s*\(|\.getRdbStore\s*\(' "$TMP" 2>/dev/null && ! grep -qE '\.close\s*\(\s*\)' "$TMP" 2>/dev/null; then
