@@ -41,10 +41,26 @@
 | `STATE-006` | `Toggle({ on: this.x })` 父子双向绑定丢 `$$` | `Toggle({ on: $$this.x })` | 常见 |
 | `STATE-008` | `build()` 内调 `console`/`fetch`/`await`/`setTimeout` | 副作用挪到 `aboutToAppear` / `onClick` 等 | 高频 |
 | `STATE-009` | `this.cache.set('k', v)` Map/Set 就地 mutation | `const next = new Map(this.cache); next.set(...); this.cache = next` | 中频 |
+| `STATE-010` | Per-host store 用单 key（如 `cwd`）分桶 → 多 host 状态串扰 | key 改 `${serverId}:${cwd}` 联合 | 多 host 必现 |
+| `STATE-011` | `SessionStore.appendTimelineItem` 直接写绕过 `TimelineReducer.applyFetchedEntries` → timestamp 等元数据丢失 | 历史拉取也走 reducer：`reducer.applyFetchedEntries(agentId, entries)` | 中频（绕路径常见） |
 
 ---
 
-## 三、Kit / 性能 / 安全 / 数据库 / 上架
+## 三、UI / Navigation / 类型系统（新增）
+
+| 规则 ID | 反模式 | 正确写法 | 说明 |
+| --- | --- | --- | --- |
+| `NAV-001` | `NavPathStack.pop()` 到空 stack → 白屏 | `if (size > 1) pop(); else replacePathByName('safe-fallback')` | Splash → replacePathByName 后目标页是栈底时必踩 |
+| `UI-001` | `Button('🎙') / Text('⌕') / Text('⋯')` 等 emoji 或 BMP 高码位字符在鸿蒙系统字体不显示，fallback 成空方框 / 错字符 | 用 ASCII / 中文单字 / BMP 基础符号（`≡` `·` `→` `↓` `×` `✓`）/ SymbolGlyph + `sys.symbol.*` | 安卓上游用 lucide-react-native，鸿蒙照搬必踩 |
+| `UI-002` | `Button('Git').width(40)` — Button 默认 padding ~16px 两侧吃掉 width，多字符文本被 ellipsis 截断 | 用 `Text + onClick` 替代（无 default padding），或 `Button.padding({ left: 4, right: 4 }).width(60)` | 头部 icon-button 必踩 |
+| `UI-003` | `build()` 内多分支顶层组件（`if {} ... Row {}` 并列）→ 编译报错 "build can have only one root node" | 整体 wrap 进单一 Column / Row 外层；分支放进 builder 函数内 | ArkUI 硬约束 |
+| `TYPES-005` | `const x: Record<string, Object> = {};` 字面量 → `arkts-no-untyped-obj-literals` 编译错 | `const x: Record<string, Object> = JSON.parse('{}') as Record<string, Object>` 或先 `class T {...}` | 透传 daemon 嵌套 JSON 时常见 |
+| `TYPES-006` | `let g: Group \| null = null; if (g !== null) { g.foo }` —— ArkTS 在 if 内可能把 g 推成 never | `const safeG = g as Group; safeG.foo` 显式 cast | ArkTS 类型窄化 + null union 时偶发 |
+| `TYPES-007` | 把"应该是 uuid"的字段（如 `agent.workspaceId`）当严格 uuid 用 → daemon 在某些 workspace 类型下填 path 字符串，导致 `===` 严格匹配漏命中 | 始终用 cwd 等业务字段做 fallback 匹配 | 客户端 / daemon wire-format 不变契约时必踩 |
+
+---
+
+## 四、Kit / 性能 / 安全 / 数据库 / 上架
 
 | 规则 ID | 反模式 | 正确写法 | 自动扫描 |
 | --- | --- | --- | --- |

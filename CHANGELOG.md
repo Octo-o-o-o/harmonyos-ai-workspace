@@ -4,6 +4,38 @@
 
 > **Git tag 历史**：本仓库 git tag 从 [v0.2.0](https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.2.0) 起（GitHub initial commit `83a71b2` 即名为 "Initial release v0.2.0"）。**v0.1.0 是 v0.2.0 之前的本地阶段性里程碑**（仓库雏形：10 主题目录 + 4 SKILL + LICENSE 等），无独立 git snapshot——保留 changelog 段是为了完整记录构建路径，但**没有对应 GitHub release**。
 
+## [0.3.0] - 2026-05-22
+
+来源：基于一个真实鸿蒙端 client 项目（paseo-harmony，对齐 Expo/RN 上游）的 Phase A/B 实战反馈整理。完整 case study 见 [`docs/case-studies/android-parity-migration.md`](docs/case-studies/android-parity-migration.md)。
+
+**新增规则**（详见 [`.claude/skills/arkts-rules/references/spec-quick-ref.md`](.claude/skills/arkts-rules/references/spec-quick-ref.md)）：
+
+- `NAV-001` NavPathStack 空 stack 白屏（Splash → replacePathByName 后目标页是栈底时必踩）
+- `UI-001` ArkUI emoji / Unicode 高码位字符鸿蒙系统字体不显示（fallback ASCII / 中文单字 / SymbolGlyph）
+- `UI-002` Button 默认 horizontal padding 吃掉 width，多字符文本被 ellipsis 截断（小按钮用 Text + onClick）
+- `UI-003` `build()` 必须单 root container（多分支 wrap Column）
+- `STATE-010` Per-host store 必须按 `${serverId}:${...}` 联合 key 隔离（多 host 串扰）
+- `STATE-011` Timeline 写入跳过 reducer 导致 timestamp 等元数据丢失（必走 `applyFetchedEntries`）
+- `TYPES-005` `Record<string, Object>` 字面量 → `JSON.parse('{}') as Record<...>` hack
+- `TYPES-006` ArkTS union `T | null` 在 if 内可能被推成 `never` — 显式 `as` cast
+- `TYPES-007` daemon "应该是 uuid" 的字段在某些 workspace 类型可能填 path → 必须 cwd / displayName fallback
+
+**runtime-pitfalls/SKILL.md** 新增 § 十～十六：
+
+- 十、NavPathStack.pop() 到空 stack → 白屏
+- 十一、ArkUI emoji / Unicode 高码位字符渲染不可靠
+- 十二、ArkUI Button width 限定 + 默认 padding 截断多字符
+- 十三、ArkUI build() 必须单 root container
+- 十四、Workspace timeline timestamp 丢失 — 绕过 reducer
+- 十五、Per-host store 必须按 serverId 隔离
+- 十六、daemon `agent.workspaceId` 不可靠 — cwd fallback 匹配
+
+**新增 case study** `docs/case-studies/android-parity-migration.md`：
+
+14 个阶段的真实修复笔记，覆盖：Splash → 主入口路由白屏、emoji 渲染陷阱、Button padding 截断、历史 session 加载、消息 timestamp 注入、per-host store 隔离、MessageBubble 类型分发、协议 envelope 双层 vs 顶级、Codex review 流程、列表页 vs 详情页预拉策略、ArkTS 类型推断 union null never bug、真机 hdc + screenshot 工作流。
+
+每章 **症状 → 根因 → 修复 → 一句话教训** 结构，含可复用的 helper 代码与 review prompt 框架。
+
 ## [0.2.0] - 2026-05-06
 
 完整施工方案与决策记录见 [`PLAN.md`](docs/PLAN.md)。本版完成 P0+P1 全套：
@@ -390,6 +422,23 @@ AI Agent CLI 调试闭环 patch：
 - **文档同步**：README、`04-build-debug-tools/README.md`、`docs/USER-GUIDE.md` 同步说明 `quick-check / build-check / cycle-once / device-check` 的推荐用法。
 
 ## [Unreleased]
+
+### 2026-05-22 · LCC 真机部署反哺（layered icon 幽灵 + 9568297）
+
+来自 LCC（化名，真鸿蒙 LLM 对话 app）v0.4.4 发布后第一次正经替换品牌图标 + 装机 MLR-AL10（HarmonyOS 6.1.0 / API 23）的实战：
+
+- **`runtime-pitfalls/SKILL.md` § 十七「应用图标 layered icon · 三处资源 + foreground 必须真透明」**：
+  - 现象：替换 `background.png` 后桌面 icon 显示叠加幽灵图案
+  - 根因：DevEco 工程模板默认 `foreground.png` **不是真透明**——半透明白色四方格（RGB=255, alpha≈128–230, ~37.6% 像素非零 alpha），Read 工具肉眼看是空白
+  - 修复：(1) 完整 icon 1024×1024 → 两处 `background.png`（AppScope + product）；(2) PIL 生成真透明 `(0,0,0,0)` PNG → 两处 `foreground.png`；(3) sips 256×256 → product `startIcon.png`
+  - 验证脚本：`python3 -c "from PIL import Image; im=Image.open('foreground.png').convert('RGBA'); print(sum(1 for p in im.get_flattened_data() if p[3]!=0))"` 必须 0
+  - 顺带覆盖了"资源在 AppScope + product 双份必须同步"这条相关坑
+- **`build-debug/SKILL.md` + `references/develop-debug-build.md` 错误码表新增 `9568297`**：`install failed due to older sdk version in the device`——HAP `compatibleSdkVersion` 高于设备 OS API
+  - 速诊：`hdc -t <id> shell param get const.ohos.apiversion` 查设备 API；HarmonyOS 6 编号对照（6.0.0=20 / 6.0.1=21 / 6.0.2=22 / 6.1.0=23 / 6.1.1=24）写进 SKILL 减少混淆——OS 子版本号 ≠ API 号
+  - SKILL.md 激活条件加 `9568297`；hdc 命令段补三条设备 OS 探测 `param get`
+- **`CLAUDE.md § 11.4` Top 7 → Top 8**：精华错误码段同步加 `9568297`
+- **`docs/case-studies/llm-chat-app.md` M13**：新增"真机部署 · layered icon 幽灵 + 9568297 install 失败"节，沿用既有"症状 / 排查 / 修复 diff / 教训"四段式；总评 M3-M12 → M3-M13，运行时装配坑 7+ → 9+。M13 标号说明此节为 v0.4.4 发布后的运维期反馈而非原始里程碑
+- **来源**：LCC `~/DevEcoStudioProjects/PrivateTalk` 真机部署 session（MLR-AL10 / HarmonyOS 6.1.0.117(SP6C00E115R1P4) / API 23）；首次走通"换品牌 icon + release 打包 + hdc 装机"完整链路时遇到的两类阻断
 
 ### 2026-05-15 · OctoDesk N2 / N3 二次反哺
 
