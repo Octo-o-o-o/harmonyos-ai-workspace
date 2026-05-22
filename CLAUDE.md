@@ -227,7 +227,6 @@ HarmonyOS_DevSpace/
 │   ├── settings.json           ← PostToolUse 钩子配置
 │   └── skills/                 ← 8 个 Claude Code SKILL.md（详见 § 2.5）
 ├── .agents/skills/             ← 8 个 Codex 项目级 SKILL.md 镜像
-├── .codex/config.toml          ← Codex 项目级 MCP 配置
 ├── tools/                      ← 钩子 / 校验 / 安装 / fan-out 脚本
 │   ├── hooks/                  ← post-edit.sh + lib/* + test-fixtures/
 │   ├── install.sh              ← curl-pipeable 安装到 app
@@ -418,7 +417,7 @@ DevEco Studio 与 Claude Code / Codex 并行使用：
 
 **强烈推荐安装的 AI 增强工具**：
 
-- **MCP-HarmonyOS**（让 AI 直接查设备 / 项目 / 构建状态）：`npm install -g mcp-harmonyos`
+- **MCP-HarmonyOS**（让 AI 直接查设备 / 项目 / 构建状态）：Claude/通用 MCP 走 `.mcp.json` 的 `npx -y mcp-harmonyos@latest`；Codex 走 `bash tools/setup-codex-mcp.sh`
 - **DevEco 自带 CodeGenie / DeepSeek-R1**（针对鸿蒙训练，对 ArkTS 更准）
 - **DevEco Code Linter**（每次构建前必跑：`hvigorw codeLinter`，或本仓库的 `tools/run-linter.sh`）
 
@@ -432,7 +431,8 @@ DevEco Studio 与 Claude Code / Codex 并行使用：
 | `tools/run-linter.sh` | 包装 hvigorw codeLinter，不依赖 DevEco GUI |
 | `tools/install.sh` | 把规则一行装到任意鸿蒙 app（curl pipe-able） |
 | `tools/generate-ai-configs.sh` | 5 个默认 SKILL → Cursor 6 个 `.mdc`（按 globs 触发）+ Copilot root < 4KB + `.github/instructions/*.md` 5 个（按 applyTo 触发） |
-| `.agents/skills/` + `.codex/config.toml` | Codex CLI / Desktop 的项目级 Skills 与 MCP-HarmonyOS 配置 |
+| `.agents/skills/` | Codex CLI / Desktop 的项目级 Skills |
+| `tools/setup-codex-mcp.sh` | 显式把 `mcp-harmonyos` 注册到用户级 Codex MCP 配置 |
 | `tools/doctor.sh` | PASS/WARN/FAIL 体检（钩子端到端自测、工具链、规则文件大小）；`npx harmonyos-ai-workspace doctor` 同款 |
 | `tools/bootstrap-upstream-docs.sh` | 拉取 OpenHarmony 官方文档镜像 |
 | `tools/hooks/test-fixtures/` | 故意写错的 .ets 用于校验脚本回归 |

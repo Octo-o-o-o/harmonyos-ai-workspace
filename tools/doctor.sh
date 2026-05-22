@@ -239,7 +239,7 @@ if [[ -d ".github/instructions" ]]; then
   fi
 fi
 
-# Codex 项目级 skills + MCP config
+# Codex 项目级 skills + 用户级 MCP config
 if [[ -d ".agents/skills" ]]; then
   N_AGENT_SKILLS=$(find .agents/skills -name "SKILL.md" -type f | wc -l | tr -d ' ')
   if [[ "$N_AGENT_SKILLS" -ge 1 ]]; then
@@ -252,15 +252,16 @@ else
     "如要装：bash tools/install.sh --targets=codex"
 fi
 
-if [[ -f ".codex/config.toml" ]]; then
-  if grep -q 'mcp-harmonyos' .codex/config.toml 2>/dev/null; then
-    record PASS ".codex/config.toml" "Codex MCP config 含 mcp-harmonyos"
+if command -v codex >/dev/null 2>&1; then
+  CODEX_MCP_LIST=$(codex mcp list 2>/dev/null || true)
+  if echo "$CODEX_MCP_LIST" | grep -Eq '^harmonyos[[:space:]].*mcp-harmonyos'; then
+    record PASS "Codex MCP harmonyos" "用户级 Codex MCP 已配置"
   else
-    record WARN ".codex/config.toml" "存在但未配置 mcp-harmonyos"
+    record WARN "Codex MCP harmonyos" "未在 Codex 用户级配置中发现 mcp-harmonyos" \
+      "如要给 Codex 开启设备/项目查询：bash tools/setup-codex-mcp.sh"
   fi
 else
-  record WARN ".codex/config.toml" "未安装（如不用 Codex MCP 可忽略）" \
-    "如要装：bash tools/install.sh --targets=codex"
+  record WARN "Codex CLI" "未安装，跳过 Codex MCP 检查" "如需 Codex：brew install codex 或 npm i -g @openai/codex"
 fi
 
 # ─── F. MCP ───────────────────────────────────────────────────

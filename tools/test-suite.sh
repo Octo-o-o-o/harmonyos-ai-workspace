@@ -101,6 +101,11 @@ if bash -n tools/harmony-dev-cycle.sh; then
 else
   assert_fail "harmony-dev-cycle.sh bash -n 失败"
 fi
+if bash -n tools/setup-codex-mcp.sh; then
+  assert_pass "setup-codex-mcp.sh bash -n 通过"
+else
+  assert_fail "setup-codex-mcp.sh bash -n 失败"
+fi
 
 TMP_APP=$(mktemp -d)
 mkdir -p "$TMP_APP/AppScope" "$TMP_APP/entry/src/main/ets/pages"
@@ -141,10 +146,10 @@ else
   assert_fail "install.sh --dry-run 误写了 $file_count 个文件"
 fi
 if echo "$DRY_OUTPUT" | grep -q ".agents/skills/arkts-rules/SKILL.md" && \
-   echo "$DRY_OUTPUT" | grep -q ".codex/config.toml"; then
-  assert_pass "install.sh 默认 codex target 含 .agents skills + .codex config"
+   echo "$DRY_OUTPUT" | grep -q "tools/setup-codex-mcp.sh"; then
+  assert_pass "install.sh 默认 codex target 含 .agents skills + Codex MCP setup helper"
 else
-  assert_fail "install.sh 默认 codex target 缺 .agents skills 或 .codex config"
+  assert_fail "install.sh 默认 codex target 缺 .agents skills 或 Codex MCP setup helper"
 fi
 rm -rf "$TMP"
 

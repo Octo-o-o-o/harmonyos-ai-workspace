@@ -9,11 +9,11 @@
 ### Added
 
 - Codex 项目级分发补齐：`.agents/skills/` 纳入仓库 / npm files / `tools/install.sh --targets=codex`，让 Codex CLI / Desktop 能自动发现 8 个 HarmonyOS Skills。
-- Codex MCP 配置补齐：新增 `.codex/config.toml` 发布链路，`doctor` 会检查 `mcp-harmonyos` 是否对 Codex 可见。
+- Codex MCP 配置补齐：新增 `tools/setup-codex-mcp.sh`，显式把 `mcp-harmonyos` 注册进用户级 Codex MCP 配置；`doctor` 会检查 `codex mcp list` 是否真的可见。
 
 ### Fixed
 
-- 修正 Codex 文档与安装提示：`AGENTS.md`、`README.md`、`docs/USER-GUIDE.md`、`llms.txt` 同步说明 `.agents/skills` 与 `.codex/config.toml`。
+- 修正 Codex 文档与安装提示：`AGENTS.md`、`README.md`、`docs/USER-GUIDE.md`、`llms.txt` 同步说明 `.agents/skills` 自动发现，以及 MCP 必须通过 `tools/setup-codex-mcp.sh` 写入用户级配置。
 - 修正 `bin/cli.js` 的 `doctor` 缺失提示版本号（`v0.4.5+`）。
 - 修正 `tools/doctor.sh --json` 在 WARN / FAIL 场景混入人类可读行、导致 JSON 无法解析的问题，并补回归断言。
 - 修正一处 `.agents/skills/multimodal-llm` 触发文案，把误写的 `Codex Vision` 还原为 `Claude Vision`。

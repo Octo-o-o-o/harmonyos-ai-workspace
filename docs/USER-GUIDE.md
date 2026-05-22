@@ -92,7 +92,7 @@ cd ~/WorkSpace/apps/my-harmony-app
 codex                                 # AGENTS.md + .agents/skills 自动加载
 ```
 
-同样的 prompt——Codex 读到 `AGENTS.md` 第 0 节硬约束，并从 `.agents/skills/` 自动发现 `state-management` 等项目级 skills。`.codex/config.toml` 会把 `mcp-harmonyos` 接进 Codex MCP 列表。
+同样的 prompt——Codex 读到 `AGENTS.md` 第 0 节硬约束，并从 `.agents/skills/` 自动发现 `state-management` 等项目级 skills。需要 MCP-HarmonyOS 时，先运行 `bash tools/setup-codex-mcp.sh`，它会显式写入用户级 Codex MCP 配置。
 
 ### 2.3 用 Cursor / Copilot
 
@@ -141,7 +141,7 @@ Codex 走 `AGENTS.md` 标准，并额外读取 `.agents/skills/` 项目级 Skill
 | 8 SKILL 按需触发 | ✅ frontmatter 自动激活 | ✅ `.agents/skills/` 自动发现 |
 | Edit 后钩子强校验 | ✅ PostToolUse 触发 | ❌ 自己跑 `bash tools/hooks/post-edit.sh` 或 git pre-commit |
 | `.cursor/rules/` / `.github/copilot-instructions.md` 同源 | ✅ | ✅ |
-| MCP-HarmonyOS | ✅ `.mcp.json` | ✅ `.codex/config.toml` |
+| MCP-HarmonyOS | ✅ `.mcp.json` | ✅ `bash tools/setup-codex-mcp.sh` |
 
 Codex 用户建议：把钩子加到 git pre-commit，commit 前自动跑：
 
@@ -415,7 +415,7 @@ npx -y harmonyos-ai-workspace --force
 npx -y harmonyos-ai-workspace --uninstall
 
 # 选项 B：手动删（你确定知道哪些文件是本工具装的）
-rm -f CLAUDE.md AGENTS.md .mcp.json .codex/config.toml
+rm -f CLAUDE.md AGENTS.md .mcp.json
 rm -rf .claude/ .agents/ .cursor/ .github/copilot-instructions.md tools/hooks/ tools/check-*.sh tools/run-linter.sh
 ```
 
@@ -474,7 +474,7 @@ source ~/.zshrc
 
 ```bash
 git add CLAUDE.md AGENTS.md .mcp.json \
-        .agents/ .codex/config.toml \
+        .agents/ \
         .claude/settings.json .claude/skills/ \
         .cursor/ .github/copilot-instructions.md \
         tools/ \

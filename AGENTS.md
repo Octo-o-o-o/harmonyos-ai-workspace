@@ -29,7 +29,7 @@ Codex / Codex Desktop 默认读取 `.agents/skills/`，Claude Code 默认读取 
 - 违规打到 stderr + 写入 `.claude/.harmonyos-last-scan.txt`
 - 你看到该文件存在 → **先读它**，含上次扫描的违规列表
 
-非 Claude Code 工具用户：把这两个脚本加进 git pre-commit 或 CI 同样能保证质量。Codex 项目级 MCP 配置在 `.codex/config.toml`。
+非 Claude Code 工具用户：把这两个脚本加进 git pre-commit 或 CI 同样能保证质量。Codex 如需 MCP-HarmonyOS，显式运行 `bash tools/setup-codex-mcp.sh` 写入用户级 Codex 配置。
 
 ---
 

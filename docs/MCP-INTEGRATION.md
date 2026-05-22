@@ -1,6 +1,7 @@
 # MCP 集成指引 · 两个 HarmonyOS MCP server 的接入对照
 
 > 本仓库默认通过 `.mcp.json` 接入 [`mcp-harmonyos`](https://www.npmjs.com/package/mcp-harmonyos)（**只读**：查设备 / 项目 / 构建状态）。
+> Codex CLI 的 MCP server 当前读取用户级 Codex 配置；运行 `bash tools/setup-codex-mcp.sh` 可显式注册同一个 `mcp-harmonyos`。
 >
 > 如果你想要**动作型能力**——AI 直接 `hdc` 启动 app、点击屏幕、截图验证——本文档解释如何叠加接入第二个 MCP server。
 
@@ -13,7 +14,7 @@
 | 类型 | 只读 | 动作型 |
 | 工具数 | 7 个（device list / app info / build outputs 等） | 16 个（含 launch_app / click / long_click / swipe / input_text / get_uilayout / get_screenshot 等） |
 | 实现 | npm（Node.js） | Python 3.13 + uv |
-| 安装难度 | `npm install -g mcp-harmonyos` | clone + uv sync + 注册 MCP |
+| 安装难度 | `.mcp.json` 用 `npx -y mcp-harmonyos@latest`；Codex 用 `tools/setup-codex-mcp.sh` | clone + uv sync + 注册 MCP |
 | 维护活跃度 | 持续更新 | **2025-04 后未更新**（v0.1.0，至今 1 年+） |
 | 跟 Claude Code 接入 | 有官方说明 | 自己摸索（需写 MCP 配置） |
 | 风险 | 低 | 中——半年未更新；`system_prompt.py` 是空文件；只支持 Python 3.13 |

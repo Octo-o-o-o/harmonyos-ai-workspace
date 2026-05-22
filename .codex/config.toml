@@ -1,7 +1,0 @@
-# Project-local Codex MCP config. This mirrors .mcp.json for Codex CLI/Desktop.
-[mcp_servers.harmonyos]
-args = [
-    "-y",
-    "mcp-harmonyos@latest",
-]
-command = "npx"

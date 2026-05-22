@@ -9,7 +9,6 @@
 - [CLAUDE.md](CLAUDE.md): Claude Code 项目级大宪章
 - [AGENTS.md](AGENTS.md): 跨工具通用宪法（[agents.md 标准](https://agents.md/) 24+ 工具兼容；与 CLAUDE.md 冲突时以本文件为准）
 - [.agents/skills/](.agents/skills/): Codex CLI / Desktop 项目级 Skills 镜像
-- [.codex/config.toml](.codex/config.toml): Codex MCP-HarmonyOS 项目级配置
 - [.cursor/rules/](.cursor/rules/): Cursor 规则 6 个 `.mdc`（按 globs 触发，单源 fan-out 生成）
 - [.github/copilot-instructions.md](.github/copilot-instructions.md): GitHub Copilot root 指令（< 4KB）
 - [.github/instructions/](.github/instructions/): Copilot 5 个分场景 `.instructions.md`（按 applyTo 触发）
@@ -66,6 +65,7 @@
 - [tools/install.sh](tools/install.sh): curl-pipeable 一行装到任意鸿蒙 app
 - [tools/generate-ai-configs.sh](tools/generate-ai-configs.sh): 5 个默认 SKILL → 多文件 fan-out（Cursor `.mdc` × 6 + Copilot root < 4KB + `instructions/*.md` × 5）
 - [tools/doctor.sh](tools/doctor.sh): PASS/WARN/FAIL 诊断（含钩子端到端自测、工具链、规则文件大小校验）；`npx harmonyos-ai-workspace doctor` 同款
+- [tools/setup-codex-mcp.sh](tools/setup-codex-mcp.sh): 显式把 `mcp-harmonyos` 注册到用户级 Codex MCP 配置
 
 ## 核心规则速查
 

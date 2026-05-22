@@ -25,12 +25,13 @@
 #   AGENTS.md
 #   .mcp.json
 #   .claude/settings.json + .claude/skills/  （--targets 含 claude）
-#   .agents/skills/ + .codex/config.toml     （--targets 含 codex）
+#   .agents/skills/                          （--targets 含 codex）
 #   .cursor/rules/*.mdc                      （--targets 含 cursor）
 #   .github/copilot-instructions.md          （--targets 含 copilot）
 #   tools/hooks/                             （所有 target 都装）
 #   tools/check-ohpm-deps.sh                 （所有 target 都装）
 #   tools/harmony-dev-cycle.sh               （所有 target 都装；AI CLI build/install/run/log 闭环）
+#   tools/setup-codex-mcp.sh                 （显式把 mcp-harmonyos 注册进 Codex 用户配置）
 #
 # 安全设计（v0.4 起）：
 #   1. 每次 install 写 .harmonyos-ai-workspace.manifest，记录所有写入文件 + sha256
@@ -259,9 +260,11 @@ install() {
   fetch "$BASE_URL/tools/harmony-dev-cycle.sh"          "tools/harmony-dev-cycle.sh"
   fetch "$BASE_URL/tools/run-linter.sh"                 "tools/run-linter.sh"
   fetch "$BASE_URL/tools/doctor.sh"                     "tools/doctor.sh"
+  fetch "$BASE_URL/tools/setup-codex-mcp.sh"             "tools/setup-codex-mcp.sh"
   if [[ "$DRY_RUN" != "1" ]]; then
     chmod +x tools/hooks/post-edit.sh tools/hooks/lib/*.sh \
-      tools/check-ohpm-deps.sh tools/harmony-dev-cycle.sh tools/run-linter.sh tools/doctor.sh 2>/dev/null || true
+      tools/check-ohpm-deps.sh tools/harmony-dev-cycle.sh tools/run-linter.sh tools/doctor.sh \
+      tools/setup-codex-mcp.sh 2>/dev/null || true
   fi
 
   # 2b) OHPM 黑/白名单数据（脚本会自动加载这些外部文件 → 不拉就退化为内联兜底）
@@ -285,9 +288,8 @@ install() {
     fetch "$BASE_URL/.claude/skills/build-debug/references/develop-debug-build.md"   ".claude/skills/build-debug/references/develop-debug-build.md" || true
   fi
 
-  # 4) Codex 专属：项目级 skills + MCP config
+  # 4) Codex 专属：项目级 skills
   if contains_target "codex"; then
-    fetch "$BASE_URL/.codex/config.toml"                                 ".codex/config.toml"
     fetch "$BASE_URL/.agents/skills/README.md"                           ".agents/skills/README.md" || true
     for skill in arkts-rules state-management build-debug signing-publish harmonyos-review runtime-pitfalls multimodal-llm web-bridge; do
       fetch "$BASE_URL/.agents/skills/$skill/SKILL.md"                   ".agents/skills/$skill/SKILL.md" || true
@@ -362,7 +364,8 @@ install() {
   echo
   info "下一步："
   echo "  · Claude Code:  claude       （CLAUDE.md 自动加载，钩子已就绪）"
-  echo "  · Codex CLI:    codex        （AGENTS.md + .agents/skills 自动加载，MCP config 已就绪）"
+  echo "  · Codex CLI:    codex        （AGENTS.md + .agents/skills 自动加载）"
+  echo "                  bash tools/setup-codex-mcp.sh  # 可选：注册 mcp-harmonyos 到 Codex"
   echo "  · CLI 调试闭环： bash tools/harmony-dev-cycle.sh cycle-once"
   echo "                  # build → install → run → 抓 8s hilog 给 AI 分析"
   echo "  · 卸载：        bash tools/install.sh --uninstall  （安全：只删本工具写入的）"

@@ -82,7 +82,7 @@
   "fanout_targets": {
     "implemented": {
       "claude_code": ".claude/skills/*/SKILL.md",
-      "codex": "AGENTS.md + .agents/skills/*/SKILL.md + .codex/config.toml",
+      "codex": "AGENTS.md + .agents/skills/*/SKILL.md + tools/setup-codex-mcp.sh",
       "cursor": ".cursor/rules/*.mdc",
       "copilot": ".github/copilot-instructions.md"
     },
