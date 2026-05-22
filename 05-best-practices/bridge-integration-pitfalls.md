@@ -216,7 +216,239 @@ const nonce: Uint8Array = (await random.generateRandom(12)).data
 
 `Math.random()` 在 ArkTS 移动端**任何**加密用途都是 hard fail。AES-GCM 一次 nonce 撞车 = 完全 break；HMAC 用 `Math.random()` 作 key 是无意义的。这条规则由 `CSPRNG-001` scan 抓覆盖（路径含 `security/` 或文件含 cryptoFramework / nonce / aesGcm / huks 关键字时升级到 High）。
 
-## 8. 反检查清单（上 PR 前过一遍）
+> **OAuth 2.0 PKCE 是 CSPRNG-001 最容易忘的真实子场景**：RFC 7636 §4.1 要求 `code_verifier` 来自 CSPRNG。`Math.random()` 的 xorshift128+ 状态可从几次输出反推，攻击者可预计算 verifier 并截获授权流。正确写法（ArkTS）：
+>
+> ```typescript
+> const data = cryptoFramework.createRandom().generateRandomSync(32).data
+> const verifier = base64UrlEncode(data)  // RFC 7636 base64url
+> ```
+>
+> 若 cryptoFramework 不可用，应 `throw` 而非静默 fallback —— "弱 PKCE 总比没 PKCE 好" 是错的，silent downgrade 会让客户端长期处于可攻击状态而无告警。
+
+## 8. Token / SecureStore 写入原子性（先持久化、再 fire listener）
+
+### 陷阱
+
+跨端 `AuthController` 常见反模式：登录 / refresh 成功后**先**调 `storeAccessToken`（写内存 + fire `tokenChangeListener`），**再**写 refresh token 到 SecureStore（HUKS / Keychain / EncryptedPreferences）。Listener 经 bridge fan-out 立刻把 `auth.access_token.set` 推到 WebView，React 业务区把用户当成"已登录"。
+
+如果**之后**的 SecureStore 写入失败（HUKS session 失败、Keychain entitlement 异常、Android KeyStore 损坏、磁盘满）：
+
+- 当前会话 access token 仍然活的，业务区按"已登录"工作
+- refresh token 没写盘，下次启动无法 refresh → 静默退出
+- 同时 native panel 弹"登录失败"红条
+- 两个状态**矛盾**且**无法在客户端调和**，用户体验是"明明登成功了，重启就完了"。需要手动 wipe 才能恢复
+
+### 标准做法
+
+把顺序倒过来：**SecureStore 写入在前**（能 throw，没有副作用），**`storeAccessToken` 在后**（只写内存 + fire listener，假定永远成功）：
+
+```typescript
+// ✅ 正确顺序
+await this.secureStore.set(REFRESH_TOKEN_KEY, outcome.refreshToken)  // 先持久化
+this.storeAccessToken(outcome.accessToken, outcome.expiresInMs)       // 后通知
+
+// ❌ 反模式
+this.storeAccessToken(outcome.accessToken, outcome.expiresInMs)       // listener 已 fire
+await this.secureStore.set(REFRESH_TOKEN_KEY, outcome.refreshToken)   // 一旦 throw 就矛盾
+```
+
+### 跨端注意
+
+这是**纯接线层 bug，scanner 抓不到**，但**三端都会犯**。代码 review 时把 "`secureStore.set` 必须在 `storeAccessToken` 之前" 写成显式 comment，并在 design doc 留 file:line 引用，避免 copy-paste 时被改回。同样适用于：
+
+- iOS: `Keychain.setItem(...)` 在 `storeAccessToken(...)` 之前
+- Android: `EncryptedSharedPreferences.edit().putString(...).commit()` 在 `tokenChangeListener.fire(...)` 之前
+- HarmonyOS: `huks.set(...)` 或 HUKS-wrapped `preferences.put(...)` 在 fire listener 之前
+
+## 9. HarmonyOS Pasteboard 提示时机 —— 不要 eager peek
+
+### 陷阱
+
+HarmonyOS 6.x 起 `pasteboard.getData()` / `getSystemPasteboard().getData()` **每次调用都会弹系统级 toast**（"应用正在读取剪贴板"），且应用无法关闭这个 prompt（设计如此，是 OS-level UX）。如果 native shell 在以下时机"eager peek" 剪贴板：
+
+- App 启动 / cold-start 完成第一帧渲染前
+- App 切回前台时（`onForeground` / `onWindowFocusChange`）
+- WebView 业务区还没 mount 完时被 bridge 触发
+
+用户会看到一个**没有任何上下文**的"读取剪贴板"提示。AGC 审核常以此为 P0 拒因（"非用户主动操作时读取剪贴板"），同时是 24h 留存的红线。
+
+### 标准做法
+
+把 pasteboard 调用门控在**显式用户操作**之后（点击按钮、扫码完成回调、用户输入触发的搜索等），且 native 端要主动过滤：仅返回符合预期格式的内容，绝不把整段剪贴板转给 WebView：
+
+```typescript
+// ✅ 正确：用户点了"粘贴配对码"按钮后才读
+async handleUserPastePairingTicket(): Promise<string> {
+  const board = pasteboard.getSystemPasteboard()
+  const text = await board.getData()  // 此时系统 prompt 有明确语义
+  const raw = await text.getPrimaryText()
+  // 仅当看起来像 octodesk-pair://v1?t=... 才放行
+  if (!raw.startsWith('octodesk-pair://')) return ''
+  return raw
+}
+
+// ❌ 反模式：App 启动 / 前台切换时 peek
+onForeground(): void {
+  this.peekClipboard()  // ← 系统 prompt 在没有上下文的时机弹，用户/审核都会困惑
+}
+```
+
+如果 native 想"自动识别用户复制了配对链接然后弹引导"，**用 share intent / App-Linking 而非剪贴板**：让分享方主动 `openLink(...)` 把链接送进来，比从剪贴板猜要干净。
+
+### 跨端注意
+
+- **iOS**：`UIPasteboard.general.string` 在 iOS 14+ 同样每次读都弹横幅，与 HarmonyOS 一致。
+- **Android**：`ClipboardManager.getPrimaryClip()` 默认无 toast（部分厂商定制 ROM 有），但 Android 12+ App 前台读会被 system overlay 提示，规则同上。
+
+## 10. App-Linking 双侧配置 + EntryAbility 双入口路由（HarmonyOS）
+
+### 陷阱
+
+`https://link.<domain>` 类深链接（含 OAuth callback / push deeplink / share link）在 HarmonyOS 上需要**三件事同时正确**：
+
+1. **`apps/.../AppScope/well-known/harmony-app-linking.json`** 的 `components` 列出每条 path（这是上传到华为 Domain Verify 服务的清单）
+2. **`apps/.../entry/src/main/module.json5`** 的 `skills.uris` 用 `pathStartWith` / `path` 显式列出（这是 OS-level intent filter）
+3. **`EntryAbility.ets` 在 `onCreate` AND `onNewWant` 都做 dispatch**
+
+很多 app 只配了上面 1 或 1+2，结果：
+
+- 测试时点链接看似能拉起 app，**但 cold-start 路径不走 deeplink dispatcher**（`onCreate` 没读 `want.uri`），WebView 启动后停在首页
+- 或者反过来：cold-start 走了，但 app 已经在前台时，`onNewWant` 没接，新链接被丢
+- 或者 `harmony-app-linking.json` 列了 path 但 `module.json5` 没列，OS intent filter 不 match，Domain Verify 失败
+
+### 标准做法
+
+**三处必须同步**。下面是一个最小可跑骨架（OAuth callback + push + share 三类）：
+
+```json5
+// apps/<bundle>/AppScope/well-known/harmony-app-linking.json
+{
+  "applinking": {
+    "apps": [{
+      "appIdentifier": "<your-app-id>",
+      "fingerprints": [],
+      "components": [
+        { "/": "/oauth/callback/*" },
+        { "/": "/push/*" },
+        { "/": "/share/*" }
+      ]
+    }]
+  }
+}
+```
+
+```json5
+// apps/<bundle>/entry/src/main/module.json5
+"skills": [{
+  "actions": ["ohos.want.action.viewData"],
+  "uris": [
+    { "scheme": "https", "host": "link.<your-domain>",
+      "pathStartWith": "/oauth/callback" },
+    { "scheme": "https", "host": "link.<your-domain>",
+      "pathStartWith": "/push" },
+    { "scheme": "https", "host": "link.<your-domain>",
+      "pathStartWith": "/share" }
+  ]
+}]
+```
+
+```typescript
+// apps/<bundle>/entry/src/main/ets/entryability/EntryAbility.ets
+onCreate(want: Want, _launchParam: AbilityConstant.LaunchParam): void {
+  // cold-start：want.uri 来自 OS 拉起时的 deeplink
+  const uri = typeof want.uri === 'string' ? want.uri : ''
+  if (uri.length > 0) this.dispatchInboundUri(uri)
+}
+
+onNewWant(want: Want, _launchParam: AbilityConstant.LaunchParam): void {
+  // warm-start：app 已在前台或后台，OS 用 onNewWant 投递新 deeplink
+  const uri = typeof want.uri === 'string' ? want.uri : ''
+  if (uri.length > 0) this.dispatchInboundUri(uri)
+}
+
+private dispatchInboundUri(uri: string): void {
+  // 不要在这里直接 navigate WebView。先按 path 分类：
+  //   /oauth/callback/* → OAuthPlugin.deliverCallback(uri)
+  //   /push/* / /share/* → bridge.emitRouteDeeplink(uri)
+  // OAuth callback 永远不应该走"通用 route.deeplink"，否则 WebView 路由会误处理。
+  if (OAuthPlugin.parseCallbackUri(uri) !== null) {
+    this.oauthPlugin.deliverCallback(uri)
+  } else {
+    this.bridge.emitRouteDeeplink(uri)
+  }
+}
+```
+
+### 深一层：OAuth callback 必须用外部 user-agent（RFC 8252）
+
+OAuth 2.0 / OIDC 强制要求授权流走**外部 user-agent**（系统浏览器），不能用 ArkWeb / WebView 作 user-agent —— 否则一旦 ArkWeb renderer 被攻陷（XSS / hook），攻击者能 scrape 第三方登录表单。HarmonyOS 上正确做法是 `@kit.AbilityKit` 的 `UIAbilityContext.openLink(authorizationUrl)`，`appLinkingOnly` 留默认 `false`，让 OS 把 https URL 路由到用户的默认浏览器。然后通过 App-Linking 把 `/oauth/callback/*` 收回来。
+
+另外两条防御：
+
+- **路径 host 二次校验**：即使 OS 的 Domain Verify 已经 match 过 host，plugin 入口仍要 `expectedCallbackHost === 'link.<your-domain>'` literal 比较，防止 module.json5 误配额外 host 时的 cross-tenant 攻击
+- **客户端 dedup ring**：把已 consume 的 `intentId` 持久化（plain preferences 即可，server-side 是权威，client-side 是 defense-in-depth），server 的 dedup 401 之前先在客户端 fail-closed
+
+### 跨端注意
+
+- **iOS**：等价文件是 `apps/ios/App/well-known/apple-app-site-association.json`，path 在 `components[].`/` 字段；project.yml 里 `applinks:link.<domain>`；`SceneDelegate.scene(_:openURLContexts:)` + `scene(_:continueUserActivity:)` 双入口。
+- **Android**：等价文件是 `apps/android/app/.well-known/assetlinks.json`，path 必须**同时**在 `AndroidManifest.xml` 的 `<data android:pathPrefix=...>` 里 —— assetlinks 只授权 host，per-path 路由靠 manifest。`MainActivity.onCreate` + `onNewIntent` 双入口。
+
+## 11. HMS ScanKit 接线层 trap（HarmonyOS）
+
+### 陷阱
+
+HMS ScanKit (`@kit.ScanKit`) 在 HarmonyOS NEXT 6.x 上有三个并存的踩坑面，AI 训练数据里几乎全是错的：
+
+1. **`@kit.ScanKit` 直接 dynamic import 在某些镜像上拿到 undefined exports** —— 调用 `scanKit.scanBarcode.startScanForResult` 报"Cannot read properties of undefined"，模拟器多数 OK，真机不一致。**dual-import** 才稳：
+
+   ```typescript
+   const scanBarcodeMod: ESObject = await import('@hms.core.scan.scanBarcode')
+   const scanCoreMod: ESObject = await import('@hms.core.scan.scanCore')
+   const scanBarcode = scanBarcodeMod.default as ScanBarcodeApi
+   const scanCore = scanCoreMod.default as ScanCoreApi
+   ```
+
+   由 `KIT-003` scan 抓覆盖。
+
+2. **`ScanType.QRCODE` 在 HarmonyOS 6.x 已改名为 `QR_CODE`** —— 旧名是 `undefined`，传入 `options.scanTypes` 让 `startScanForResult` 以 `BusinessError code 401`（"Parameter check failed"）整体失败。AI 训练数据里几乎全用 `QRCODE`，必须显式覆盖。由 `KIT-004` scan 抓覆盖。
+
+3. **`startScanForResult(context, options)` 的 `context` 必须是 page-bound `UIAbilityContext`** —— 也就是从 ArkUI `@Entry struct` 的 `aboutToAppear()` / `build()` 内调 `getContext(this) as common.UIAbilityContext` 得到的那个。Plugin 在 EntryAbility 的 `onCreate(want, launchParam, context)` 里拿到的"裸" `AbilityContext` 不带 page binding，传给 ScanKit 同样以 `code 401` 失败。**这条 scanner 抓不到**，是纯接线层 trap。
+
+### 标准做法
+
+在页面（`@Entry struct`）的 `aboutToAppear` 把 page-bound context 注册到一个 runtime registry，plugin 从 registry 取，不要从 EntryAbility 直接传：
+
+```typescript
+// pages/Index.ets
+@Entry
+@Component
+struct Index {
+  aboutToAppear(): void {
+    const pageCtx = getContext(this) as common.UIAbilityContext
+    setUIAbilityContext(pageCtx)   // 写入 runtime registry
+  }
+}
+
+// scanner plugin
+const pageCtx = getUIAbilityContext() ?? this.context   // 回退到裸 ctx 仅做兜底
+const result = await scanBarcode.startScanForResult(pageCtx, options)
+```
+
+错误码到 bridge outcome 的映射（HarmonyOS 真实 BusinessError code）：
+
+| code | 含义 | bridge outcome |
+|------|------|---------------|
+| `1000500001` | 相机权限被拒 | `permission_denied`（导引 `canOpenSettings: true`） |
+| `1000500002` | 用户主动关闭扫码 UI | `cancelled` |
+| `401` | 参数校验失败（多半是 ScanType 错 / context 错） | `unavailable`（写 hilog 含 raw error 便于排查） |
+
+**HarmonyOS 不像 Android 有 `shouldShowRationale`**，相机权限被拒后只能引导用户去系统设置页 —— 所以 `canOpenSettings` 永远 `true`。
+
+### 完整骨架
+
+见 `samples/templates/scan-qrcode/`（含 plugin + page wiring + 错误码处理 + bridge outcome 序列化）。
+
+## 12. 反检查清单（上 PR 前过一遍）
 
 - [ ] handshake 的 `granted` 来自 handler 注册表，不是 enum
 - [ ] `BridgeCapability` enum 新增条目都有对应 handler，或者明确 reject + reason
@@ -226,23 +458,31 @@ const nonce: Uint8Array = (await random.generateRandom(12)).data
 - [ ] hilog dump / 错误回执的字段过滤过 token / password / refreshToken
 - [ ] picker URI 不进任何缓存 / 后台 task；要后续读改走 Folder Import
 - [ ] 加密路径全 `cryptoFramework`，scanner 的 `CSPRNG-001` exit 0
+- [ ] PKCE / token / nonce / IV 来源 `cryptoFramework.createRandom`，不退路到 `Math.random`
+- [ ] **登录 / refresh：`secureStore.set(refresh)` 在 `storeAccessToken` 之前**（§8）
+- [ ] pasteboard 仅在显式用户操作回调内读，不在 `onForeground` / `aboutToAppear` 等"被动"时机调（§9）
+- [ ] App-Linking 三处同步：`harmony-app-linking.json` ↔ `module.json5` ↔ `EntryAbility.onCreate` + `onNewWant` 双入口（§10）
+- [ ] OAuth callback 走系统浏览器（`UIAbilityContext.openLink`），不在 ArkWeb 内开授权页（§10）
+- [ ] HMS ScanKit dual-import + `QR_CODE` 新名 + page-bound `UIAbilityContext`（§11）
 - [ ] `addJavascriptInterface` / 已废弃 `picker.PhotoViewPicker` / `decodeWithStream` 全 0 命中（scanner 覆盖：`ARKTS-DEPRECATED-PICKER` / `ARKTS-DEPRECATED-DECODE`）
 
-## 9. 相关 scan-arkts 规则
+## 13. 相关 scan-arkts 规则
 
 | 规则 ID | 严重度 | 覆盖什么 |
 |--------|--------|---------|
 | `SEC-001` | High | 硬编码 token / api-key / secret 字符串字面量 |
 | `SEC-002` | High | hilog `%{public}` 输出 token / password / 身份证 |
 | `SEC-007` | Medium | MD5 / SHA1 / DES 弱算法 |
-| `CSPRNG-001` | High in security/, Medium otherwise | `Math.random()` 在加密上下文 |
+| `CSPRNG-001` | High in security/, Medium otherwise | `Math.random()` 在加密上下文（含 PKCE verifier） |
 | `CSPRNG-002` | High | `HUKS_TAG_IV` 同文件无 `cryptoFramework.createRandom`（IV 似非 CSPRNG） |
 | `ARKTS-DEPRECATED-PICKER` | High | `picker.PhotoViewPicker`（用 `photoAccessHelper`） |
 | `ARKTS-DEPRECATED-DECODE` | High | `TextDecoder.decodeWithStream`（已弃用） |
 | `KIT-001` | Medium | `http.createHttp()` 未 destroy |
+| `KIT-003` | Medium | `@kit.ScanKit` 直接 import 真机不稳；改 dual-import `@hms.core.scan.*` |
+| `KIT-004` | High | HMS ScanKit `ScanType.QRCODE` 已改名 `QR_CODE`，旧值 undefined |
 | `DB-001` | High | `ResultSet` / `RdbStore` 未 close |
 
-## 10. 相关文档
+## 14. 相关文档
 
 - `01-language-arkts/02-typescript-to-arkts-migration.md` — ArkTS 严格模式禁用项
 - `03-platform-apis/` — Kit 系统能力索引
@@ -250,7 +490,8 @@ const nonce: Uint8Array = (await random.generateRandom(12)).data
 - `09-quick-reference/` — 装饰器 / 错误码速查
 - `samples/templates/web-bridge-h5-shell/` — 最小 Web bridge 骨架
 - `samples/templates/huks-secure-store/` — HUKS 硬件密钥保管示例
+- `samples/templates/scan-qrcode/` — HMS ScanKit dual-import + page-bound ctx + 错误码处理（§11 配套）
 
 ---
 
-> **来源**：本文 8 类陷阱沉淀自 2026-05 一个真实下游消费者（企业级 AI 工作面 macOS / iPadOS / Android / HarmonyOS 四端套件）实战教训 + 评审反馈。具体出处可能因后续脱敏调整不再可追溯，但所有陷阱都在三端的至少一端实际遇到过、并被代码 review 拍板进规则。新增条目欢迎附最小复现路径。
+> **来源**：本文 12 类陷阱沉淀自 2026-05 一个真实下游消费者（企业级 AI 工作面 macOS / iPadOS / Android / HarmonyOS 四端套件）实战教训 + 评审反馈。具体出处可能因后续脱敏调整不再可追溯，但所有陷阱都在三端的至少一端实际遇到过、并被代码 review 拍板进规则。新增条目欢迎附最小复现路径。

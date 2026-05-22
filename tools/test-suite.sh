@@ -31,6 +31,7 @@ declare -A EXPECTED=(
   [BadState]=2 [BadArkTS]=2 [BadDecorators]=2 [BadSecurityKit]=2
   [BadRuntimePitfalls]=2 [InlineDecorators]=2 [CustomDialogState]=2 [ReusableState]=2
   [GoodPrefStore]=0
+  [BadHmsScanKit]=2 [GoodHmsScanKit]=0
 )
 for f in "${!EXPECTED[@]}"; do
   bash tools/hooks/lib/scan-arkts.sh "tools/hooks/test-fixtures/${f}.ets" >/dev/null 2>&1

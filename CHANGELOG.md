@@ -423,6 +423,49 @@ AI Agent CLI 调试闭环 patch：
 
 ## [Unreleased]
 
+### 2026-05-22 · OctoDesk N4 反哺（HMS ScanKit + token 写入原子性 + pasteboard + App-Linking）
+
+来自 OctoDesk Mobile Companion `apps/harmonyos/**` 自 2026-05-15 起的 ~30 个 commit 实战教训（desktop remote QR 配对、外部 OAuth、Auth refresh 路径、剪贴板 pair link 自动提示）：
+
+- **`KIT-003` scan-arkts 新规则（Medium）**：`@kit.ScanKit` 直接 dynamic import 在 HarmonyOS NEXT 6.x 真机不稳。
+  - 触发条件：`import('@kit.ScanKit')` 或 `from '@kit.ScanKit'`
+  - 来源：OctoDesk `DesktopRemoteQrScanner.ets` 真机实测 `scanKit.scanBarcode` / `scanKit.scanCore` 解析为 `undefined`（默认 export 形态在某些镜像下不对），模拟器不一致
+  - 标准做法：dual-import `@hms.core.scan.scanBarcode` + `@hms.core.scan.scanCore`，显式取 `.default`
+  - inline-suppress 支持：`// scan-ignore: KIT-003`
+- **`KIT-004` scan-arkts 新规则（High）**：HMS ScanKit `ScanType.QRCODE` 在 HarmonyOS 6.x 已改名为 `QR_CODE`。
+  - 触发条件：`\bScanType\.QRCODE\b`（旧名是 word boundary 匹配，新名 `QR_CODE` 含 `_` 不会误命中）
+  - 来源：OctoDesk 2026-05-22 commit `3f0c76c5`——旧值在新 SDK 是 `undefined`，传入 `options.scanTypes` 让 `startScanForResult` 以 BusinessError `code 401` 整体失败。AI 训练数据里几乎全用 `QRCODE`，必须显式覆盖
+- **`05-best-practices/bridge-integration-pitfalls.md` §8 新增「Token / SecureStore 写入原子性」**：
+  - `secureStore.set(refreshToken)` 必须**先**于 `storeAccessToken(...)`，因为后者 fire `tokenChangeListener` → bridge 推 `auth.access_token.set` → WebView 认为已登录
+  - 一旦 SecureStore 写失败（HUKS / Keychain / EncryptedSharedPreferences），客户端会处于"当前会话已登录 + 下次启动无法 refresh + native panel 弹登录失败"三重矛盾态
+  - 三端等价反模式都已写入文档，含 iOS / Android / HarmonyOS 各自的 SecureStore wrapper 与 file:line 引用模式
+  - 来源：OctoDesk commit `c389ae1a`（fix(mobile): persist refresh token before firing access-token listener）
+- **`05-best-practices/bridge-integration-pitfalls.md` §9 新增「HarmonyOS Pasteboard 提示时机」**：
+  - HarmonyOS 6.x 起 `pasteboard.getData()` **每次**都弹系统级 toast，app 无法关闭
+  - 在 `onForeground` / `aboutToAppear` / cold-start 第一帧前调用 = AGC 审核 P0 拒因 + 用户莫名其妙
+  - 正确做法：仅在显式用户操作回调里读 + native 端 prefix 过滤（仅返回符合预期格式的内容，绝不把整段剪贴板给 WebView）
+  - 来源：OctoDesk commit `4412ff12`（fix(mobile): stop eager desktop pairing clipboard peek）
+- **`05-best-practices/bridge-integration-pitfalls.md` §10 新增「App-Linking 双侧配置 + EntryAbility 双入口路由」**：
+  - HarmonyOS 深链接需要**三处同步**：`AppScope/well-known/harmony-app-linking.json` ↔ `entry/src/main/module.json5` ↔ `EntryAbility.onCreate` + `onNewWant` 双入口
+  - 常踩错配：只 1+2 没 3 → cold-start 不走 deeplink dispatcher，WebView 停首页；只 2 没 1 → Domain Verify fail
+  - 深入：OAuth callback 必须走系统浏览器（RFC 8252），不能用 ArkWeb 做 user-agent；客户端 dedup ring 作 defense-in-depth；literal host 二次校验
+  - 来源：OctoDesk commits `43d7fa94`（Phase 1 Commit 3 — `/oauth/callback` deeplink）+ `2cfd0758`（Phase 3 Commit 15 — HarmonyOS OAuthPlugin）
+- **`05-best-practices/bridge-integration-pitfalls.md` §11 新增「HMS ScanKit 接线层 trap」**：
+  - 把 KIT-003 / KIT-004 之外、scanner 抓不到的"page-bound `UIAbilityContext`"问题写成文档：`startScanForResult(ctx, opts)` 的 ctx 必须从 `@Entry struct` 的 `getContext(this)` 取，EntryAbility 里那个裸 `AbilityContext` 会 `code 401` 失败
+  - 错误码到 bridge outcome 的标准映射（`1000500001` / `1000500002` / `401`）
+  - 来源：OctoDesk commits `28efd120` + `3f0c76c5`
+- **§7 CSPRNG 段补 OAuth 2.0 PKCE 子场景**：
+  - 显式点名"RFC 7636 PKCE verifier 必须来自 cryptoFramework"，这是 `CSPRNG-001` 最容易漏的真实子场景
+  - 强调 silent fallback to `Math.random` 比直接 throw 更糟糕（客户端长期处于可攻击态而无告警）
+  - 来源：OctoDesk commit `2c975529`（PKCE verifier 从 `Math.random` 改 `cryptoFramework.createRandom().generateRandomSync(32)`）
+- **新增 `samples/templates/scan-qrcode/` 完整可跑骨架**：
+  - `ScanPlugin.ets` + `RuntimeRegistry.ets` + `module.json5.patch.md` + README
+  - 集成步骤、错误码映射表、反模式三例、上 PR 前 checklist
+  - 内部跑 `bash tools/hooks/lib/scan-arkts.sh ScanPlugin.ets` exit 0
+- **新增 fixture**：`BadHmsScanKit.ets`（exit=2，命中 KIT-003 + KIT-004）+ `GoodHmsScanKit.ets`（exit=0，验证 dual-import + `QR_CODE` 新名 + try/catch 不误命中）
+- **README.md「接线层陷阱」一行**："8 类" → "12 类"（同步章节扩展）
+- **回归**：`tools/hooks/test-fixtures/` 全部 11 个 fixture 跑通
+
 ### 2026-05-22 · LCC 真机部署反哺（layered icon 幽灵 + 9568297）
 
 来自 LCC（化名，真鸿蒙 LLM 对话 app）v0.4.4 发布后第一次正经替换品牌图标 + 装机 MLR-AL10（HarmonyOS 6.1.0 / API 23）的实战：
