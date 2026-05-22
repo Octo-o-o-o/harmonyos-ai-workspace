@@ -37,6 +37,7 @@
   "files": [
     "bin/",
     "tools/install.sh",
+    "tools/doctor.sh",
     "tools/harmony-dev-cycle.sh",
     "tools/scaffold-deveco-project.sh",
     "tools/check-ohpm-deps.sh",
@@ -55,6 +56,7 @@
     ".claude/skills/",
     ".cursor/",
     ".github/copilot-instructions.md",
+    ".github/instructions/",
     ".mcp.json",
     "LICENSE",
     "README.md"

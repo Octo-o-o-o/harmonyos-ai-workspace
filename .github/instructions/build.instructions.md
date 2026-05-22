@@ -1,16 +1,8 @@
 ---
-name: harmonyos-build-debug
-verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
-description: |
-  HarmonyOS Hvigor / OHPM / hdc 工具链 + 错误码诊断。
-  **激活条件**（满足任一即激活）：
-    - 用户跑 hvigorw / ohpm / hdc 命令时出错
-    - 用户问构建产物（.hap / .app / .har / .hsp）的差异 / 选型
-    - 错误码 201 / 202 / 401 / 801 / 9568297 / 9568305 / 9568322 等鸿蒙特定数字
-    - hilog 日志解读 / hdc fport 端口转发 / NAPI 调试
-    - 装包到模拟器或真机失败
-  **不激活**：Android adb / iOS Xcode / Web devtools 调试问题（即使概念相似）。
+description: Hvigor / OHPM / hdc 构建调试
+applyTo: "**/oh-package.json5,**/module.json5,**/build-profile.json5,**/hvigorfile.ts"
 ---
+
 
 # HarmonyOS 构建与调试
 
@@ -57,11 +49,6 @@ hdc shell                                          # 进入 shell
 hdc hilog | grep MyTag                             # 查日志
 hdc fport tcp:9229 tcp:9229                        # 端口转发（NAPI / Web 调试）
 hdc file send <local> <device-path>                # 推文件
-
-# 设备 OS / API 探测（决定 build-profile.json5 的 compatibleSdkVersion 上限）
-hdc -t <id> shell param get const.product.software.version   # e.g. 6.1.0.117(SP6C00E115R1P4)
-hdc -t <id> shell param get const.ohos.apiversion            # e.g. 23
-hdc -t <id> shell param get const.product.model              # e.g. MLR-AL10
 ```
 
 ## hilog 正确写法
@@ -83,25 +70,8 @@ hilog.info(DOMAIN, 'MyTag', '%{public}s value=%{public}d', name, n);
 | 401 | 参数错误 | 比对 `upstream-docs/.../reference/` 中签名 |
 | 801 | 设备不支持 | `canIUse('SystemCapability.X')` 守护 |
 | 16000050 | Ability 启动失败 | `module.json5` abilities 配置 |
-| 9568297 | install failed due to older sdk version | HAP 的 `compatibleSdkVersion` 高于设备 OS · 降版本（见下） |
 | 9568305 | HAP 安装失败 | clean / 包过大 / 签名不一致 |
 | 9568322 | 签名校验失败 | profile 与 cert 不匹配 |
-
-### 9568297 速诊
-
-设备 OS 是 6.1.0（API 23），HAP 用 `compatibleSdkVersion: "6.1.1(24)"` 打的 → `hdc install` 报 9568297。
-
-```bash
-# 1) 查设备实际 OS / API
-hdc -t <id> shell param get const.product.software.version    # → e.g. 6.1.0.117(SP6C00E115R1P4)
-hdc -t <id> shell param get const.ohos.apiversion             # → e.g. 23
-hdc -t <id> shell param get const.product.model               # → e.g. MLR-AL10
-
-# 2) 把 build-profile.json5 的 compatibleSdkVersion 降到 ≤ 设备 API
-#    targetSdkVersion 可保留高版本，不影响安装
-```
-
-**注意**：`6.1.0(23)` 这种写法是 "OS 6.1.0, API 23"——HarmonyOS 6 期间 API 编号 ≠ OS 子版本号（HarmonyOS 6.0.0=API 20 / 6.0.1=21 / 6.0.2=22 / 6.1.0=23 / 6.1.1=24）。
 
 ## 签名三件套
 
@@ -190,3 +160,6 @@ which hdc     && hdc --version
 - 完整指南：`04-build-debug-tools/README.md`
 - 调试技巧：`CLAUDE.md` 第 12 节
 - 上架流程：`07-publishing/README.md`
+
+---
+> 由 `tools/generate-ai-configs.sh` 自动生成。**请勿手动编辑**——改源文件后重跑。

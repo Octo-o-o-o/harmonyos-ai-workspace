@@ -36,7 +36,7 @@ npx -y harmonyos-ai-workspace          # 30 秒搞定，0 改你的源码
 | AI 写 `this.list.push(x)` 状态不刷新（**LLM 第一坑**） | UI 不更新，调试半小时才发现 | 钩子立刻报 `STATE-002 · High`，给改写示例 |
 | AI 引用旧 API（DevEco 12 → 22 多次变化） | 用了已弃用的 `picker.PhotoViewPicker` | `ARKTS-DEPRECATED-PICKER` 即时拦截 + 给新 API |
 | AGC 上架前才发现拒因 | 提审被打回再修 = 1 周 | 20 条 `AGC-RJ-*` 稳定 ID 编辑时就提示 |
-| 多 AI 工具规则不一致（Claude / Cursor 各写一套） | 同一项目下 AI 给不同建议 | 单源 fan-out：8 个 SKILL → Cursor `.mdc` + Copilot instructions |
+| 多 AI 工具规则不一致（Claude / Cursor 各写一套） | 同一项目下 AI 给不同建议 | 单源 fan-out：5 个默认 SKILL → Cursor 6 个 `.mdc`（按 globs 触发）+ Copilot root < 4KB + `instructions/*.md` 按 applyTo 触发 |
 
 ---
 
@@ -164,9 +164,10 @@ rm -rf test
 | 资产 | 内容 |
 | --- | --- |
 | **AI 规则集** | `CLAUDE.md`（Claude Code）+ `AGENTS.md`（[agents.md 标准](https://agents.md/) 24+ 工具通用）+ 8 个按需触发的 [`.claude/skills/`](.claude/skills/) |
-| **8 个 SKILL** | `arkts-rules` / `state-management` / `build-debug` / `signing-publish` / `harmonyos-review` / `runtime-pitfalls` / `multimodal-llm` / `web-bridge` |
+| **8 个 SKILL** | 5 个默认 fan-out（`arkts-rules` / `state-management` / `build-debug` / `signing-publish` / `runtime-pitfalls`，对所有项目通用）+ 3 个领域专项（`harmonyos-review` / `multimodal-llm` / `web-bridge`，仅 Claude Code 自动激活，其他工具按需手动读） |
 | **PostToolUse 钩子链路** | Edit `.ets`/`.ts`/`oh-package.json5` 后自动跑 ArkTS 反模式扫描 + OHPM 包名核验 + 权限提示 |
-| **多工具 fan-out** | 单源 `.claude/skills/*/SKILL.md` → Cursor `.mdc` + Copilot instructions |
+| **多工具 fan-out** | 5 个默认 SKILL → Cursor 6 个 `.mdc`（按 globs 触发，单文件 < 12KB）+ Copilot root `< 4KB` + `.github/instructions/*.md` 5 个按 `applyTo` 触发 |
+| **`doctor` 体检** | `npx harmonyos-ai-workspace doctor` 或 `bash tools/doctor.sh`：PASS/WARN/FAIL 三态报告，含钩子端到端自测（喂故意的 `STATE-002` 看是否被抓） |
 | **CLI 工具集** | `install.sh`（manifest + sha256 安装）/ `run-linter.sh`（离线 codeLinter）/ `check-ohpm-deps.sh`（4 类校验）/ `check-rename-module.sh`（模块改名一致性）/ `test-suite.sh`（19 项回归断言）/ **`scaffold-deveco-project.sh`**（一键补 DevEco 脚手架 11 文件）/ **`harmony-dev-cycle.sh`**（`quick-check` / `build-check` / `cycle-once` / `device-check`，绕开 DevEco GUI Run 按钮） |
 | **Recipe Templates** | 4 个可粘贴最小可用代码（`permission/` / `list/` / `dark-mode/` / `login/`） |
 | **2026 提审 Top 20 拒因** | [`07-publishing/checklist-2026-rejection-top20.md`](07-publishing/checklist-2026-rejection-top20.md)，含 `AGC-RJ-001..020` 稳定 ID + 6 条高频项配可粘贴代码 |
@@ -193,12 +194,16 @@ PostToolUse 钩子并非孤例（[`yibaiba/harmonyos-skills-pack`](https://githu
 
 | 层 | 数量 | 位置 | 用途 |
 | --- | --- | --- | --- |
-| **自动化扫描**（钩子触发） | 31 条 | `tools/hooks/lib/scan-arkts.sh` 内联 + awk 装饰器上下文检测 | grep-based 快扫，毫秒级反馈；支持 [inline-suppress](.claude/skills/arkts-rules/SKILL.md#抑制-scanner-误报inline-suppress) |
+| **自动化扫描**（钩子触发） | 32 条 | `tools/hooks/lib/scan-arkts.sh` 内联 + awk 装饰器上下文检测 | grep-based 快扫，毫秒级反馈；支持 [inline-suppress](.claude/skills/arkts-rules/SKILL.md#抑制-scanner-误报inline-suppress) |
 | **代码审查清单** | 36 条（9 大类） | `.claude/skills/harmonyos-review/references/checklist.md` | review skill 引用的稳定 ID（`SEC-001` / `STATE-002` / `KIT-003` 等） |
 | **AGC 提审拒因** | 20 条 | `07-publishing/checklist-2026-rejection-top20.md` | 上架审核拒因映射，含 `AGC-RJ-*` 稳定 ID |
 | **OHPM 黑名单**（已知伪包） | ~25 项 | `tools/data/ohpm-blacklist.txt` + 脚本内联 | 防 AI 虚构包名 |
 
-合计 ~94 条编号规则，分布在四层；它们用于不同场景。
+合计 ~95 条编号规则，分布在四层；它们用于不同场景。
+
+**接线层陷阱**（scanner 抓不到、灰度才暴露的）单独整理在 [`05-best-practices/bridge-integration-pitfalls.md`](05-best-practices/bridge-integration-pitfalls.md)：8 类常见 Web Bridge + 原生外壳集成坑（capability 握手 fail-closed、`javaScriptProxy` 生命周期、idempotencyKey 强制、envelope schema validation 等），沉淀自下游真工程教训。
+
+**Monorepo 接入**：HarmonyOS shell 是大 monorepo 子目录的项目（不是 npm app 形态），参考 [`samples/integrations/monorepo-consumer/`](samples/integrations/monorepo-consumer/) —— 三个文件薄 wrapper、scope 到子目录、单一来源、零文件复制；包含 token 成本实测与降噪方案。
 
 ---
 

@@ -17,6 +17,8 @@
 | `CustomDialogState.ets` | exit=2 | v0.7 回归：`@CustomDialog struct` 应在装饰器白名单内，类内 push 报 STATE-002 |
 | `ReusableState.ets` | exit=2 | v0.7 回归：`@Reusable @Component struct` 同行写法应被识别 |
 | `GoodPrefStore.ets` | **exit=0** | 反测试：4 类合法代码（`preferences.delete` / Record 索引赋值 / 空 Record 字面量 / 带 scan-ignore 的资源清理 catch）应**全部 0 命中** |
+| `BadHmsScanKit.ets` | exit=2 | KIT-003（`@kit.ScanKit` 直接 import）+ KIT-004（`ScanType.QRCODE` 旧名）—— OctoDesk 反哺 |
+| `GoodHmsScanKit.ets` | **exit=0** | 反测试：dual-import `@hms.core.scan.*` + `ScanType.QR_CODE` 新名 + try/catch 应**0 命中** |
 | `bad-oh-package.json5` | 非 0 | OHPM-FAKE：虚构 `@ohos/lottie-player` 等不存在的包名（由 `tools/check-ohpm-deps.sh` 校验） |
 
 ## 用法

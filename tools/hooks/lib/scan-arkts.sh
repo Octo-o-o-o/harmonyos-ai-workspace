@@ -599,6 +599,36 @@ if grep -qE 'createImageSource\s*\(|imageSource' "$TMP" 2>/dev/null && ! grep -q
   fi
 fi
 
+# KIT-003: @kit.ScanKit 直接 import 在 HarmonyOS NEXT 真机不稳
+# 来自 OctoDesk 反哺（2026-05-22 commit 3f0c76c5）：HarmonyOS 6.x 真机实测
+# `import('@kit.ScanKit')` 解析成功但 `scanKit.scanBarcode` / `.scanCore` 为
+# undefined（默认 export 形态在某些镜像下不对），导致扫码功能静默不可用。
+# 建议改 dual-import + 显式取 `.default`：
+#   const sb = (await import('@hms.core.scan.scanBarcode')).default
+#   const sc = (await import('@hms.core.scan.scanCore')).default
+# 严重度 Medium：模拟器多数 OK，真机不一致；保留低噪提醒。如确认目标镜像
+# 上 @kit.ScanKit 工作，加 // scan-ignore: KIT-003。
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  emit_med "KIT-003" "$ln" "${content:0:80}" \
+    "@kit.ScanKit 在 HarmonyOS 6.x 真机可能解析为 undefined。改 dual-import @hms.core.scan.scanBarcode + @hms.core.scan.scanCore，取 .default 拿到真实 API"
+done < <(scan_lines "(import\s*\(\s*['\"]@kit\.ScanKit['\"]|from\s+['\"]@kit\.ScanKit['\"])" | head -3)
+
+# KIT-004: HMS ScanKit ScanType.QRCODE 已改名为 QR_CODE
+# 来自 OctoDesk 反哺（2026-05-22 commit 3f0c76c5）：HMS ScanKit 在 HarmonyOS 6.x
+# 把枚举值从 ScanType.QRCODE 改名为 ScanType.QR_CODE。旧 train data 残留的
+# QRCODE 写法在新 SDK 是 undefined，传给 options.scanTypes 后 startScanForResult
+# 会以 BusinessError code 401（参数校验失败）整体失败。
+while IFS= read -r match; do
+  [[ -z "$match" ]] && continue
+  ln="${match%%:*}"
+  content="${match#*:}"
+  emit_high "KIT-004" "$ln" "${content:0:80}" \
+    "HMS ScanKit ScanType.QRCODE 在 HarmonyOS 6.x 已改名为 ScanType.QR_CODE。旧枚举值为 undefined，startScanForResult 会以 code 401 失败"
+done < <(scan_lines '\bScanType\.QRCODE\b' | head -3)
+
 # AGC-RJ-014: UI 中文字符串硬编码（应走 $r('app.string.xxx')）
 while IFS= read -r match; do
   [[ -z "$match" ]] && continue

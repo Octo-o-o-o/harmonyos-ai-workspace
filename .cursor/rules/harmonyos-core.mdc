@@ -1,6 +1,7 @@
-# HarmonyOS / ArkTS / ArkUI 核心硬约束
-
-> GitHub Copilot 全局指令。本文件 < 4KB（code-review 安全区）；详细规则按 `applyTo` 自动激活，见 `.github/instructions/`。
+---
+description: HarmonyOS / ArkTS 硬约束精华。always-on，凡是写鸿蒙代码都先看这个。
+alwaysApply: true
+---
 
 > 平台：HarmonyOS 6 系列（API 22 / 21 现行稳定，API 23 Developer Beta）
 > ArkTS + ArkUI 声明式 + Stage 模型

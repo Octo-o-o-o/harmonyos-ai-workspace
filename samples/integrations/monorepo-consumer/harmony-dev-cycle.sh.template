@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# scripts/harmony-dev-cycle.sh
+#
+# Thin wrapper around HarmonyOS_DevSpace's tools/harmony-dev-cycle.sh.
+# Pre-fills your monorepo's harmony subdir + bundle + ability so you don't
+# pass them on every invocation.
+#
+# Override DevSpace location with:
+#   export HARMONYOS_DEVSPACE=/path/to/HarmonyOS_DevSpace
+
+set -euo pipefail
+
+# ─── CONFIG ─── change these 3 lines for your monorepo
+HARMONY_SUBDIR="apps/harmonyos"
+BUNDLE="com.example.app"
+ABILITY="EntryAbility"
+# ───────────────────────────────────────────────────
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+HARMONY_DIR="$REPO_ROOT/$HARMONY_SUBDIR"
+DEVSPACE="${HARMONYOS_DEVSPACE:-$HOME/WorkSpace/HarmonyOS_DevSpace}"
+DEVCYCLE="$DEVSPACE/tools/harmony-dev-cycle.sh"
+
+if [[ ! -x "$DEVCYCLE" ]]; then
+  cat >&2 <<EOF
+ERROR: HarmonyOS_DevSpace not found at:
+         $DEVSPACE
+
+This wrapper relies on the DevSpace toolkit. Either:
+  1. Set HARMONYOS_DEVSPACE to your existing checkout, or
+  2. Clone it:   git clone https://github.com/Octo-o-o-o/harmonyos-ai-workspace "$DEVSPACE"
+  3. Or install via npm:   npx -y harmonyos-ai-workspace
+EOF
+  exit 1
+fi
+
+# Defaults come first; user-passed flags appear later and override.
+exec "$DEVCYCLE" \
+  --dir "$HARMONY_DIR" \
+  --bundle "$BUNDLE" \
+  --ability "$ABILITY" \
+  "$@"

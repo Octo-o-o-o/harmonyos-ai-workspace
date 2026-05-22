@@ -257,9 +257,10 @@ install() {
   fetch "$BASE_URL/tools/check-ohpm-deps.sh"            "tools/check-ohpm-deps.sh"
   fetch "$BASE_URL/tools/harmony-dev-cycle.sh"          "tools/harmony-dev-cycle.sh"
   fetch "$BASE_URL/tools/run-linter.sh"                 "tools/run-linter.sh"
+  fetch "$BASE_URL/tools/doctor.sh"                     "tools/doctor.sh"
   if [[ "$DRY_RUN" != "1" ]]; then
     chmod +x tools/hooks/post-edit.sh tools/hooks/lib/*.sh \
-      tools/check-ohpm-deps.sh tools/harmony-dev-cycle.sh tools/run-linter.sh 2>/dev/null || true
+      tools/check-ohpm-deps.sh tools/harmony-dev-cycle.sh tools/run-linter.sh tools/doctor.sh 2>/dev/null || true
   fi
 
   # 2b) OHPM 黑/白名单数据（脚本会自动加载这些外部文件 → 不拉就退化为内联兜底）
@@ -283,16 +284,23 @@ install() {
     fetch "$BASE_URL/.claude/skills/build-debug/references/develop-debug-build.md"   ".claude/skills/build-debug/references/develop-debug-build.md" || true
   fi
 
-  # 4) Cursor 专属
+  # 4) Cursor 专属（v0.5 起多文件 fan-out，按 globs 触发）
   if contains_target "cursor"; then
-    fetch "$BASE_URL/.cursor/rules/harmonyos.mdc" ".cursor/rules/harmonyos.mdc" || \
-      warn "Cursor 配置生成器尚未在远端可用；本地用 tools/generate-ai-configs.sh 生成"
+    for mdc in harmonyos-core harmonyos-arkts harmonyos-state harmonyos-build harmonyos-runtime harmonyos-sign; do
+      fetch "$BASE_URL/.cursor/rules/$mdc.mdc" ".cursor/rules/$mdc.mdc" || \
+        warn "$mdc.mdc 远端缺失；本地可 bash tools/generate-ai-configs.sh 再生成"
+    done
   fi
 
-  # 5) Copilot 专属
+  # 5) Copilot 专属（v0.5 起 root < 4KB + 多 instructions）
   if contains_target "copilot"; then
     fetch "$BASE_URL/.github/copilot-instructions.md" ".github/copilot-instructions.md" || \
-      warn "Copilot 配置尚未在远端可用；本地用 tools/generate-ai-configs.sh 生成"
+      warn "Copilot root 指令远端缺失；本地用 tools/generate-ai-configs.sh 生成"
+    for instr in arkts state build runtime sign-publish; do
+      fetch "$BASE_URL/.github/instructions/$instr.instructions.md" \
+            ".github/instructions/$instr.instructions.md" || \
+        warn "$instr.instructions.md 远端缺失；本地可 bash tools/generate-ai-configs.sh 再生成"
+    done
   fi
 
   echo
@@ -323,9 +331,11 @@ install() {
 
   ok "安装完成！"
   echo
-  info "立即自测（30 秒确认装对了）："
+  info "立即自测（一行确认装对了）："
   echo
-  echo "  # 1. 跑一遍钩子，看到 [STATE-002 · High] 输出 = 钩子工作"
+  echo "  bash tools/doctor.sh         # PASS/WARN/FAIL 三态报告，含钩子端到端自测"
+  echo
+  echo "  # 或老办法（手动跑钩子看 [STATE-002 · High] 是否输出）："
   echo "  cat > /tmp/_test.ets <<'EOF'"
   echo "  @Entry @Component struct X {"
   echo "    @State items: number[] = [];"

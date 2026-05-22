@@ -7,6 +7,8 @@
 //   npx harmonyos-ai-workspace --targets=claude,codex,cursor
 //   npx harmonyos-ai-workspace --mirror=ghproxy
 //   npx harmonyos-ai-workspace --uninstall
+//   npx harmonyos-ai-workspace doctor                       # 检查当前项目是否真的"装好"
+//   npx harmonyos-ai-workspace doctor --json                # 机器可读输出
 //
 // 如果还没发到 npm，也可以直接用 GitHub source（无需先 publish）：
 //   npx github:Octo-o-o-o/harmonyos-ai-workspace
@@ -45,6 +47,10 @@ function findInstallScript() {
   return { mode: 'local', path: local };
 }
 
+function findDoctorScript() {
+  return path.resolve(__dirname, '..', 'tools', 'doctor.sh');
+}
+
 function fetchAndExec(args) {
   const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}/tools/install.sh`;
   log(`fetching install.sh from ${url}`);
@@ -78,14 +84,28 @@ harmonyos-ai-workspace · npm CLI 包装
   npx harmonyos-ai-workspace --targets=claude,codex,cursor
   npx harmonyos-ai-workspace --mirror=ghproxy                  # 国内 GitHub 不通时
   npx harmonyos-ai-workspace --uninstall
+  npx harmonyos-ai-workspace doctor                            # 检查当前目录"装好了没"
+  npx harmonyos-ai-workspace doctor --json                     # 机器可读输出
 
 也可以直接用 GitHub source（无需 npm publish）：
   npx -y github:${REPO_OWNER}/${REPO_NAME}
 
-底层调用：tools/install.sh（参数透传）
+底层调用：tools/install.sh / tools/doctor.sh（参数透传）
 完整文档：https://github.com/${REPO_OWNER}/${REPO_NAME}
 `);
     process.exit(0);
+  }
+
+  // 子命令路由（doctor 等）
+  if (args[0] === 'doctor') {
+    const doctorPath = findDoctorScript();
+    if (!fs.existsSync(doctorPath)) {
+      err(`找不到 tools/doctor.sh（预期路径：${doctorPath}）`);
+      err('请确认你装的是 v0.5.0+ 的包，或在仓库 git clone 模式下运行');
+      process.exit(2);
+    }
+    const result = spawnSync('bash', [doctorPath, ...args.slice(1)], { stdio: 'inherit' });
+    process.exit(result.status || 0);
   }
 
   // 优先用本地脚本（git clone 场景 / npm 包场景）

@@ -235,8 +235,8 @@ HarmonyOS_DevSpace/
 │   ├── bootstrap-upstream-docs.sh  ← 拉官方文档镜像
 │   ├── verify-environment.sh
 │   └── install-deveco-prereqs.sh
-├── .cursor/rules/harmonyos.mdc ← fan-out 生成（不要手改）
-├── .github/                    ← workflows / copilot-instructions.md（fan-out 生成）
+├── .cursor/rules/              ← 6 个 .mdc 按 globs 触发（fan-out 生成，不要手改）
+├── .github/                    ← copilot-instructions.md (< 4KB) + instructions/*.md（fan-out 生成）
 ─── 维护者文档（AI 写代码不需要读，全部在 docs/）─────────────
 ├── docs/
 │   ├── PLAN.md                 ← 施工方案 / 调研 / 决策
@@ -429,7 +429,8 @@ DevEco Studio 与 Claude Code / Codex 并行使用：
 | `tools/check-ohpm-deps.sh` | OHPM 包名黑/白名单 + ohpm CLI 校验 |
 | `tools/run-linter.sh` | 包装 hvigorw codeLinter，不依赖 DevEco GUI |
 | `tools/install.sh` | 把规则一行装到任意鸿蒙 app（curl pipe-able） |
-| `tools/generate-ai-configs.sh` | 单源 fan-out 到 Cursor `.mdc` / Copilot instructions |
+| `tools/generate-ai-configs.sh` | 5 个默认 SKILL → Cursor 6 个 `.mdc`（按 globs 触发）+ Copilot root < 4KB + `.github/instructions/*.md` 5 个（按 applyTo 触发） |
+| `tools/doctor.sh` | PASS/WARN/FAIL 体检（钩子端到端自测、工具链、规则文件大小）；`npx harmonyos-ai-workspace doctor` 同款 |
 | `tools/bootstrap-upstream-docs.sh` | 拉取 OpenHarmony 官方文档镜像 |
 | `tools/hooks/test-fixtures/` | 故意写错的 .ets 用于校验脚本回归 |
 
@@ -459,11 +460,11 @@ hvigorw assembleHap -p buildMode=debug  # 真编译
 
 `.ets` 含 UI（`@Component` / `build()`）；`.ts` 纯逻辑；不要把 UI 写到 `.ts`。
 
-### 11.4 错误码 Top 7（详见 references）
+### 11.4 错误码 Top 8（详见 references）
 
 ```
 201 PERMISSION_DENIED · 401 参数错误 · 801 设备不支持
-9568305 HAP 安装失败 · 9568322 签名校验失败
+9568297 compatibleSdkVersion 高于设备 OS · 9568305 HAP 安装失败 · 9568322 签名校验失败
 16000050 Ability 启动失败 · 202 非系统应用
 ```
 

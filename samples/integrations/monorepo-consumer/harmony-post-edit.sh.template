@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# scripts/harmony-post-edit.sh
+#
+# Claude Code PostToolUse hook entry. Scopes to <YOUR_HARMONY_SUBDIR>/ and
+# delegates to HarmonyOS_DevSpace's tools/hooks/post-edit.sh — single source
+# of truth for ArkTS / OHPM rules.
+#
+# Override DevSpace location with:
+#   export HARMONYOS_DEVSPACE=/path/to/HarmonyOS_DevSpace
+# Default: $HOME/WorkSpace/HarmonyOS_DevSpace
+
+set -u
+
+# ─── CONFIG ─── change this one line for your monorepo
+HARMONY_SUBDIR="apps/harmonyos"
+# ────────────────────────────────────────────────────
+
+# 1. Capture stdin (Claude Code hook JSON envelope)
+RAW_INPUT=""
+if [[ ! -t 0 ]]; then
+  RAW_INPUT="$(cat || true)"
+fi
+
+# 2. Extract file_path
+FILE_PATH=""
+if command -v jq >/dev/null 2>&1 && [[ -n "$RAW_INPUT" ]]; then
+  FILE_PATH="$(printf '%s' "$RAW_INPUT" \
+    | jq -r '.tool_input.file_path // .tool_input.path // .file_path // empty' 2>/dev/null)"
+fi
+if [[ -z "$FILE_PATH" && -n "$RAW_INPUT" ]]; then
+  FILE_PATH="$(printf '%s' "$RAW_INPUT" \
+    | sed -n 's/.*"file_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+fi
+[[ -z "$FILE_PATH" ]] && exit 0
+
+# 3. Resolve repo root + harmony shell dir
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+HARMONY_DIR="$REPO_ROOT/$HARMONY_SUBDIR"
+
+# Normalize relative paths
+if [[ "$FILE_PATH" != /* ]]; then
+  FILE_PATH="$REPO_ROOT/$FILE_PATH"
+fi
+
+# 4. Scope check — only fire for edits inside the harmony subdir
+case "$FILE_PATH" in
+  "$HARMONY_DIR"/*) ;;
+  *) exit 0 ;;
+esac
+
+# 5. Locate DevSpace
+DEVSPACE="${HARMONYOS_DEVSPACE:-$HOME/WorkSpace/HarmonyOS_DevSpace}"
+DEVSPACE_HOOK="$DEVSPACE/tools/hooks/post-edit.sh"
+
+if [[ ! -f "$DEVSPACE_HOOK" ]]; then
+  printf '[harmony-post-edit] HarmonyOS_DevSpace not found at %s — skip scan.\n' "$DEVSPACE" >&2
+  exit 0
+fi
+
+# 6. Delegate. Override CLAUDE_PROJECT_DIR so DevSpace's relative paths
+#    and its scan state file land inside the harmony subdir (gitignored).
+export CLAUDE_PROJECT_DIR="$HARMONY_DIR"
+printf '%s' "$RAW_INPUT" | bash "$DEVSPACE_HOOK"

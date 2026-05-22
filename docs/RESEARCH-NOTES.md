@@ -9,6 +9,7 @@
 | 2026-05-06 一轮 | 4 家邻接项目（Awesome-HarmonyOS / DengShiyingA / yibaiba / CoreyLyn） + 命名可用性 | `PLAN.md` § 五 |
 | 2026-05-06 二轮 | 8 家广搜（baidu-maps / cheliangzhao / ohosvscode / Phodal AutoDev / awesome-cursorrules issue #62 / hreyulog / sqlab / craftysecurity） | `PLAN.md` § 五 + § 六 |
 | 2026-05-06 三轮 UX | 三家直接竞品深度对比（安装 / 日常使用 / 升级 / 贡献流） | `PLAN.md` § 三 / § 四 |
+| 2026-05-09 用户场景复审 | 新开发 / 老鸿蒙维护 / Android-iOS-Web-uni-app 迁移 / 多 AI 工具协作 / LLM-Web 专项 | [`RESEARCH-AI-HARMONYOS-USER-PAINPOINTS-2026-05.md`](RESEARCH-AI-HARMONYOS-USER-PAINPOINTS-2026-05.md) + [`REVIEW-NEXT-STEPS-2026-05.md`](REVIEW-NEXT-STEPS-2026-05.md) |
 
 ## 关键结论
 
