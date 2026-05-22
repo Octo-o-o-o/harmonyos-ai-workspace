@@ -101,7 +101,7 @@ harmonyos-ai-workspace · npm CLI 包装
     const doctorPath = findDoctorScript();
     if (!fs.existsSync(doctorPath)) {
       err(`找不到 tools/doctor.sh（预期路径：${doctorPath}）`);
-      err('请确认你装的是 v0.5.0+ 的包，或在仓库 git clone 模式下运行');
+      err('请确认你装的是 v0.4.5+ 的包，或在仓库 git clone 模式下运行');
       process.exit(2);
     }
     const result = spawnSync('bash', [doctorPath, ...args.slice(1)], { stdio: 'inherit' });

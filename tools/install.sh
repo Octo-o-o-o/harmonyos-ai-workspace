@@ -25,7 +25,8 @@
 #   AGENTS.md
 #   .mcp.json
 #   .claude/settings.json + .claude/skills/  （--targets 含 claude）
-#   .cursor/rules/harmonyos.mdc              （--targets 含 cursor）
+#   .agents/skills/ + .codex/config.toml     （--targets 含 codex）
+#   .cursor/rules/*.mdc                      （--targets 含 cursor）
 #   .github/copilot-instructions.md          （--targets 含 copilot）
 #   tools/hooks/                             （所有 target 都装）
 #   tools/check-ohpm-deps.sh                 （所有 target 都装）
@@ -212,7 +213,7 @@ uninstall() {
     # 先删运行时产物（钩子写入的，manifest 不跟踪）
     rm -f .claude/.harmonyos-last-scan.txt 2>/dev/null || true
     # 用 find 递归删空目录（比一一列稳，处理任意嵌套深度）
-    for root in .claude .cursor .github tools; do
+    for root in .claude .agents .codex .cursor .github tools; do
       [[ -d "$root" ]] && find "$root" -depth -type d -empty -delete 2>/dev/null || true
     done
     rm -f "${MANIFEST_FILE}"
@@ -284,7 +285,21 @@ install() {
     fetch "$BASE_URL/.claude/skills/build-debug/references/develop-debug-build.md"   ".claude/skills/build-debug/references/develop-debug-build.md" || true
   fi
 
-  # 4) Cursor 专属（v0.5 起多文件 fan-out，按 globs 触发）
+  # 4) Codex 专属：项目级 skills + MCP config
+  if contains_target "codex"; then
+    fetch "$BASE_URL/.codex/config.toml"                                 ".codex/config.toml"
+    fetch "$BASE_URL/.agents/skills/README.md"                           ".agents/skills/README.md" || true
+    for skill in arkts-rules state-management build-debug signing-publish harmonyos-review runtime-pitfalls multimodal-llm web-bridge; do
+      fetch "$BASE_URL/.agents/skills/$skill/SKILL.md"                   ".agents/skills/$skill/SKILL.md" || true
+    done
+    fetch "$BASE_URL/.agents/skills/harmonyos-review/references/checklist.md"        ".agents/skills/harmonyos-review/references/checklist.md" || true
+    fetch "$BASE_URL/.agents/skills/harmonyos-review/references/report-template.md"  ".agents/skills/harmonyos-review/references/report-template.md" || true
+    fetch "$BASE_URL/.agents/skills/harmonyos-review/references/official-docs.md"    ".agents/skills/harmonyos-review/references/official-docs.md" || true
+    fetch "$BASE_URL/.agents/skills/arkts-rules/references/spec-quick-ref.md"        ".agents/skills/arkts-rules/references/spec-quick-ref.md" || true
+    fetch "$BASE_URL/.agents/skills/build-debug/references/develop-debug-build.md"   ".agents/skills/build-debug/references/develop-debug-build.md" || true
+  fi
+
+  # 5) Cursor 专属（多文件 fan-out，按 globs 触发）
   if contains_target "cursor"; then
     for mdc in harmonyos-core harmonyos-arkts harmonyos-state harmonyos-build harmonyos-runtime harmonyos-sign; do
       fetch "$BASE_URL/.cursor/rules/$mdc.mdc" ".cursor/rules/$mdc.mdc" || \
@@ -292,7 +307,7 @@ install() {
     done
   fi
 
-  # 5) Copilot 专属（v0.5 起 root < 4KB + 多 instructions）
+  # 6) Copilot 专属（root < 4KB + 多 instructions）
   if contains_target "copilot"; then
     fetch "$BASE_URL/.github/copilot-instructions.md" ".github/copilot-instructions.md" || \
       warn "Copilot root 指令远端缺失；本地用 tools/generate-ai-configs.sh 生成"
@@ -347,7 +362,7 @@ install() {
   echo
   info "下一步："
   echo "  · Claude Code:  claude       （CLAUDE.md 自动加载，钩子已就绪）"
-  echo "  · Codex CLI:    codex        （AGENTS.md 自动加载）"
+  echo "  · Codex CLI:    codex        （AGENTS.md + .agents/skills 自动加载，MCP config 已就绪）"
   echo "  · CLI 调试闭环： bash tools/harmony-dev-cycle.sh cycle-once"
   echo "                  # build → install → run → 抓 8s hilog 给 AI 分析"
   echo "  · 卸载：        bash tools/install.sh --uninstall  （安全：只删本工具写入的）"

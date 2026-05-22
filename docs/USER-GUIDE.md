@@ -89,14 +89,14 @@ claude                                # 启动后 CLAUDE.md 自动加载
 
 ```bash
 cd ~/WorkSpace/apps/my-harmony-app
-codex                                 # AGENTS.md 自动加载（agents.md 标准）
+codex                                 # AGENTS.md + .agents/skills 自动加载
 ```
 
-同样的 prompt——Codex 读到 `AGENTS.md` 第 0 节 SKILL 触发索引，按需展开 `state-management` 部分。
+同样的 prompt——Codex 读到 `AGENTS.md` 第 0 节硬约束，并从 `.agents/skills/` 自动发现 `state-management` 等项目级 skills。`.codex/config.toml` 会把 `mcp-harmonyos` 接进 Codex MCP 列表。
 
 ### 2.3 用 Cursor / Copilot
 
-打开 IDE，在 chat 里粘 prompt 即可——`.cursor/rules/harmonyos.mdc` / `.github/copilot-instructions.md` 是 install 时已生成（或者跑 `bash tools/generate-ai-configs.sh` 重新生成），AI 在编辑 `.ets` 时自动应用规则。
+打开 IDE，在 chat 里粘 prompt 即可——`.cursor/rules/*.mdc` / `.github/copilot-instructions.md` 是 install 时已生成（或者跑 `bash tools/generate-ai-configs.sh` 重新生成），AI 在编辑 `.ets` 时自动应用规则。
 
 ---
 
@@ -133,14 +133,15 @@ Claude: "已加滚动按钮，钩子 0 命中。建议你跑：
 
 ### 3.2 跟 Codex CLI 一起写代码
 
-Codex 走 `AGENTS.md` 标准——所有 24+ 兼容工具同样吃这套。差异：
+Codex 走 `AGENTS.md` 标准，并额外读取 `.agents/skills/` 项目级 Skills。差异：
 
 | 能力 | Claude Code | Codex CLI |
 | --- | --- | --- |
 | 项目宪法自动加载 | ✅ `CLAUDE.md` | ✅ `AGENTS.md`（[agents.md](https://agents.md/) 标准）|
-| 8 SKILL 按需触发 | ✅ frontmatter 自动激活 | ⚠️ 通过 `AGENTS.md` § 0 索引手动指引 |
+| 8 SKILL 按需触发 | ✅ frontmatter 自动激活 | ✅ `.agents/skills/` 自动发现 |
 | Edit 后钩子强校验 | ✅ PostToolUse 触发 | ❌ 自己跑 `bash tools/hooks/post-edit.sh` 或 git pre-commit |
 | `.cursor/rules/` / `.github/copilot-instructions.md` 同源 | ✅ | ✅ |
+| MCP-HarmonyOS | ✅ `.mcp.json` | ✅ `.codex/config.toml` |
 
 Codex 用户建议：把钩子加到 git pre-commit，commit 前自动跑：
 
@@ -158,7 +159,7 @@ chmod +x .git/hooks/pre-commit
 
 ### 3.3 跟 Cursor / Copilot 一起写代码
 
-`.cursor/rules/harmonyos.mdc` 在 `*.ets` / `*.ts` / `module.json5` / `oh-package.json5` 编辑时自动激活。`.github/copilot-instructions.md` 在仓库内全局应用。
+`.cursor/rules/*.mdc` 在 `*.ets` / `*.ts` / `module.json5` / `oh-package.json5` 编辑时按 globs 激活。`.github/copilot-instructions.md` 在仓库内全局应用。
 
 两者都没钩子机制——靠规则文件软引导。建议把钩子加进 GitHub Actions（见 § 7.2）让 PR 时强校验。
 
@@ -382,9 +383,9 @@ hvigorw 报 ERROR: arkts-no-untyped-obj-literals。
 
 ```
 我在改鸿蒙工程 [项目名]。
-本仓库装了 harmonyos-ai-workspace（CLAUDE.md / AGENTS.md / 8 SKILL）。
+本仓库装了 harmonyos-ai-workspace（CLAUDE.md / AGENTS.md / .claude/skills / .agents/skills）。
 今天我想 [具体任务描述]。
-请先确认你能看到 .claude/skills/manifest.json + CLAUDE.md，然后开始。
+请先确认你能看到对应工具的 skills 目录和项目宪法，然后开始。
 ```
 
 让 AI 一开始就 anchor 到项目宪法上。
@@ -414,8 +415,8 @@ npx -y harmonyos-ai-workspace --force
 npx -y harmonyos-ai-workspace --uninstall
 
 # 选项 B：手动删（你确定知道哪些文件是本工具装的）
-rm -f CLAUDE.md AGENTS.md .mcp.json
-rm -rf .claude/ .cursor/ .github/copilot-instructions.md tools/hooks/ tools/check-*.sh tools/run-linter.sh
+rm -f CLAUDE.md AGENTS.md .mcp.json .codex/config.toml
+rm -rf .claude/ .agents/ .cursor/ .github/copilot-instructions.md tools/hooks/ tools/check-*.sh tools/run-linter.sh
 ```
 
 ### 6.3 scanner 报"不该报的"误报
@@ -473,6 +474,7 @@ source ~/.zshrc
 
 ```bash
 git add CLAUDE.md AGENTS.md .mcp.json \
+        .agents/ .codex/config.toml \
         .claude/settings.json .claude/skills/ \
         .cursor/ .github/copilot-instructions.md \
         tools/ \

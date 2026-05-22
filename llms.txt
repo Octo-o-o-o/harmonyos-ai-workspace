@@ -8,6 +8,8 @@
 
 - [CLAUDE.md](CLAUDE.md): Claude Code 项目级大宪章
 - [AGENTS.md](AGENTS.md): 跨工具通用宪法（[agents.md 标准](https://agents.md/) 24+ 工具兼容；与 CLAUDE.md 冲突时以本文件为准）
+- [.agents/skills/](.agents/skills/): Codex CLI / Desktop 项目级 Skills 镜像
+- [.codex/config.toml](.codex/config.toml): Codex MCP-HarmonyOS 项目级配置
 - [.cursor/rules/](.cursor/rules/): Cursor 规则 6 个 `.mdc`（按 globs 触发，单源 fan-out 生成）
 - [.github/copilot-instructions.md](.github/copilot-instructions.md): GitHub Copilot root 指令（< 4KB）
 - [.github/instructions/](.github/instructions/): Copilot 5 个分场景 `.instructions.md`（按 applyTo 触发）
@@ -16,7 +18,7 @@
 
 ## Skills（按需加载，frontmatter 触发）
 
-`.claude/skills/` 下共 8 个 SKILL.md。其中 **5 个默认** fan-out 到 Cursor / Copilot（按 globs / applyTo 触发），**3 个领域专项** 仅 Claude Code 自动激活，其他工具用到时手动读：
+`.claude/skills/` 下共 8 个 SKILL.md，`.agents/skills/` 是给 Codex 的同源镜像。其中 **5 个默认** fan-out 到 Cursor / Copilot（按 globs / applyTo 触发），**3 个领域专项** 按需激活：
 
 语言 / 框架 / 工程层（5 个默认 fan-out，对所有鸿蒙项目通用）：
 
@@ -52,7 +54,8 @@
 
 ## Case Studies（真实战疤）
 
-- [docs/case-studies/llm-chat-app.md](docs/case-studies/llm-chat-app.md): LCC（LLM Chat Client）M3-M12 多里程碑实战笔记，**症状 / 错误信息 / 修复 diff / 教训**四段式
+- [docs/case-studies/llm-chat-app.md](docs/case-studies/llm-chat-app.md): LCC（LLM Chat Client）M3-M13 多里程碑实战笔记，**症状 / 错误信息 / 修复 diff / 教训**四段式
+- [docs/case-studies/android-parity-migration.md](docs/case-studies/android-parity-migration.md): paseo-harmony Phase A/B Android parity 迁移实战笔记
 
 ## 自动化校验工具
 

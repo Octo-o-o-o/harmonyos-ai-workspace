@@ -11,12 +11,12 @@
 | 工具 | 是否支持 PostToolUse 强校验 | 等价方案 | 示例文件 |
 | --- | --- | --- | --- |
 | **Claude Code** | ✅ 强校验（自动调用） | `.claude/settings.json` | 仓库根 `.claude/settings.json` 已配 |
-| **Codex CLI** | ❌ 无 hook 机制 | git pre-commit + AGENTS.md 引导 | [`codex-precommit.sh`](codex-precommit.sh) |
+| **Codex CLI** | ❌ 无 hook 机制 | git pre-commit + AGENTS.md + `.agents/skills/` 引导 | [`codex-precommit.sh`](codex-precommit.sh) |
 | **Cursor** | ❌ 无 hook 机制（IDE 内嵌只支持 `.mdc` 规则） | git pre-commit + `.cursorrules` 引导 | [`codex-precommit.sh`](codex-precommit.sh)（同 Codex） |
 | **GitHub Copilot Coding Agent** | ⚠️ Beta 阶段在探索 hook | git pre-commit + `.github/copilot-instructions.md` 引导 | [`copilot-coding-agent.json`](copilot-coding-agent.json) |
 | **CI（GitHub Actions / GitLab CI）** | ✅ 等价校验 | 工作流调用 `--json` 模式 | [`github-action-arkts-check.yml`](github-action-arkts-check.yml) |
 
-> **结论**：除了 Claude Code 是真正的 "AI Edit 后**强**校验"，其他工具最实际的等价物是 **git pre-commit + AGENTS.md/规则文件软引导**。这是工具能力差异，不是设计缺陷。
+> **结论**：除了 Claude Code 是真正的 "AI Edit 后**强**校验"，其他工具最实际的等价物是 **git pre-commit + AGENTS.md / `.agents/skills` / 规则文件软引导**。这是工具能力差异，不是设计缺陷。
 
 ## 安装 git pre-commit（任何工具都可用）
 

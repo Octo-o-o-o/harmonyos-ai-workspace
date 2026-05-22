@@ -55,12 +55,12 @@ record() {
       ;;
     WARN)
       WARN_COUNT=$((WARN_COUNT + 1))
-      printf "  ${YELLOW}[!]${NC} %s ${DIM}— %s${NC}\n" "$label" "$detail"
+      [[ "$QUIET" != "1" ]] && printf "  ${YELLOW}[!]${NC} %s ${DIM}— %s${NC}\n" "$label" "$detail"
       [[ -n "$hint" ]] && WARN_HINTS+=("$label → $hint")
       ;;
     FAIL)
       FAIL_COUNT=$((FAIL_COUNT + 1))
-      printf "  ${RED}[✗]${NC} %s ${DIM}— %s${NC}\n" "$label" "$detail"
+      [[ "$QUIET" != "1" ]] && printf "  ${RED}[✗]${NC} %s ${DIM}— %s${NC}\n" "$label" "$detail"
       [[ -n "$hint" ]] && FAIL_HINTS+=("$label → $hint")
       ;;
   esac
@@ -237,6 +237,30 @@ if [[ -d ".github/instructions" ]]; then
   if [[ "$N_INSTR" -gt 0 ]]; then
     record PASS ".github/instructions/" "${N_INSTR} 个 .instructions.md（按 applyTo 触发）"
   fi
+fi
+
+# Codex 项目级 skills + MCP config
+if [[ -d ".agents/skills" ]]; then
+  N_AGENT_SKILLS=$(find .agents/skills -name "SKILL.md" -type f | wc -l | tr -d ' ')
+  if [[ "$N_AGENT_SKILLS" -ge 1 ]]; then
+    record PASS ".agents/skills/" "${N_AGENT_SKILLS} 个 Codex SKILL.md"
+  else
+    record WARN ".agents/skills/" "目录存在但无 SKILL.md"
+  fi
+else
+  record WARN ".agents/skills/" "未安装（Codex 仍会读 AGENTS.md，但不会获得项目级 skill 自动发现）" \
+    "如要装：bash tools/install.sh --targets=codex"
+fi
+
+if [[ -f ".codex/config.toml" ]]; then
+  if grep -q 'mcp-harmonyos' .codex/config.toml 2>/dev/null; then
+    record PASS ".codex/config.toml" "Codex MCP config 含 mcp-harmonyos"
+  else
+    record WARN ".codex/config.toml" "存在但未配置 mcp-harmonyos"
+  fi
+else
+  record WARN ".codex/config.toml" "未安装（如不用 Codex MCP 可忽略）" \
+    "如要装：bash tools/install.sh --targets=codex"
 fi
 
 # ─── F. MCP ───────────────────────────────────────────────────

@@ -127,7 +127,7 @@ rm -rf test
 │   └────┬────┘                                                    │
 │        │ 启动时自动加载                                          │
 │        ▼                                                          │
-│   CLAUDE.md / AGENTS.md / .cursor/rules/ / .github/copilot-…     │
+│   CLAUDE.md / AGENTS.md / .agents/skills / .cursor/rules / …     │
 │        │ AI 读到鸿蒙硬约束 + 8 SKILL 触发索引                    │
 │        ▼                                                          │
 │   AI 写代码 → Edit .ets / .ts / oh-package.json5                 │
@@ -163,8 +163,8 @@ rm -rf test
 
 | 资产 | 内容 |
 | --- | --- |
-| **AI 规则集** | `CLAUDE.md`（Claude Code）+ `AGENTS.md`（[agents.md 标准](https://agents.md/) 24+ 工具通用）+ 8 个按需触发的 [`.claude/skills/`](.claude/skills/) |
-| **8 个 SKILL** | 5 个默认 fan-out（`arkts-rules` / `state-management` / `build-debug` / `signing-publish` / `runtime-pitfalls`，对所有项目通用）+ 3 个领域专项（`harmonyos-review` / `multimodal-llm` / `web-bridge`，仅 Claude Code 自动激活，其他工具按需手动读） |
+| **AI 规则集** | `CLAUDE.md`（Claude Code）+ `AGENTS.md`（[agents.md 标准](https://agents.md/) 24+ 工具通用）+ 8 个按需触发的 [`.claude/skills/`](.claude/skills/) + Codex 镜像 [`.agents/skills/`](.agents/skills/) |
+| **8 个 SKILL** | 5 个默认 fan-out（`arkts-rules` / `state-management` / `build-debug` / `signing-publish` / `runtime-pitfalls`，对所有项目通用）+ 3 个领域专项（`harmonyos-review` / `multimodal-llm` / `web-bridge`）；Claude Code 读 `.claude/skills/`，Codex 读 `.agents/skills/` |
 | **PostToolUse 钩子链路** | Edit `.ets`/`.ts`/`oh-package.json5` 后自动跑 ArkTS 反模式扫描 + OHPM 包名核验 + 权限提示 |
 | **多工具 fan-out** | 5 个默认 SKILL → Cursor 6 个 `.mdc`（按 globs 触发，单文件 < 12KB）+ Copilot root `< 4KB` + `.github/instructions/*.md` 5 个按 `applyTo` 触发 |
 | **`doctor` 体检** | `npx harmonyos-ai-workspace doctor` 或 `bash tools/doctor.sh`：PASS/WARN/FAIL 三态报告，含钩子端到端自测（喂故意的 `STATE-002` 看是否被抓） |
@@ -173,7 +173,7 @@ rm -rf test
 | **2026 提审 Top 20 拒因** | [`07-publishing/checklist-2026-rejection-top20.md`](07-publishing/checklist-2026-rejection-top20.md)，含 `AGC-RJ-001..020` 稳定 ID + 6 条高频项配可粘贴代码 |
 | **Case Studies** | [`docs/case-studies/llm-chat-app.md`](docs/case-studies/llm-chat-app.md) — 真鸿蒙 LLM 对话 app M3-M13 实战（M3-M12 原始里程碑 + M13 运维期 layered icon / 9568297），12 节"症状/错误信息/修复 diff/教训"四段式 + [`docs/case-studies/android-parity-migration.md`](docs/case-studies/android-parity-migration.md) — paseo-harmony 14 阶段 Phase A/B 真修复笔记 |
 | **测试 fixture** | 9 个回归 fixture 覆盖 inline 装饰器 / `@CustomDialog` / `@Reusable` / 普通工具类等边界 |
-| **MCP** | `.mcp.json` 接通 `mcp-harmonyos`（npx 自动）；动作型 MCP 接入指引见 [`docs/MCP-INTEGRATION.md`](docs/MCP-INTEGRATION.md) |
+| **MCP** | `.mcp.json` + `.codex/config.toml` 接通 `mcp-harmonyos`（npx 自动）；动作型 MCP 接入指引见 [`docs/MCP-INTEGRATION.md`](docs/MCP-INTEGRATION.md) |
 | **可选官方文档镜像** | 5300+ 中文 + 5100+ 英文 OpenHarmony md（按需 `bootstrap-upstream-docs.sh -y` 拉，~2.7 GB） |
 
 ### 真正独有的能力（vs 同类项目）
@@ -380,7 +380,7 @@ grep -rln 'Octo-o-o-o' --include='*.md' --include='*.sh' --include='*.json' . | 
 
 ## 许可
 
-- 本仓库自创内容（指南、`CLAUDE.md`、`AGENTS.md`、`.claude/skills/`、脚本、示例）：**MIT License**（详见 [`LICENSE`](LICENSE)）
+- 本仓库自创内容（指南、`CLAUDE.md`、`AGENTS.md`、`.claude/skills/`、`.agents/skills/`、脚本、示例）：**MIT License**（详见 [`LICENSE`](LICENSE)）
 - `upstream-docs/openharmony-docs/`（运行 bootstrap 拉取）：CC-BY-4.0，版权归 **OpenAtom Foundation / OpenHarmony 项目**
 
 ---

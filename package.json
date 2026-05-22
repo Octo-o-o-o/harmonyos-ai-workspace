@@ -54,6 +54,8 @@
     "AGENTS.md",
     ".claude/settings.json",
     ".claude/skills/",
+    ".agents/skills/",
+    ".codex/config.toml",
     ".cursor/",
     ".github/copilot-instructions.md",
     ".github/instructions/",

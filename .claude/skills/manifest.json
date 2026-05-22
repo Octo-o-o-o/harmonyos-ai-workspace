@@ -82,8 +82,8 @@
   "fanout_targets": {
     "implemented": {
       "claude_code": ".claude/skills/*/SKILL.md",
-      "codex": "AGENTS.md",
-      "cursor": ".cursor/rules/harmonyos.mdc",
+      "codex": "AGENTS.md + .agents/skills/*/SKILL.md + .codex/config.toml",
+      "cursor": ".cursor/rules/*.mdc",
       "copilot": ".github/copilot-instructions.md"
     },
     "planned": {
@@ -92,8 +92,8 @@
     }
   },
   "_notes": {
-    "fanout_targets": "未来通过 tools/generate-ai-configs.sh 把同源规则导出到不同 AI 工具的约定路径",
-    "versioning": "目前与工作区 package.json 同 SemVer 节奏（皆 0.3.0）。如果 Layer 2 Plugin 包未来独立分发（见 docs/OPEN-SOURCE-STRATEGY.md），此版本号会从工作区脱钩。",
+    "fanout_targets": "tools/install.sh 会按 target 下发对应 AI 工具的约定路径；tools/generate-ai-configs.sh 负责 Cursor / Copilot fan-out 产物。",
+    "versioning": "目前与工作区 package.json 同 SemVer 节奏。如果 Layer 2 Plugin 包未来独立分发（见 docs/OPEN-SOURCE-STRATEGY.md），此版本号会从工作区脱钩。",
     "borrowed_from": [
       "yibaiba/harmonyos-skills-pack — SKILLS_MANIFEST.json schema",
       "agents.md — 跨工具规范"

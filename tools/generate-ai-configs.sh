@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # generate-ai-configs.sh — 从 .claude/skills/ + AGENTS.md 拼接出其他 AI 工具的配置
 #
-# v0.5 起改为**多文件 fan-out**：
+# 当前采用**多文件 fan-out**：
 #   - 不再生成单个 29KB 大文件（Cursor 触发精度低、Copilot code-review 会截断）
 #   - 按 SKILL 切到多个文件，每个文件用 globs / applyTo 精准触发
 #   - root 入口控制在 4KB 内（Copilot 安全区）

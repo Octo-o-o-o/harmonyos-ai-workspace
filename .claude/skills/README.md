@@ -1,6 +1,6 @@
 # Claude Skills · HarmonyOS DevSpace
 
-这里是为 Claude Code 准备的 Skill 集合。每个子目录是一个独立的 Skill，按需触发加载，避免一次把 600+ 行的 `CLAUDE.md` 全塞进上下文。
+这里是为 Claude Code 准备的 Skill 集合。每个子目录是一个独立的 Skill，按需触发加载，避免一次把 600+ 行的 `CLAUDE.md` 全塞进上下文。Codex 对应镜像在 `.agents/skills/`。
 
 ## 可用 Skills
 

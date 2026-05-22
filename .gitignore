@@ -61,6 +61,7 @@ Icon
 CLAUDE.local.md
 AGENTS.override.md
 .codex/state/
+.codex/hooks.json
 
 # ----- 上游文档（约 2.7 GB，不入主分支；用 tools/bootstrap-upstream-docs.sh 拉取） -----
 upstream-docs/openharmony-docs/

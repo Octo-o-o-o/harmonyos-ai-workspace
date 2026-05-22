@@ -81,7 +81,7 @@ cd ~/WorkSpace/apps/my-music-player && claude
 # Claude 自动读本目录的 CLAUDE.md，并能用 Bash 工具读 ../../HarmonyOS_DevSpace/...
 ```
 
-**Codex CLI 同理**——在 app 根放 `AGENTS.md`（软链或独立写）即可。Codex 默认会从 git root 向上查找 `AGENTS.md`，并支持 `~/.codex/AGENTS.md` 全局兜底。
+**Codex CLI 同理**——在 app 根放 `AGENTS.md`，并保留 `.agents/skills/` 与 `.codex/config.toml`。Codex 默认会从 git root 向上查找 `AGENTS.md`，项目级 skills 会从 `.agents/skills/` 自动发现；全局兜底可用 `~/.codex/AGENTS.md`。
 
 ---
 

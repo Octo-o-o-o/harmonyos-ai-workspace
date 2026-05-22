@@ -8,7 +8,7 @@
 
 ## 0. Skills 触发索引
 
-`.claude/skills/` 下 8 个 SKILL.md 按 frontmatter 自动激活。手动判断索引：
+Codex / Codex Desktop 默认读取 `.agents/skills/`，Claude Code 默认读取 `.claude/skills/`；两处各有 8 个同源 SKILL.md。手动判断索引：
 
 | 用户场景 | skill | 内容 |
 | --- | --- | --- |
@@ -23,13 +23,13 @@
 
 ## 0.5 Edit 后实时校验
 
-仓库已配 PostToolUse 钩子（仅 Claude Code 强校验；Codex / Cursor / Copilot 用规则文件软引导）：
+仓库已配 PostToolUse 钩子（仅 Claude Code 强校验；Codex 有 `.agents/skills/` 规则自动发现，但强校验仍建议用 pre-commit / CI；Cursor / Copilot 用规则文件软引导）：
 
 - 改完 `.ets` / `.ts` / `oh-package.json5` 自动跑 `tools/hooks/lib/scan-arkts.sh` + `tools/check-ohpm-deps.sh`
 - 违规打到 stderr + 写入 `.claude/.harmonyos-last-scan.txt`
 - 你看到该文件存在 → **先读它**，含上次扫描的违规列表
 
-非 Claude Code 工具用户：把这两个脚本加进 git pre-commit 或 CI 同样能保证质量。
+非 Claude Code 工具用户：把这两个脚本加进 git pre-commit 或 CI 同样能保证质量。Codex 项目级 MCP 配置在 `.codex/config.toml`。
 
 ---
 
@@ -100,7 +100,7 @@ bash tools/check-ohpm-deps.sh entry/oh-package.json5
 # 真编译期 lint（依赖 DevEco SDK，不依赖 GUI）
 bash tools/run-linter.sh --strict
 
-# 把规则同步到 Cursor / Copilot
+# 把规则同步到 Cursor / Copilot（Codex skills 由 .agents/skills 提供）
 bash tools/generate-ai-configs.sh --targets=cursor,copilot
 ```
 

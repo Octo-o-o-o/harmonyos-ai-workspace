@@ -133,13 +133,18 @@ rm -rf "$TMP_APP"
 echo
 echo "[7/7] install/generate sanity"
 TMP=$(mktemp -d)
-HOAW_REPO_OWNER="" \
-  bash tools/install.sh --dry-run --dir="$TMP" >/dev/null 2>&1 || true
+DRY_OUTPUT=$(HOAW_REPO_OWNER="" bash tools/install.sh --dry-run --dir="$TMP" 2>&1 || true)
 file_count=$(find "$TMP" -type f 2>/dev/null | wc -l | tr -d ' ')
 if [[ "$file_count" == "0" ]]; then
   assert_pass "install.sh --dry-run 不写文件"
 else
   assert_fail "install.sh --dry-run 误写了 $file_count 个文件"
+fi
+if echo "$DRY_OUTPUT" | grep -q ".agents/skills/arkts-rules/SKILL.md" && \
+   echo "$DRY_OUTPUT" | grep -q ".codex/config.toml"; then
+  assert_pass "install.sh 默认 codex target 含 .agents skills + .codex config"
+else
+  assert_fail "install.sh 默认 codex target 缺 .agents skills 或 .codex config"
 fi
 rm -rf "$TMP"
 
@@ -147,6 +152,13 @@ if bash tools/generate-ai-configs.sh --check >/dev/null 2>&1; then
   assert_pass "generate-ai-configs.sh --check 通过"
 else
   assert_fail "generate-ai-configs.sh --check 失败"
+fi
+
+DOCTOR_JSON=$(bash tools/doctor.sh --json 2>/dev/null || true)
+if echo "$DOCTOR_JSON" | python3 -m json.tool >/dev/null 2>&1; then
+  assert_pass "doctor.sh --json valid JSON"
+else
+  assert_fail "doctor.sh --json INVALID JSON"
 fi
 
 # ─── 总结 ─────────────────────────────────────────────────
