@@ -1,9 +1,9 @@
 ---
 name: runtime-pitfalls
-verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
+verified_against: harmonyos-6.1.0-api23  # last sync 2026-05-22
 description: |
   鸿蒙工程**运行时装配陷阱**——ArkTS 语法无错但项目跑不起来 / 行为不正确的工程层坑。
-  来源：真实 LLM 对话客户端 app 的 M3-M12 实战反馈。
+  来源：真实 LLM 对话客户端 app M3-M13 + paseo-harmony Phase A/B 实战反馈。
   **激活条件**（满足任一即激活）：
     - 修改 `build-profile.json5` / `module.json5` / `oh-package.json5` 任意一个
     - 改 `resources/*/element/string.json` 或其他资源文件
@@ -12,6 +12,9 @@ description: |
     - 写多模态 LLM 调用（OpenAI Vision / Whisper / DALL-E 等）
     - 多模块工程（feature 拆分）+ 模块改名
     - HUKS 加密集成（API key / 用户敏感数据落盘）
+    - 替换品牌图标 / 修改 `AppScope/resources/base/media/{background,foreground}.png`（layered icon）
+    - 改 `NavPathStack` 路由 / 在 `build()` 写多个根 container / 实现长列表 timeline
+    - 多 host 共享存储（per-host store 按 serverId 分桶）/ daemon workspaceId 字段消费
   **不激活**：纯 UI 组件、纯算法逻辑、单 module hello world。
 ---
 
@@ -19,7 +22,7 @@ description: |
 
 > 触发场景：**ArkTS 编译能过但 app 跑不起来 / 行为不对**。这一层 grep 扫不出来，靠 AI 主动避免。
 >
-> 来源：真实 LLM 对话 app 的 M3-M12 工程踩坑总结。
+> 来源：真实 LLM 对话 app M3-M13 工程踩坑总结 + paseo-harmony Phase A/B（Splash 白屏 / emoji / Button padding / build() root / timeline timestamp / per-host store / workspaceId）+ LCC 真机部署（layered icon foreground 透明）。共 17 章，编号一～十七。
 
 ## 一、主题切换 / 外观跟随
 

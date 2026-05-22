@@ -1,6 +1,6 @@
 # Recipe 模板
 
-> 把"hello world 之后的第一个真功能"拆成 4 个高频小场景。每个 recipe 是**完整可运行**的最小代码 + 关键约束 + 反模式提醒，AI 写新功能时可参考。
+> 把"hello world 之后的第一个真功能"拆成 **8 个**高频小场景（基础 4 + 进阶 4）。每个 recipe 是**完整可运行**的最小代码 + 关键约束 + 反模式提醒，AI 写新功能时可参考。
 >
 > **不是脚手架**——这些是片段，用来粘到你已有的 DevEco 工程里。完整工程见 [`docs/SETUP-FROM-SCRATCH.md`](../../docs/SETUP-FROM-SCRATCH.md)。
 

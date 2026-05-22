@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "name": "harmonyos-ai-workspace",
-  "version": "0.4.3",
+  "version": "0.4.5",
   "description": "鸿蒙开发参考工作区的 Claude Skills 集合，按需触发，可独立分发为 Plugin",
   "license": "MIT",
   "homepage": "https://github.com/Octo-o-o-o/harmonyos-ai-workspace",
@@ -58,7 +58,7 @@
       "id": "runtime-pitfalls",
       "path": "runtime-pitfalls/SKILL.md",
       "title": "运行时装配陷阱",
-      "triggers": ["build-profile.json5 / module.json5 / oh-package.json5 改动", "string.json 改动", "主题切换", "Web 组件 javaScriptProxy", "多模块改名", "HUKS 加密", "DEVECO_SDK_HOME"],
+      "triggers": ["build-profile.json5 / module.json5 / oh-package.json5 改动", "string.json 改动", "主题切换", "Web 组件 javaScriptProxy", "多模块改名", "HUKS 加密", "DEVECO_SDK_HOME", "替换品牌图标 / layered icon foreground 透明", "NavPathStack 白屏 / build() 单 root / Button padding 截断 / emoji Unicode 渲染", "per-host store serverId 隔离 / timeline timestamp 绕 reducer / daemon workspaceId 不可靠"],
       "category": "engineering",
       "criticality": "high"
     },

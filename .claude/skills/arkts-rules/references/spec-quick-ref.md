@@ -66,11 +66,15 @@
 | --- | --- | --- | --- |
 | `KIT-001` | `http.createHttp()` 用完没 `destroy()` | 加 `req.destroy()` 释放 | ✅ |
 | `KIT-002` | ImageSource 解码后未 `.release()` | `imageSource.release()` 释放原生缓冲 | ✅ |
+| `KIT-003` | `import('@kit.ScanKit')` 在 HarmonyOS 6.x 真机 default export 解析不稳定 | dual-import `@hms.core.scan.scanBarcode` + `@hms.core.scan.scanCore`，显式取 `.default` | ✅ |
+| `KIT-004` | `ScanType.QRCODE` 在 HarmonyOS 6.x 已改名 `QR_CODE`，旧名解析为 `undefined` 导致 `startScanForResult` BusinessError 401 | `ScanType.QR_CODE`（旧名不存在；AI 训练数据全用 QRCODE 必须显式覆盖） | ✅ |
 | `PERF-001` | `arr.forEach(async ...)` | 并发 `Promise.all(arr.map(async ...))` 或顺序 `for-of` | ✅ |
 | `PERF-002` | 长列表用 `ForEach` 而非 `LazyForEach` | `LazyForEach + IDataSource`（> 50 项时） | ✅ |
 | `SEC-001` | 硬编码看似 token / api-key / password 的字符串（≥ 16 字符） | 挪到 EncryptedPreferences / 环境变量 | ✅ |
 | `SEC-002` | `hilog %{public}` 输出敏感字段（token / 身份证 / password 等） | 用 `%{private}` 或脱敏 `mask()` 后再打 | ✅ |
 | `SEC-007` | `MD5` / `SHA1` / `DES` 弱算法 | SHA-256+ / AES-GCM（`@kit.CryptoArchitectureKit`） | ✅ |
+| `CSPRNG-001` | `Math.random()` 用于 IV / nonce / signature / PKCE verifier 等加密上下文（路径 `/security/` 或 `/crypto/` → High；含 `cryptoFramework` / `nonce` / `aesGcm` / `huks` / `hmac` 等关键字 → High；否则 Medium） | `cryptoFramework.createRandom().generateRandomSync(N)`；inline-suppress: `// scan-ignore: CSPRNG-001` | ✅ |
+| `CSPRNG-002` | HUKS `HUKS_TAG_IV` 同文件无 `cryptoFramework.createRandom` 引用（AES-GCM IV 重复一次就完全 break） | IV 必须从 CSPRNG 取；inline-suppress 仅适用 IV 来自可信跨文件封装 | ✅ |
 | `DB-001` | ResultSet / RdbStore 取出后未 `.close()` | `try { ... } finally { rs.close() }` | ✅ |
 | `COMPAT-001` | 用 API 21+ 新 Kit 但无 `canIUse` 守护 | `if (canIUse('SystemCapability.Foo')) { ... }` | ✅ |
 | `AGC-RJ-014` | UI 硬编码中文字符串 | `Text($r('app.string.xxx'))` + 资源文件 | ✅ |

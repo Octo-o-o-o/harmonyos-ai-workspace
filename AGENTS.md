@@ -17,7 +17,7 @@
 | Hvigor / OHPM / hdc / 错误码 | `harmonyos-build-debug` | 命令速查 + 错误码 |
 | 签名 / AGC 上架 / 审核被拒 | `harmonyos-signing-publish` | 三件套 + Top 20 拒因 |
 | review 代码 / PR 审查 / 上架前自查 | `harmonyos-review` | 9 大类 60+ 编号规则 |
-| 主题切换 / 模块改名 / `string.json` 空数组 / HUKS 加密 / `DEVECO_SDK_HOME` | `runtime-pitfalls` | 7 类工程装配陷阱 |
+| 主题切换 / 模块改名 / `string.json` 空数组 / HUKS 加密 / `DEVECO_SDK_HOME` / 替换品牌图标（layered icon） | `runtime-pitfalls` | 17 类工程装配陷阱（一～十七，含 NavPathStack 白屏 / emoji 渲染 / Button padding / build() 单 root / timeline timestamp / per-host store / daemon workspaceId / layered icon foreground 透明） |
 | OpenAI Vision / Whisper / DALL-E / SSE 流式 / `string\|object[]` union | `multimodal-llm` | LLM 客户端领域 |
 | ArkUI Web 组件 / `javaScriptProxy` / `runJavaScript` / Markdown 离线渲染 | `web-bridge` | H5↔ArkTS 桥 |
 

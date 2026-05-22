@@ -2,7 +2,7 @@
 
 > 面向 Claude Code / Codex CLI / Cursor / Copilot / Aider 等 24+ AI 编码助手（[agents.md 标准](https://agents.md/)）的鸿蒙开发参考工作区。
 > HarmonyOS 6 系列（API 21 / 22）+ ArkTS + ArkUI，含官方文档镜像、严格语法规则、状态管理速查、构建调试 / 上架签名 Skills、PostToolUse 自动校验钩子。
-> 当前版本：v0.3.0（2026-05-07）
+> 当前版本：v0.4.5（2026-05-22）
 
 ## 入口（按 AI 工具）
 
@@ -24,7 +24,7 @@
 - [.claude/skills/state-management/SKILL.md](.claude/skills/state-management/SKILL.md): V1 / V2 状态管理 + "替换引用"铁律（含 V2 完整范例）
 - [.claude/skills/build-debug/SKILL.md](.claude/skills/build-debug/SKILL.md): Hvigor / OHPM / hdc / 错误码 / DEVECO_SDK_HOME
 - [.claude/skills/signing-publish/SKILL.md](.claude/skills/signing-publish/SKILL.md): 签名三件套 + AGC 上架 + Top 20 拒因
-- [.claude/skills/runtime-pitfalls/SKILL.md](.claude/skills/runtime-pitfalls/SKILL.md): 7 类工程装配陷阱（主题切换 / `useNormalizedOHMUrl` / 模块改名三处同步 / `string.json` 空数组 / Web `javaScriptProxy` 稳定实例 / HUKS 加密 / `DEVECO_SDK_HOME`）
+- [.claude/skills/runtime-pitfalls/SKILL.md](.claude/skills/runtime-pitfalls/SKILL.md): 17 类工程装配陷阱（基础 9：主题切换 / `useNormalizedOHMUrl` / 模块改名三处同步 / `string.json` 空数组 / Web `javaScriptProxy` 稳定实例 / HUKS 加密 / OHPM 仓库 502 / `DEVECO_SDK_HOME` / `@kit.AbilityKit` 易混；进阶 8：NavPathStack 白屏 / emoji Unicode 渲染 / Button padding 截断 / `build()` 单 root / timeline timestamp 绕 reducer / per-host store serverId 隔离 / daemon workspaceId 不可靠 / layered icon foreground 真透明）
 
 领域专项（3 个，仅 Claude Code 自动激活；其他工具用到时手动读 SKILL.md）：
 
@@ -34,10 +34,19 @@
 
 ## Recipes（可粘贴的鸿蒙最小可用代码）
 
+基础 4 个（高频，新工程必用）：
+
 - [samples/templates/permission/](samples/templates/permission/): 4 类敏感权限运行时申请 + UI 解释 + 拒绝兜底
 - [samples/templates/list/](samples/templates/list/): LazyForEach + IDataSource + 下拉刷新 + 上拉加载
 - [samples/templates/dark-mode/](samples/templates/dark-mode/): 系统主题跟随 + 资源限定符 + mediaquery 监听
 - [samples/templates/login/](samples/templates/login/): 华为账号 SSO 接入指引（不写完整代码，给约束 + 文档链接）
+
+进阶 4 个（OctoDesk Mobile 真实生产抽取）：
+
+- [samples/templates/web-bridge-h5-shell/](samples/templates/web-bridge-h5-shell/): ArkUI Web + `javaScriptProxy` 稳定实例 + `runJavaScript` 异步出口 + 域名白名单
+- [samples/templates/llm-sse-client/](samples/templates/llm-sse-client/): `requestInStream` 流式 + 半包 buffer 切帧 + TextDecoder stream + cancel/destroy 生命周期
+- [samples/templates/huks-secure-store/](samples/templates/huks-secure-store/): HUKS AES-256-GCM 包装 + preferences 落盘 + 懒生成 key + 卸载自动清理
+- [samples/templates/scan-qrcode/](samples/templates/scan-qrcode/): HMS ScanKit dual-import + page-bound `UIAbilityContext` + 错误码到 outcome 映射（KIT-003 / KIT-004 配套）
 
 > 所有 recipe 已通过 scan-arkts 全规则；可拷贝到自家项目 `entry/src/main/ets/` 下改 import 即用。
 

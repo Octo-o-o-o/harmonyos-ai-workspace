@@ -169,9 +169,9 @@ rm -rf test
 | **多工具 fan-out** | 5 个默认 SKILL → Cursor 6 个 `.mdc`（按 globs 触发，单文件 < 12KB）+ Copilot root `< 4KB` + `.github/instructions/*.md` 5 个按 `applyTo` 触发 |
 | **`doctor` 体检** | `npx harmonyos-ai-workspace doctor` 或 `bash tools/doctor.sh`：PASS/WARN/FAIL 三态报告，含钩子端到端自测（喂故意的 `STATE-002` 看是否被抓） |
 | **CLI 工具集** | `install.sh`（manifest + sha256 安装）/ `run-linter.sh`（离线 codeLinter）/ `check-ohpm-deps.sh`（4 类校验）/ `check-rename-module.sh`（模块改名一致性）/ `test-suite.sh`（19 项回归断言）/ **`scaffold-deveco-project.sh`**（一键补 DevEco 脚手架 11 文件）/ **`harmony-dev-cycle.sh`**（`quick-check` / `build-check` / `cycle-once` / `device-check`，绕开 DevEco GUI Run 按钮） |
-| **Recipe Templates** | 4 个可粘贴最小可用代码（`permission/` / `list/` / `dark-mode/` / `login/`） |
+| **Recipe Templates** | 8 个可粘贴最小可用代码 — 基础 4 个：`permission/` / `list/` / `dark-mode/` / `login/`；进阶 4 个（OctoDesk 抽取）：`web-bridge-h5-shell/` / `llm-sse-client/` / `huks-secure-store/` / `scan-qrcode/` |
 | **2026 提审 Top 20 拒因** | [`07-publishing/checklist-2026-rejection-top20.md`](07-publishing/checklist-2026-rejection-top20.md)，含 `AGC-RJ-001..020` 稳定 ID + 6 条高频项配可粘贴代码 |
-| **Case Studies** | [`docs/case-studies/llm-chat-app.md`](docs/case-studies/llm-chat-app.md) — 真鸿蒙 LLM 对话 app M3-M12 实战，11 节"症状/错误信息/修复 diff/教训"四段式 |
+| **Case Studies** | [`docs/case-studies/llm-chat-app.md`](docs/case-studies/llm-chat-app.md) — 真鸿蒙 LLM 对话 app M3-M13 实战（M3-M12 原始里程碑 + M13 运维期 layered icon / 9568297），12 节"症状/错误信息/修复 diff/教训"四段式 + [`docs/case-studies/android-parity-migration.md`](docs/case-studies/android-parity-migration.md) — paseo-harmony 14 阶段 Phase A/B 真修复笔记 |
 | **测试 fixture** | 9 个回归 fixture 覆盖 inline 装饰器 / `@CustomDialog` / `@Reusable` / 普通工具类等边界 |
 | **MCP** | `.mcp.json` 接通 `mcp-harmonyos`（npx 自动）；动作型 MCP 接入指引见 [`docs/MCP-INTEGRATION.md`](docs/MCP-INTEGRATION.md) |
 | **可选官方文档镜像** | 5300+ 中文 + 5100+ 英文 OpenHarmony md（按需 `bootstrap-upstream-docs.sh -y` 拉，~2.7 GB） |

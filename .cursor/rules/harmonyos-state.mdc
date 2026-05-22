@@ -299,12 +299,65 @@ build() {
 
 副作用放在 `aboutToAppear()` / `onPageShow()` / `onClick(...)` 等回调里。
 
+## 多 host / 多 workspace 场景：单例 store 必须按 serverId 隔离
+
+对于"per-host" / "per-workspace" 语义的全局单例 store（如 daemon 客户端的 DraftStore / CheckoutStore / TabsStore），**key 必须以 serverId 为前缀联合**，否则切 host 时状态串扰：
+
+```typescript
+// ❌ 单 key 分桶 — 两 host 同 cwd 互相覆盖
+class CheckoutStoreImpl {
+  private entries: Map<string, CheckoutEntry> = new Map();    // key = cwd
+  setStatus(cwd: string, ...): void { this.entries.set(cwd, ...) }
+}
+
+// ✅ serverId + cwd 联合 key
+class CheckoutStoreImpl {
+  private entries: Map<string, CheckoutEntry> = new Map();    // key = `${serverId}:${cwd}`
+  private keyOf(serverId: string, cwd: string): string { return serverId + ':' + cwd; }
+  setStatus(serverId: string, cwd: string, ...): void {
+    this.entries.set(this.keyOf(serverId, cwd), ...);
+  }
+  // host 断开时清掉本 host 全部 entry
+  removeAllForHost(serverId: string): void { /* ... */ }
+}
+```
+
+**Per-host store key 速查**：
+
+| Store | key |
+| --- | --- |
+| `DraftStore` | `${serverId}:${agentId}` |
+| `AttachmentStore` | `${serverId}:${agentId}` |
+| `CheckoutStore` | `${serverId}:${cwd}` |
+| `WorkspaceTabsStore` | `${serverId}:${workspaceId}` |
+| `ProviderSnapshotStore` | `${serverId}` |
+
+详见规则 `STATE-010`。
+
+## Reducer 模式：所有写入封死单一入口
+
+如果项目有 reducer / action 层（如 LLM 客户端的 `TimelineReducer` 处理 `agent_stream` 增量 + `fetch_agent_timeline` 历史拉取），**所有 store 写入必须经过 reducer**，避免绕路径导致元数据（timestamp / status 衍生 / race 保护）丢失：
+
+```typescript
+// ❌ 在调用方直接 append（绕过 reducer 内的 injectTimestamp）
+const payload = await client.fetchAgentTimeline({ agentId });
+for (const e of payload.entries) {
+  this.session.appendTimelineItem(agentId, e.item);   // ← 跳过 timestamp 注入
+}
+
+// ✅ 走 reducer 单一入口
+this.reducer.applyFetchedEntries(agentId, payload.entries);
+```
+
+Code review 时凡看到 `store.append*` / `store.set*` 直接调，先质疑是否绕开了 reducer。详见规则 `STATE-011`。
+
 ## 进一步参考
 
 - 完整模板：`01-language-arkts/03-state-management-cheatsheet.md`
 - V1 文档：`upstream-docs/.../ui/state-management/arkts-state-management-overview.md`
 - V2 文档：`upstream-docs/.../ui/state-management/arkts-new-state-management.md`
 - 实战 case study：[`docs/case-studies/llm-chat-app.md`](../../../docs/case-studies/llm-chat-app.md) —— 真实 LLM 对话 app 的状态管理踩坑（数组就地 mutation / @Trace 字段漏标 / Map 替换引用等）
+- 安卓上游对齐 case study：[`docs/case-studies/android-parity-migration.md`](../../../docs/case-studies/android-parity-migration.md) —— per-host store 隔离 / reducer path / cwd fallback / Codex review 流程
 
 ---
 > 由 `tools/generate-ai-configs.sh` 自动生成。**请勿手动编辑**——改源文件后重跑。
