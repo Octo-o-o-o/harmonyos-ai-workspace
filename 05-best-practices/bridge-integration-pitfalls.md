@@ -448,7 +448,107 @@ const result = await scanBarcode.startScanForResult(pageCtx, options)
 
 见 `samples/templates/scan-qrcode/`（含 plugin + page wiring + 错误码处理 + bridge outcome 序列化）。
 
-## 12. 反检查清单（上 PR 前过一遍）
+## 12. ArkTS V1 禁 object literal → event payload "接线膨胀"
+
+### 陷阱
+
+ArkTS V1（HarmonyOS NEXT 默认）强 type-strictness：bridge event payload 不允许 object literal `{ correlationId, errorCode, ... }`，必须 `new BridgePayload()` 后逐字段赋值。结果是每个 `service.fail(...)` / `emit(error, ...)` 调用点都展开为 4-8 行：
+
+```typescript
+// ❌ 反模式 — 每个调用点重复
+async startUpload(corrId: string, request: BridgeUploadStartRequestPayload): Promise<void> {
+  if (!this.allowed(request.endpoint)) {
+    const payload = new BridgeUploadErrorEventPayload()
+    payload.correlationId = corrId
+    payload.errorCode = 'BRIDGE.INVALID_PAYLOAD'
+    payload.errorMessage = 'endpoint not allowed'
+    payload.retryable = false
+    this.emitError(payload)
+    return
+  }
+  if (this.active.has(corrId)) {
+    const payload = new BridgeUploadErrorEventPayload()
+    payload.correlationId = corrId
+    payload.errorCode = 'BRIDGE.NATIVE_FAILURE'
+    payload.errorMessage = 'upload already running'
+    payload.retryable = false
+    this.emitError(payload)
+    return
+  }
+  // ... 又重复一次 method 不支持 ...
+  // ... 又重复一次 body 缺失 ...
+}
+```
+
+OctoDesk UploadController 2026-05 audit 单文件 8 处 4 行模板（~32 行噪音），handler 主线逻辑被埋没。同款问题在 SSE / Picker / OAuth / Push 各 plugin 都会出现。
+
+### 标准做法 —— per-service private builder helper
+
+每个 service 内部抽 `private reportXxx(...)` / `private failAndXxx(...)` helper，把 `new` + 字段 assign + `emit` 收一处，调用点变 1 行 delegate：
+
+```typescript
+// ✅ service 内 private helper
+private reportError(
+  corrId: string,
+  code: string,
+  message: string,
+  retryable: boolean,
+): void {
+  const payload = new BridgeUploadErrorEventPayload()
+  payload.correlationId = corrId
+  payload.errorCode = code
+  payload.errorMessage = message
+  payload.retryable = retryable
+  this.emitError(payload)
+}
+
+// 已注册后失败需要清理表项 → 单独 helper, 命名反映状态
+private failAndUnregister(
+  corrId: string,
+  code: string,
+  message: string,
+  retryable: boolean,
+): void {
+  this.reportError(corrId, code, message, retryable)
+  this.active.delete(corrId)
+}
+
+// 调用点 5 行 → 1 行
+async startUpload(corrId: string, request: BridgeUploadStartRequestPayload): Promise<void> {
+  if (!this.allowed(request.endpoint)) {
+    this.reportError(corrId, 'BRIDGE.INVALID_PAYLOAD', 'endpoint not allowed', false)
+    return
+  }
+  if (this.active.has(corrId)) {
+    this.reportError(corrId, 'BRIDGE.NATIVE_FAILURE', 'upload already running', false)
+    return
+  }
+  // ...
+}
+```
+
+### 谨防的边界
+
+- **不要抽跨 service 通用 builder**：
+
+  ```typescript
+  // ❌ 反模式 — ESObject 泛型让 IDE / scan-arkts 失字段名 / 类型 narrow
+  function reportBridgeError<T>(emit: (p: T) => void, P: new () => T, fields: Partial<T>) { ... }
+  ```
+
+  ArkTS V1 + ESObject 泛型 erase 后等于回到 untyped JS，调用方失字段拼写校验。**每个 payload class 各自的 service-local helper 是合理颗粒**。
+
+- **保留语义命名差异**：`reportError` vs `failAndUnregister` 反映"未注册 / 已注册后失败"两态；不要强合并到一个名字。
+
+- **不抽 success payload builder**：success 各 service 字段差异大（含 metadata / progress / nextCursor 等），强抽通常注释比代码长，per call-site 直接构造更清晰。
+
+- **如果一个 service 同 payload 类型只用 1-2 处**：直接 inline，不抽 helper（抽是为消重复，1-2 处不算重复）。
+
+### 配套样例
+
+`samples/templates/error-event-builder/` — 最小可跑骨架，含 UploadController-style service 含 `reportError` + `failAndUnregister` 双 helper + 2 个不同状态的调用点。
+
+## 13. 反检查清单（上 PR 前过一遍）
 
 - [ ] handshake 的 `granted` 来自 handler 注册表，不是 enum
 - [ ] `BridgeCapability` enum 新增条目都有对应 handler，或者明确 reject + reason
@@ -466,7 +566,7 @@ const result = await scanBarcode.startScanForResult(pageCtx, options)
 - [ ] HMS ScanKit dual-import + `QR_CODE` 新名 + page-bound `UIAbilityContext`（§11）
 - [ ] `addJavascriptInterface` / 已废弃 `picker.PhotoViewPicker` / `decodeWithStream` 全 0 命中（scanner 覆盖：`ARKTS-DEPRECATED-PICKER` / `ARKTS-DEPRECATED-DECODE`）
 
-## 13. 相关 scan-arkts 规则
+## 14. 相关 scan-arkts 规则
 
 | 规则 ID | 严重度 | 覆盖什么 |
 |--------|--------|---------|
@@ -482,7 +582,7 @@ const result = await scanBarcode.startScanForResult(pageCtx, options)
 | `KIT-004` | High | HMS ScanKit `ScanType.QRCODE` 已改名 `QR_CODE`，旧值 undefined |
 | `DB-001` | High | `ResultSet` / `RdbStore` 未 close |
 
-## 14. 相关文档
+## 15. 相关文档
 
 - `01-language-arkts/02-typescript-to-arkts-migration.md` — ArkTS 严格模式禁用项
 - `03-platform-apis/` — Kit 系统能力索引
