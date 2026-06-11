@@ -548,7 +548,65 @@ async startUpload(corrId: string, request: BridgeUploadStartRequestPayload): Pro
 
 `samples/templates/error-event-builder/` — 最小可跑骨架，含 UploadController-style service 含 `reportError` + `failAndUnregister` 双 helper + 2 个不同状态的调用点。
 
-## 13. 反检查清单（上 PR 前过一遍）
+## 13. 原生毛玻璃 / blur 只能做有界增强（HarmonyOS）
+
+### 陷阱
+
+ArkUI 的 `backdropBlur` / `backgroundBlurStyle` 看起来很接近 Web
+`backdrop-filter`，AI 很容易把桌面玻璃效果原样搬进 HarmonyOS 原生外壳：
+
+- 在 WebView 上层放一个半透明 ArkUI 卡片并直接 `backdropBlur(28)`
+- 对可滚动列表、动态背景、多个嵌套卡片都开实时 blur
+- 把 blur 半径做成 entrance 动画或跟随手势实时变化
+- 没有低端机 / reduce-transparency / API guard fallback
+
+结果通常不是"更接近桌面"，而是 RenderService / UI 线程逐帧开销上升，
+真机滚动、弹窗开合或 WebView 合成时掉帧。更糟的是 ArkWeb 在部分设备上会
+提升成独立原生图层，ArkUI 卡片可能压不住 WebView，blur 看似失效或被内容盖住。
+
+### 标准做法
+
+把原生 blur 当作**有界增强**，不是基础可用性依赖：
+
+1. **API guard + 开关集中化**：封装 `supportsRealtimeBlur()`，同时检查
+   target API、设备能力、低功耗 / reduce-transparency / 远程 kill switch。
+2. **一次只开一个静态岛**：登录 / 设置这类 modal island 可以用固定半径；
+   禁止在长列表、持续动画背景、嵌套 surface 上开 blur。
+3. **不动画 blur 半径**：入口动效只做 opacity / scale / shadow；blur 半径固定。
+4. **fallback 等价**：guard 失败时用同一套 token 的强玻璃填充、rim、sheen、
+   shadow，不换品牌色、不降成随手的灰色块。
+5. **WebView 先验证 z-order**：如果 blur 的背景是 ArkWeb，先在真机确认 ArkUI
+   overlay 能盖住 WebView；不稳定时隐藏 / 暂停 WebView 或直接使用 opaque fallback。
+6. **Profiler 证据进 PR**：至少记录开合弹窗时 UI/RenderService 帧耗时，确认
+   60fps 预算（单帧约 16.6ms）内没有连续掉帧。
+
+```typescript
+const ENABLE_REALTIME_BLUR: boolean = true
+const API_MAINLINE: number = 22
+
+function supportsRealtimeBlur(): boolean {
+  return ENABLE_REALTIME_BLUR && API_MAINLINE >= 9
+}
+
+// ✅ fallback 与 realtime 分支共享 token，不手写临时色
+if (supportsRealtimeBlur()) {
+  GlassIsland()
+    .backdropBlur(28)
+    .backgroundBlurStyle(BlurStyle.Thin, { scale: 0.2 })
+} else {
+  GlassIsland()
+    .backgroundColor('#E6FFFFFF') // 例：由 token rgba 转成 #AARRGGBB
+}
+```
+
+### 谨防的边界
+
+- 不要把 `backdropBlur` 当作 CSS `backdrop-filter` 的逐像素等价替代。跨平台验收应是
+  "角色等价 + 视觉意图一致 + 无障碍合格 + 平台例外登记"。
+- 不要为了过视觉门禁手写产品色；颜色、rim、sheen、shadow 应来自设计 token 生成物。
+- 不要在模拟器单帧看起来可用后跳过真机；WebView 合成和 GPU 负载差异主要在真机暴露。
+
+## 14. 反检查清单（上 PR 前过一遍）
 
 - [ ] handshake 的 `granted` 来自 handler 注册表，不是 enum
 - [ ] `BridgeCapability` enum 新增条目都有对应 handler，或者明确 reject + reason
@@ -564,9 +622,10 @@ async startUpload(corrId: string, request: BridgeUploadStartRequestPayload): Pro
 - [ ] App-Linking 三处同步：`harmony-app-linking.json` ↔ `module.json5` ↔ `EntryAbility.onCreate` + `onNewWant` 双入口（§10）
 - [ ] OAuth callback 走系统浏览器（`UIAbilityContext.openLink`），不在 ArkWeb 内开授权页（§10）
 - [ ] HMS ScanKit dual-import + `QR_CODE` 新名 + page-bound `UIAbilityContext`（§11）
+- [ ] 原生 blur 有 API guard、单岛范围、opaque fallback、真机 Profiler/截图证据（§13）
 - [ ] `addJavascriptInterface` / 已废弃 `picker.PhotoViewPicker` / `decodeWithStream` 全 0 命中（scanner 覆盖：`ARKTS-DEPRECATED-PICKER` / `ARKTS-DEPRECATED-DECODE`）
 
-## 14. 相关 scan-arkts 规则
+## 15. 相关 scan-arkts 规则
 
 | 规则 ID | 严重度 | 覆盖什么 |
 |--------|--------|---------|
@@ -582,7 +641,7 @@ async startUpload(corrId: string, request: BridgeUploadStartRequestPayload): Pro
 | `KIT-004` | High | HMS ScanKit `ScanType.QRCODE` 已改名 `QR_CODE`，旧值 undefined |
 | `DB-001` | High | `ResultSet` / `RdbStore` 未 close |
 
-## 15. 相关文档
+## 16. 相关文档
 
 - `01-language-arkts/02-typescript-to-arkts-migration.md` — ArkTS 严格模式禁用项
 - `03-platform-apis/` — Kit 系统能力索引
@@ -594,4 +653,4 @@ async startUpload(corrId: string, request: BridgeUploadStartRequestPayload): Pro
 
 ---
 
-> **来源**：本文 12 类陷阱沉淀自 2026-05 一个真实下游消费者（企业级 AI 工作面 macOS / iPadOS / Android / HarmonyOS 四端套件）实战教训 + 评审反馈。具体出处可能因后续脱敏调整不再可追溯，但所有陷阱都在三端的至少一端实际遇到过、并被代码 review 拍板进规则。新增条目欢迎附最小复现路径。
+> **来源**：本文 13 类陷阱沉淀自 2026-05 一个真实下游消费者（企业级 AI 工作面 macOS / iPadOS / Android / HarmonyOS 四端套件）实战教训 + 评审反馈。具体出处可能因后续脱敏调整不再可追溯，但所有陷阱都在三端的至少一端实际遇到过、并被代码 review 拍板进规则。新增条目欢迎附最小复现路径。

@@ -8,6 +8,7 @@
 
 ### Added
 
+- `05-best-practices/bridge-integration-pitfalls.md` §13: **原生毛玻璃 / blur 只能做有界增强** —— `backdropBlur` / `backgroundBlurStyle` 只允许在 API guard 后用于单个静态 island；禁止长列表、动态背景、嵌套 surface、blur 半径动画；必须有 token 等价 opaque fallback、WebView z-order 真机验证和 Profiler 帧耗时证据。原 §13-§15 顺延为 §14-§16，README "接线层陷阱" 计数 12 → 13。
 - `05-best-practices/bridge-integration-pitfalls.md` §12: **ArkTS V1 禁 object literal → event payload "接线膨胀"** —— 每个 fail 调用点都展开为 `new BridgePayload + N 行字段 assign + emit` 的反模式，标准做法是 per-service `private reportXxx` / `failAndUnregister` builder helper（不跨 service 抽通用泛型），含 OctoDesk UploadController 真实 case（单文件 8 处 4 行模板 = 32 行噪音）。原 §12-§14 顺延为 §13-§15。
 - `samples/templates/error-event-builder/`: 配套最小骨架 —— `ErrorEventBuilder.ets` 含 `reportError` + `failAndUnregister` 双 helper + 4 个不同 fail 状态调用点对比（pre-registration vs post-registration cleanup）。反哺溯源 OctoDesk wave G3 refactor commit `3d4eb635`。
 - Codex 项目级分发补齐：`.agents/skills/` 纳入仓库 / npm files / `tools/install.sh --targets=codex`，让 Codex CLI / Desktop 能自动发现 8 个 HarmonyOS Skills。
