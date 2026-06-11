@@ -580,6 +580,22 @@ ArkUI 的 `backdropBlur` / `backgroundBlurStyle` 看起来很接近 Web
 6. **Profiler 证据进 PR**：至少记录开合弹窗时 UI/RenderService 帧耗时，确认
    60fps 预算（单帧约 16.6ms）内没有连续掉帧。
 
+### OctoDesk Step 6 落地补充（2026-06-11）
+
+OctoDesk / 千手 HarmonyOS 原生登录岛 + 设置岛迁 Soft Glass 时采用的生产约束：
+
+- 颜色、rim、sheen、阴影、blur 半径全部来自 codegen 的 ArkTS token；`rgba(...)`
+  在组件边界转换为 ArkUI `#AARRGGBB`，不在产品组件手抄色值。
+- `supportsRealtimeBlur()` 集中在 theme/helper 层；主线仍是 API 22，API 24 Beta
+  镜像只能做观察证据，不能驱动产品 API 选择。
+- 登录 prompt 打开时隐藏 ArkWeb sibling，避免 WebView 提升为独立图层后盖住 ArkUI
+  overlay；blur 只作用于 token 化 native backdrop。
+- 登录岛与设置岛共用策略：最多一个静态 island、固定 radius、无 blur 半径动画；
+  fallback 使用 `glass.surfaceStrong` + 同一套 rim/sheen/shadow，而不是降回旧品牌色。
+- PR / step exit 必须带 light+dark 截图、真机或 emulator 设备信息、以及 UI /
+  RenderService 帧耗时或同等性能证据；没有签名 `.p7b` / UDID 时，明确标记 signed
+  install blocked，不伪造真机结论。
+
 ```typescript
 const ENABLE_REALTIME_BLUR: boolean = true
 const API_MAINLINE: number = 22
