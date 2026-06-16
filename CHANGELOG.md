@@ -8,6 +8,7 @@
 
 ### Added
 
+- `05-best-practices/bridge-integration-pitfalls.md` §8 进阶补充：**native-only 凭据 key 必须对 page world fail-closed（三端一致）** —— `storage.get/set` 命中 refresh token / device registration key 必须 `CAPABILITY_UNAVAILABLE`；受保护 key 列表提共享契约且**含 contract 键与原生键两套命名**（`octodesk.auth.refreshToken` vs `auth.refresh_token` 等）；`storage.wipe` 例外放行（否则 partial session-reset 清不到原生 token，含实测过的 partial-wipe scope 漏键 bug）；CI set-equality gate 防"某端多塞/漏拒"。反哺溯源 OctoDesk MOB-1（三端 refresh-token / device-key 守卫对齐）。
 - `05-best-practices/bridge-integration-pitfalls.md` §13: **原生毛玻璃 / blur 只能做有界增强** —— `backdropBlur` / `backgroundBlurStyle` 只允许在 API guard 后用于单个静态 island；禁止长列表、动态背景、嵌套 surface、blur 半径动画；必须有 token 等价 opaque fallback、WebView z-order 真机验证和 Profiler 帧耗时证据。原 §13-§15 顺延为 §14-§16，README "接线层陷阱" 计数 12 → 13。
 - `05-best-practices/bridge-integration-pitfalls.md` §13 补充 OctoDesk Soft Glass Step 6 生产落地：HarmonyOS 登录岛 / 设置岛只消费 codegen ArkTS token，`rgba(...)` 在组件边界转 `#AARRGGBB`；登录 prompt 隐藏 ArkWeb sibling 后只 blur token 化 native backdrop；realtime blur 仍限单个静态 island、固定半径、API 22 guard、`glass.surfaceStrong` fallback，并要求 light/dark 截图与 UI/RenderService 帧耗时证据。
 - `05-best-practices/bridge-integration-pitfalls.md` §12: **ArkTS V1 禁 object literal → event payload "接线膨胀"** —— 每个 fail 调用点都展开为 `new BridgePayload + N 行字段 assign + emit` 的反模式，标准做法是 per-service `private reportXxx` / `failAndUnregister` builder helper（不跨 service 抽通用泛型），含 OctoDesk UploadController 真实 case（单文件 8 处 4 行模板 = 32 行噪音）。原 §12-§14 顺延为 §13-§15。

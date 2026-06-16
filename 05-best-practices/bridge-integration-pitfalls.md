@@ -260,6 +260,21 @@ await this.secureStore.set(REFRESH_TOKEN_KEY, outcome.refreshToken)   // 一旦 
 - Android: `EncryptedSharedPreferences.edit().putString(...).commit()` 在 `tokenChangeListener.fire(...)` 之前
 - HarmonyOS: `huks.set(...)` 或 HUKS-wrapped `preferences.put(...)` 在 fire listener 之前
 
+### 进阶：native-only 凭据 key 必须对 page world fail-closed（三端一致）
+
+`SecureStore` 经 bridge 暴露 `storage.get` / `storage.set` 给 WebView（page world）做通用 KV 时，**最敏感的几把 key 绝不能让 page world 读写**：refresh token、device registration key。它们是"native 持有、JS runtime 永不接触"的契约——一旦 compromised page / 注入脚本能 `storage.get('<refreshToken-key>')`，等于把长期凭据交给了不可信的 web 层。
+
+**陷阱**：三端各自实现 `storageGet/storageSet` 守卫，很容易**只在某一端**加 deny list（例如 iOS 拒了、Android/HarmonyOS 漏了），或**只拒 contract 命名漏掉原生命名**。真实分歧：device key 原生常量是 `octodesk.device.registrationKey`，refresh 是 `octodesk.auth.refreshToken`，而跨端契约里又有 `device.registration_key` / `auth.refresh_token` 两套命名 → 必须**两套 keyspace 都拒**。
+
+**标准做法**：
+
+- 把受保护 key 列表提到**共享契约**（`PROTECTED_NATIVE_ONLY_KEYS`），**同时含 contract 键与原生键**两种命名，三端各自的守卫从同一来源对齐。
+- `storageGet` / `storageSet` 命中 → 返回 `CAPABILITY_UNAVAILABLE`（不是静默成功、不是空值）。
+- **`storage.wipe` 例外**：partial session-reset 需要真正清掉原生 token，所以 wipe 路径**不**走这个 deny list（否则 token 永远清不掉）；只 get/set 拒，wipe 放行。注意 partial-wipe 的 scope 数组要**同时**列 contract 键与原生键，否则只清到空的 contract keyspace、原生 token 残留（实测过的 partial-wipe bug）。
+- 加一个 CI gate（如 `check-native-capability-coherence`）断言**三端 storage-key 拒绝集合一致**——presence 检查只能防"漏一端"，更强的是 set-equality 防"某端多塞一把"。
+
+**跨端注意**：纯接线层一致性 bug，scanner 抓不到。iOS `isProtectedAuthCredentialKey` / Android `isProtectedAuthCredentialKey` / HarmonyOS `isProtectedAuthCredentialKey` 三处必须 key 集合 byte-for-byte 相同；新增一把 native-only 凭据时，**先改共享契约再 fan-out**，别在某一端 inline 硬编码。反哺溯源 OctoDesk MOB-1（三端 refresh-token / device-key 守卫对齐）。
+
 ## 9. HarmonyOS Pasteboard 提示时机 —— 不要 eager peek
 
 ### 陷阱
