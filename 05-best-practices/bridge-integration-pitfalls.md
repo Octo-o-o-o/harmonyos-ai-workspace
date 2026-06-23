@@ -831,7 +831,82 @@ this.downloadDelegate.onDownloadFailed((item: webview.WebDownloadItem): void => 
 
 > 反哺溯源 OctoDesk N5 · `3f4df3578`（harden desktop remote file previews）。
 
-## 16. 反检查清单（上 PR 前过一遍）
+## 16. 手机 WebView 输入框：visualViewport 是软键盘合同，不是 `100vh`
+
+**陷阱**：Native Shell + WebView 的手机形态里，聊天输入框 / 搜索框 / 底部 composer 常被软键盘遮住。AI 常见修法是 `height: 100vh`、`position: sticky; bottom: 0`、或给容器写一个固定 `padding-bottom`。这些在桌面浏览器 devtools 看起来没问题，但到 ArkWeb / Android WebView / WKWebView 真机上会错，因为移动 WebView 同时有 **layout viewport** 与 **visual viewport**：键盘弹出时变的是 visual viewport，layout viewport 可能不变。
+
+**标准做法**：Web 业务区集中维护一个 keyboard inset store，监听 `window.visualViewport.resize/scroll`、`window.resize`、`focusin/focusout`，把结果写成根容器 CSS 变量；组件只消费 `--keyboard-inset`，不要各自猜：
+
+```javascript
+let closedHeight = Math.max(window.innerHeight, document.documentElement.clientHeight);
+
+function isEditing() {
+  const active = document.activeElement;
+  return active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement;
+}
+
+function applyKeyboardInset() {
+  const vv = window.visualViewport;
+  const layoutHeight = Math.max(window.innerHeight, document.documentElement.clientHeight);
+  const visualBottom = vv ? vv.offsetTop + vv.height : layoutHeight;
+  if (!isEditing()) {
+    closedHeight = Math.max(closedHeight, layoutHeight, vv ? vv.height : 0);
+  }
+  const inset = isEditing()
+    ? Math.max(0, closedHeight - visualBottom, layoutHeight - visualBottom)
+    : 0;
+  document.documentElement.style.setProperty('--keyboard-inset', `${Math.round(inset)}px`);
+}
+```
+
+CSS 侧只认这个变量：
+
+```css
+.composer {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom) + var(--keyboard-inset, 0px));
+}
+```
+
+要点：
+
+- 键盘动画期间 viewport 会分多次变化，`requestAnimationFrame` 后再补 80ms / 220ms settle 采样。
+- 横竖屏 / 折叠态宽度变化时刷新 closed baseline，避免把旋转误判成键盘。
+- 键盘打开时隐藏或上移底部 tabbar，避免两个 fixed dock 抢同一条底边。
+- `enterKeyHint="send"` 只改变键盘按钮文案，不会帮你处理布局 inset。
+- native 侧不应向 WebView 暴露任意"键盘高度"私有 API；visualViewport + CSS var 是最小跨端合同。
+
+**鸿蒙特异性**：ArkWeb 没有稳定 JS API 直接读系统软键盘高度；且 ArkWeb 与 ArkUI overlay 的合成层级可能让 fixed 底部区更敏感。真机验收必须覆盖：输入框 focus、长文本自动增高、横竖屏 / 折叠态变化、底部 safe-area。
+
+> 反哺溯源 OctoDesk N6 · 2026-06-23 Mobile Visible Feature Closeout（PhoneShell / ChatComposer 软键盘遮挡修复）。
+
+## 17. 移动 WebView 不直接承接 IMAP / SMTP / CalDAV raw socket
+
+**陷阱**：看到 HarmonyOS `@kit.NetworkKit` 有 `socket`，AI 容易把桌面 / 服务端邮件能力搬到移动端：WebView 表单收 IMAP host、用户名、授权码，然后 ArkTS native plugin 直接开 IMAP / SMTP / CalDAV socket。对企业 companion / H5 shell 架构，这是错的边界：
+
+- page world 会影响 native socket 目标，等于把 SSRF 面暴露给不可信 Web 层。
+- 邮件授权码 / SMTP 密码进入端侧复杂生命周期，wipe / restore / 日志 / crash dump 风险上升。
+- IMAP IDLE、UIDVALIDITY、附件拉取、连接池、STARTTLS 兼容和 provider 差异都不是 WebView shell 应承担的能力。
+- AppGallery / 企业审核会追问为什么移动端长期持有第三方邮箱密码并直连任意主机。
+
+**标准做法（companion / enterprise WebView app）**：
+
+1. WebView 只调 authenticated HTTPS API（如 `/api/mail/*`、`/api/calendar/*`）。
+2. raw provider 逻辑放服务端 relay：IMAP/SMTP/CalDAV 连接、SSRF/private host block、TLS 策略、附件大小限制、连接池、delta scheduler 都在服务端。
+3. 移动端 provider catalog 只决定"展示 / 禁用 / 收集凭据后 POST 到服务端 bind"，不在端侧开 socket。
+4. kill switch 按 provider 维度控制（如 `mobile.mail.bind.imap` / `mobile.mail.read`），端侧只隐藏入口或显示 fail-closed。
+
+如果你的产品**本身就是原生邮件客户端**，确实需要端侧 raw socket，则必须单独开 native capability，而不是从 WebView 任意透传：
+
+- host 走 allowlist / 用户确认，拒绝 private / loopback / link-local / metadata IP；
+- TLS-only 默认，STARTTLS 单独实现 downgrade 防护；
+- 凭据只进 HUKS-backed SecureStore，不经 page world；
+- request timeout / attachment cap / logging redaction 明确写进代码；
+- provider 兼容矩阵和真账号 smoke 作为发布门禁。
+
+> 反哺溯源 OctoDesk N6 · Mobile Mail IMAP Closeout：IMAP baseline 最终落在 server-side `imapflow` relay；移动端仅解禁 provider catalog 和 HTTPS bind/read，不增加 HarmonyOS 本地 IMAP/SMTP socket。
+
+## 18. 反检查清单（上 PR 前过一遍）
 
 - [ ] handshake 的 `granted` 来自 handler 注册表，不是 enum
 - [ ] `BridgeCapability` enum 新增条目都有对应 handler，或者明确 reject + reason
@@ -853,10 +928,12 @@ this.downloadDelegate.onDownloadFailed((item: webview.WebDownloadItem): void => 
 - [ ] native→web 状态事件（lifecycle / window layout）在 handshake 回调里 force-replay 当前快照，`onDestroy` 解绑 handshake handler（§14.2）
 - [ ] 后台 SSE / 心跳分级取消：inactive 不杀、background 宽限后二次确认才 `cancelAll()`（§14.3）
 - [ ] `data:` URL 下载手动拦截（cancel + base64 + fileIo + 大小上限 + 文件名 sanitize），`onDownloadFailed` 吞掉主动 cancel 的误报（§15）
+- [ ] 手机 WebView 底部输入框 / composer 用 visualViewport → CSS var 管键盘 inset，不靠 `100vh` / 固定 padding（§16）
+- [ ] companion / WebView 架构不让 page world 驱动 IMAP / SMTP / CalDAV raw socket；默认走 HTTPS relay（§17）
 - [ ] cancel / ack 类操作取消目标走 payload，不用 envelope 信封 id 兜底（§3）
 - [ ] HUKS AES-GCM 用 `HUKS_TAG_NONCE` + AE_TAG 双位置兜底 + 版本化封套（§8）
 
-## 17. 相关 scan-arkts 规则
+## 19. 相关 scan-arkts 规则
 
 | 规则 ID | 严重度 | 覆盖什么 |
 |--------|--------|---------|
@@ -872,7 +949,7 @@ this.downloadDelegate.onDownloadFailed((item: webview.WebDownloadItem): void => 
 | `KIT-004` | High | HMS ScanKit `ScanType.QRCODE` 已改名 `QR_CODE`，旧值 undefined |
 | `DB-001` | High | `ResultSet` / `RdbStore` 未 close |
 
-## 18. 相关文档
+## 20. 相关文档
 
 - `01-language-arkts/02-typescript-to-arkts-migration.md` — ArkTS 严格模式禁用项
 - `03-platform-apis/` — Kit 系统能力索引
@@ -884,4 +961,4 @@ this.downloadDelegate.onDownloadFailed((item: webview.WebDownloadItem): void => 
 
 ---
 
-> **来源**：本文 15 类陷阱沉淀自 2026-05 起一个真实下游消费者（企业级 AI 工作面 macOS / iPadOS / Android / HarmonyOS 四端套件）实战教训 + 评审反馈。具体出处可能因后续脱敏调整不再可追溯，但所有陷阱都在三端的至少一端实际遇到过、并被代码 review 拍板进规则。新增条目欢迎附最小复现路径。
+> **来源**：本文 17 类陷阱沉淀自 2026-05 起一个真实下游消费者（企业级 AI 工作面 macOS / iPadOS / Android / HarmonyOS 四端套件）实战教训 + 评审反馈。具体出处可能因后续脱敏调整不再可追溯，但所有陷阱都在三端的至少一端实际遇到过、并被代码 review 拍板进规则。新增条目欢迎附最小复现路径。

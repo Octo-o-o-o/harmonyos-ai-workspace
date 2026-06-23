@@ -102,7 +102,56 @@ export struct WebContainer {
 // H5: window.reporter.log('ready', '');  // 触发 ArkTS 端 onReady
 ```
 
-## 三、Markdown 离线渲染器 · 标准模式
+## 三、移动 WebView 软键盘 / visualViewport
+
+### 现象
+
+手机形态里聊天输入框或底部工具条用 `position: sticky` / `100vh`，在 ArkWeb / Android
+WebView / WKWebView 里一弹软键盘就被遮住，或者底部 tabbar 与输入框重叠。只看桌面浏览器
+devtools 复现不了，因为移动 WebView 有 layout viewport 与 visual viewport 两套高度。
+
+### 正确模式
+
+Web 侧统一维护 keyboard inset：监听 `window.visualViewport.resize/scroll`、`focusin/focusout`
+和 `resize`，把结果写到根容器 CSS 变量，布局只消费这个变量。不要让每个组件自己猜键盘高度。
+
+```javascript
+let closedHeight = Math.max(window.innerHeight, document.documentElement.clientHeight);
+
+function updateKeyboardInset() {
+  const vv = window.visualViewport;
+  const layoutHeight = Math.max(window.innerHeight, document.documentElement.clientHeight);
+  const visualBottom = vv ? vv.offsetTop + vv.height : layoutHeight;
+  const active = document.activeElement;
+  const editing = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement;
+  if (!editing) closedHeight = Math.max(closedHeight, layoutHeight, vv ? vv.height : 0);
+  const inset = editing ? Math.max(0, closedHeight - visualBottom, layoutHeight - visualBottom) : 0;
+  document.documentElement.style.setProperty('--keyboard-inset', `${Math.round(inset)}px`);
+}
+
+window.visualViewport?.addEventListener('resize', updateKeyboardInset);
+window.visualViewport?.addEventListener('scroll', updateKeyboardInset);
+document.addEventListener('focusin', updateKeyboardInset);
+document.addEventListener('focusout', () => window.setTimeout(updateKeyboardInset, 80));
+```
+
+CSS 侧：
+
+```css
+.composer {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom) + var(--keyboard-inset, 0px));
+}
+```
+
+### 要点
+
+- 需要 2-3 次 settle timer（如 80ms / 220ms）处理键盘动画期间 viewport 分多次变化。
+- 横竖屏 / 折叠态宽度变化时刷新 closed baseline，否则会把旋转误判成键盘。
+- 键盘打开时隐藏或上移底部 tabbar，避免两个 fixed dock 抢同一条底边。
+- ArkWeb 没有可靠的 JS API 直接读系统键盘高度；visualViewport 是最小跨端合同。
+
+## 四、Markdown 离线渲染器 · 标准模式
 
 鸿蒙没有原生 markdown 组件。标配做法：
 
@@ -150,7 +199,7 @@ struct MarkdownView {
 - 不要用 CDN（用户离线时白屏）
 - bundle 体积 < 200 KB（`AGC-RJ-015` 包大小红线）
 
-## 四、Web 组件常被忽略的安全设置
+## 五、Web 组件常被忽略的安全设置
 
 ```typescript
 Web({ src, controller: this.controller })
@@ -168,13 +217,13 @@ Web({ src, controller: this.controller })
 
 **关联拒因**：[`AGC-RJ-001`](../../../07-publishing/checklist-2026-rejection-top20.md)（隐私）+ AGC 安全审核要求 https-only。
 
-## 五、性能注意
+## 六、性能注意
 
 - Web 组件初始化重：避免在长列表的 ListItem 里嵌 Web。改用"点击展开"
 - 同时多个 Web 组件 → 内存暴涨。如要多个 markdown 渲染器，**复用 1 个 Web + 切换内容**
 - 长内容用 `runJavaScript` 推 → 改成 `javaScriptProxy` 的 getter 让 H5 主动拉
 
-## 六、调试
+## 七、调试
 
 ```bash
 # 让 Web 组件支持 chrome://inspect 远程调试

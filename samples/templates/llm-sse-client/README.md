@@ -26,6 +26,7 @@
 4. **取消时必须 `request.destroy()` + 从 streams Map 删除**，否则下次启动同 correlationId 会撞"已在运行"。
 5. **`dataEnd` / `dataReceive` / 异常**三条路径都必须 cleanup，不能假设一定走 `dataEnd`——HTTP 500 / 网络断开 / 服务端 abort 都不会进 dataEnd。
 6. **绝不写 `function() { ... }` 表达式**，回调统一用箭头函数（ArkTS 限制）。
+7. **OpenAI-compatible streaming 要 token usage 必须显式请求**：`stream: true` 默认只给 delta，不保证 usage。请求体加 `stream_options.include_usage=true` 后，最后一个 chunk 才可能包含 usage；cancel / 网络中断时最后一帧可能收不到。
 
 ## 集成步骤
 
@@ -50,11 +51,14 @@ class ChatViewModel implements SseEventListener {
       method: 'POST',
       bodyJson: JSON.stringify({ model: 'gpt-4', stream: true, messages: [...] }),
       bearer: 'sk-...',
+      includeOpenAIUsage: true,
     }, this)
   }
 
   onEvent(streamId: string, name: string, data: string): void {
     // data 是单帧 SSE 的 data: 段（OpenAI 把 JSON delta 塞这里）
+    // 若 includeOpenAIUsage=true，最后一帧可能是 choices=[] + usage={...}
+    // 不要无条件读 choices[0]；usage 缺失时按"未知"处理。
   }
 
   onEnd(streamId: string, reason: string, errorCode: string | null): void {
@@ -83,6 +87,8 @@ hvigorw codeLinter
 - ❌ 在 `dataReceive` 里直接 `JSON.parse(new TextDecoder().decode(chunk))`——chunk 边界不等于帧边界，60% 概率失败
 - ❌ 取消时只删 Map 不调 `destroy()`——HTTP 连接泄漏
 - ❌ 用 `function() { ... }` 写 `dataReceive` 回调——ArkTS 编译报 `arkts-no-func-expressions`
+- ❌ 以为 `stream: true` 会自动返回 usage——OpenAI-compatible 端点需显式 `stream_options.include_usage=true`
+- ❌ 解析 OpenAI chunk 时无条件读 `choices[0]`——usage 末帧可能 `choices=[]`
 
 ## 扩展点
 
@@ -92,5 +98,6 @@ OctoDesk 真实工程在此骨架上加了：
 - **Last-Event-ID / Resume Token** 断线续传 header
 - **bearer token 走 Promise provider**（每次 start 时拿最新 access token）
 - **回调改成 BridgeForwarder 接口**：转成 H5 桥事件转发给 WebView
+- **usage 末帧转 exec-meta**：只在 final chunk 确实带 usage 时写；无 usage / 被取消 / provider 忽略字段时不报错
 
 按需扩展即可。

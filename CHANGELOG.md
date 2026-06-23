@@ -15,7 +15,10 @@
 - `samples/templates/error-event-builder/`: 配套最小骨架 —— `ErrorEventBuilder.ets` 含 `reportError` + `failAndUnregister` 双 helper + 4 个不同 fail 状态调用点对比（pre-registration vs post-registration cleanup）。反哺溯源 OctoDesk wave G3 refactor commit `3d4eb635`。
 - Codex 项目级分发补齐：`.agents/skills/` 纳入仓库 / npm files / `tools/install.sh --targets=codex`，让 Codex CLI / Desktop 能自动发现 8 个 HarmonyOS Skills。
 - Codex MCP 配置补齐：新增 `tools/setup-codex-mcp.sh`，显式把 `mcp-harmonyos` 注册进用户级 Codex MCP 配置；`doctor` 会检查 `codex mcp list` 是否真的可见。
-- **BYOK / OpenAI 兼容 streaming bridge 取 token usage 的可复用规则**（三端一致 iOS/Android/HarmonyOS）：原生外壳把 provider `/chat/completions` 的 SSE 逐帧透传给 WebView 时**默认没有 usage**——OpenAI streaming 规范要求请求体显式带 `"stream_options": {"include_usage": true}` 才会在末帧给 usage chunk；原生构造请求体时必须补这个字段（WebView 只拿 `data:` body，拿不到 HTTP response envelope）。ArkTS V1 侧：嵌套字段用**具名 `const streamOptions: Record<string, Object> = {...}` 再引用**，不在 body 字面量里内联嵌套 object literal（沿用一贯 object-literal 约束）。忽略该字段的 provider 自然省略 usage，下游优雅降级为无 exec-meta。反哺溯源 OctoDesk 移动端聊天「执行明细捕获管道」P3（personal-provider 仅 usage、无工具）。
+- **N6 / BYOK OpenAI-compatible streaming usage 规则落到稳定入口**：`.agents/.claude` 的 `multimodal-llm` skill 与 `samples/templates/llm-sse-client/` 同步说明：`stream: true` 默认不保证 token usage；OpenAI-compatible Chat Completions 需要显式注入 `stream_options.include_usage=true`，最后 usage chunk 可能 `choices=[]`，cancel / 网络中断时可能收不到。ArkTS V1 侧用具名 `OpenAIStreamOptions` + `Record<string, Object>` 注入，不内联嵌套 object literal。反哺溯源 OctoDesk 移动端聊天「执行明细捕获管道」P3（personal-provider 仅 usage、无工具）。
+- **N7 / 手机 WebView 软键盘与 `visualViewport` 规则**：`web-bridge` skill 与 `bridge-integration-pitfalls.md` 新增手机输入框 / composer 遮挡处理范式：统一 keyboard inset store，监听 `visualViewport.resize/scroll` + focus/resize，写 CSS var；禁止只靠 `100vh`、固定 padding 或每个组件各自猜键盘高度。
+- **N8 / 移动 raw socket 边界**：`03-platform-apis/README.md` 与 `bridge-integration-pitfalls.md` 明确 companion / WebView 架构不让 page world 驱动 IMAP / SMTP / CalDAV raw socket；默认走服务端 HTTPS relay。若产品本身是原生协议客户端，需单独 native capability + host/IP/TLS/HUKS/timeout/logging/smoke 门禁。
+- **N9 / scan 回归测试从 exit code 升级到 rule-id 断言**：`tools/test-suite.sh` 增 `assert_json_has_rule`，显式验证 `BadSecurityKit.ets` 命中 `CSPRNG-002`、`BadState.ets` 命中 `STATE-009`；`BadState.ets` 增 `Set.add` fixture，防止 N5 规则后续正则调整时静默退化。
 
 #### 2026-06-23 · OctoDesk N5 反哺（移动端 GA 前加固：WebView 生命周期 + ArkWeb 下载 + HUKS GCM）
 

@@ -20,7 +20,7 @@
 | Recipe | 内容 | 验证状态 |
 | --- | --- | --- |
 | [`web-bridge-h5-shell/`](web-bridge-h5-shell/) | ArkUI `Web` 组件 + `javaScriptProxy` 稳定实例 + `runJavaScript` 异步出口 + 域名白名单 | 完整代码（过 `scan-arkts.sh` 全规则，含 ARKTS-003 suppress 用法示范） |
-| [`llm-sse-client/`](llm-sse-client/) | `requestInStream` 流式 + 半包 buffer 切帧 + TextDecoder stream + cancel/destroy 生命周期 | 完整代码（过 `scan-arkts.sh`；含 OpenAI/Claude 调用模板） |
+| [`llm-sse-client/`](llm-sse-client/) | `requestInStream` 流式 + 半包 buffer 切帧 + TextDecoder stream + cancel/destroy 生命周期 + OpenAI-compatible usage 末帧 | 完整代码（过 `scan-arkts.sh`；含 OpenAI/Claude 调用模板） |
 | [`huks-secure-store/`](huks-secure-store/) | HUKS AES-256-GCM 包装 + preferences 落盘 + 懒生成 key + 卸载自动清理 | 完整代码（过 `scan-arkts.sh`；满足 `AGC-RJ-019` 敏感数据加密要求） |
 | [`scan-qrcode/`](scan-qrcode/) | HMS ScanKit 二维码扫码：dual-import + page-bound `UIAbilityContext` + 三种错误码到 outcome 映射 | 完整代码（过 `scan-arkts.sh`，KIT-003 / KIT-004 配套） |
 

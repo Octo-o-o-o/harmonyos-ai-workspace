@@ -8,6 +8,7 @@
 //   4. TextDecoder { stream: true } 保 UTF-8 多字节字符跨 chunk
 //   5. cancel: stream.cancelled = true + request.destroy() + 删 Map entry
 //   6. 三条结束路径（dataEnd / error / cancel）都走 cleanup
+//   7. OpenAI-compatible streaming 若要 usage，显式加 stream_options.include_usage
 //
 // ArkTS V1 约束：
 //   - 所有回调用箭头函数（arkts-no-func-expressions）
@@ -26,6 +27,14 @@ export class SseStartRequest {
   bodyJson: string | null = null  // POST 时必填，序列化后的 JSON
   bearer: string | null = null    // 可选 Bearer token
   lastEventId: string | null = null  // 断线续传可选
+  // OpenAI Chat Completions / compatible endpoint：stream=true 时默认不会给 token usage。
+  // 只有显式带 stream_options.include_usage=true，最后一个 usage chunk 才可能出现。
+  // 注意：取消 / 网络中断时 final usage chunk 可能收不到；不支持该字段的 provider 应优雅降级。
+  includeOpenAIUsage: boolean = false
+}
+
+export class OpenAIStreamOptions {
+  include_usage: boolean = true
 }
 
 /**
@@ -104,7 +113,11 @@ export class SseStreamManager {
       expectDataType: http.HttpDataType.ARRAY_BUFFER,
     }
     if (method === 'POST') {
-      options.extraData = req.bodyJson as string
+      let body = req.bodyJson as string
+      if (req.includeOpenAIUsage) {
+        body = withOpenAIStreamUsage(body)
+      }
+      options.extraData = body
     }
 
     // 关键 3：全部用箭头函数（ArkTS 禁 function 表达式）
@@ -209,6 +222,13 @@ class SseHeaders {
     }
     return out
   }
+}
+
+function withOpenAIStreamUsage(bodyJson: string): string {
+  const body = JSON.parse(bodyJson) as Record<string, Object>
+  const streamOptions = new OpenAIStreamOptions()
+  body['stream_options'] = streamOptions  // scan-ignore: ARKTS-003
+  return JSON.stringify(body)
 }
 
 // ─── 单帧解析 ────────────────────────────────────────────────

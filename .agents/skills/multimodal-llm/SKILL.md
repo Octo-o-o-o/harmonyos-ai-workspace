@@ -142,6 +142,35 @@ class ChatStreamDelta {
 - `req.destroy()` 必须在 finally（[KIT-001](../arkts-rules/references/spec-quick-ref.md)）
 - `Authorization` header 不要打 hilog %{public}（[SEC-002](../arkts-rules/references/spec-quick-ref.md)）
 
+### OpenAI-compatible streaming usage：必须显式 `include_usage`
+
+OpenAI Chat Completions streaming 默认不保证返回 token usage。官方 API Reference 说明：
+只有请求体设置 `stream_options: {"include_usage": true}` 时，流式事件才会在最后一个 chunk
+给 usage；如果流被取消或中断，最后 usage chunk 可能收不到。
+参考：<https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events/>
+
+ArkTS V1 写法不要在大 body 字面量里临时塞嵌套 object literal。先声明具名类或具名对象，再写入
+请求 body：
+
+```typescript
+class OpenAIStreamOptions {
+  include_usage: boolean = true;
+}
+
+function withOpenAIStreamUsage(bodyJson: string): string {
+  const body = JSON.parse(bodyJson) as Record<string, Object>;
+  const streamOptions = new OpenAIStreamOptions();
+  body['stream_options'] = streamOptions;  // scan-ignore: ARKTS-003
+  return JSON.stringify(body);
+}
+```
+
+解析端也要防御：usage 末帧通常没有 delta，可能是 `choices=[]`。不要无条件读
+`choices[0].delta.content`；先判断 usage，再判断 choices。兼容 provider 忽略 `stream_options`
+时，下游 exec-meta 记为 unknown，不要把它当失败。
+
+配套样例：[`samples/templates/llm-sse-client/`](../../../samples/templates/llm-sse-client/)。
+
 ## 三、Whisper / 多媒体上传（multipart/form-data）
 
 @kit.NetworkKit 的 http **不直接支持 multipart**。要么自己拼字节流，要么用 `request.uploadFile`：

@@ -1,5 +1,5 @@
 // Test fixture · 触发状态管理反模式
-// 期望钩子命中：STATE-002, STATE-003, STATE-008
+// 期望钩子命中：STATE-002, STATE-008, STATE-009
 
 class TodoItem {
   id: number = 0;
@@ -11,6 +11,7 @@ class TodoItem {
 struct BadState {
   @State items: TodoItem[] = [];
   @State user: TodoItem = new TodoItem();
+  @State selectedIds: Set<string> = new Set<string>();
 
   aboutToAppear(): void {
     // 模拟初始化
@@ -46,6 +47,12 @@ struct BadState {
         .onClick(() => {
           // STATE-002: 就地 sort
           this.items.sort();
+        })
+
+      Button('select')
+        .onClick(() => {
+          // STATE-009: Set.add 就地 mutation 不触发重渲染
+          this.selectedIds.add('todo-1');
         })
     }
   }

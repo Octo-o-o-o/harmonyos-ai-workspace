@@ -21,6 +21,17 @@ GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; NC='\033[0m'
 pass=0; fail=0
 assert_pass() { printf "${GREEN}✓${NC} %s\n" "$*"; pass=$((pass + 1)); }
 assert_fail() { printf "${RED}✗${NC} %s\n" "$*"; fail=$((fail + 1)); }
+assert_json_has_rule() {
+  local fixture="$1"
+  local rule="$2"
+  local json
+  json=$(bash tools/hooks/lib/scan-arkts.sh --json "$fixture" 2>/dev/null || true)
+  if echo "$json" | RULE_ID="$rule" python3 -c 'import json, os, sys; data=json.load(sys.stdin); rules={r.get("rule") for r in data}; sys.exit(0 if os.environ["RULE_ID"] in rules else 1)' >/dev/null 2>&1; then
+    assert_pass "$(basename "$fixture") --json contains $rule"
+  else
+    assert_fail "$(basename "$fixture") --json missing $rule"
+  fi
+}
 
 echo "═══ HarmonyOS AI Workspace · regression test suite ═══"
 echo
@@ -71,6 +82,8 @@ if echo "$JSON" | python3 -c 'import sys, json; data=json.load(sys.stdin); rules
 else
   assert_fail "JSON 缺 ARKTS-001"
 fi
+assert_json_has_rule "tools/hooks/test-fixtures/BadSecurityKit.ets" "CSPRNG-002"
+assert_json_has_rule "tools/hooks/test-fixtures/BadState.ets" "STATE-009"
 
 # ─── 4) --stats 模式 ─────────────────────────────────────
 echo
