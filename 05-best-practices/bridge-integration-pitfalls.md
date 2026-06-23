@@ -160,6 +160,24 @@ function dispatchEnvelope(env: BridgeEnvelope): void {
 
 cache TTL 看业务：上传断点续传可能要几小时；登录请求几分钟够了。
 
+### 附：指向其它消息的操作（cancel / ack / retry）取消目标走 payload，别用信封 id 兜底
+
+`sse.cancel` / `upload.cancel` 这类"我要取消**另一条**消息"的操作有个隐蔽坑：cancel 这条 envelope **自己是一条新消息、有自己的新 `id`**。如果取消目标用 `envelope.correlationId ?? envelope.id` 兜底，一旦 `correlationId` 为空就 fallback 到 cancel 信封自己的 id → 去"取消"一个根本不存在的流，真正该停的原始流（`SSE_START` 那条）没被取消，继续跑。
+
+**标准做法**：取消目标从 **payload 显式解码**，envelope 信封 id 只作 legacy 兜底：
+
+```typescript
+if (envelope.type === BridgeMessageType.SSE_CANCEL) {
+  const req = parseSseCancelRequest(envelope.payload)   // payload 里显式带 correlationId
+  const correlationId = req === null
+    ? (envelope.correlationId ?? envelope.id)            // legacy 兜底（次选）
+    : req.correlationId                                   // 主路径：payload 优先
+  this.sseManager.cancel(correlationId)
+}
+```
+
+通用 bridge 协议设计教训（三端同犯），归根结底"信封 id（消息身份）≠ 业务关联 id（指向谁）"，两者不能混用兜底。反哺溯源 OctoDesk N5 · `16db3e689`。
+
 ## 4. Envelope schema validation — 不要信任 page world
 
 ### 陷阱
@@ -225,6 +243,8 @@ const nonce: Uint8Array = (await random.generateRandom(12)).data
 >
 > 若 cryptoFramework 不可用，应 `throw` 而非静默 fallback —— "弱 PKCE 总比没 PKCE 好" 是错的，silent downgrade 会让客户端长期处于可攻击状态而无告警。
 
+> **HUKS AES-GCM 用 `HUKS_TAG_NONCE` 而非 `HUKS_TAG_IV`**：HUKS 官方示例两个 tag 都出现过（CBC/CTR 用 IV、GCM 用 NONCE + AE_TAG），AI 极易混。GCM 下 nonce 重用比 CBC 的 IV 重用**更致命**——直接泄漏认证密钥流、可伪造密文。`CSPRNG-002` 规则已同时覆盖 `HUKS_TAG_IV` 与 `HUKS_TAG_NONCE`；GCM 完整封装范式（NONCE + AE_TAG 双位置兜底 + 版本化封套）见 §8 末「进阶」。
+
 ## 8. Token / SecureStore 写入原子性（先持久化、再 fire listener）
 
 ### 陷阱
@@ -274,6 +294,32 @@ await this.secureStore.set(REFRESH_TOKEN_KEY, outcome.refreshToken)   // 一旦 
 - 加一个 CI gate（如 `check-native-capability-coherence`）断言**三端 storage-key 拒绝集合一致**——presence 检查只能防"漏一端"，更强的是 set-equality 防"某端多塞一把"。
 
 **跨端注意**：纯接线层一致性 bug，scanner 抓不到。iOS `isProtectedAuthCredentialKey` / Android `isProtectedAuthCredentialKey` / HarmonyOS `isProtectedAuthCredentialKey` 三处必须 key 集合 byte-for-byte 相同；新增一把 native-only 凭据时，**先改共享契约再 fan-out**，别在某一端 inline 硬编码。反哺溯源 OctoDesk MOB-1（三端 refresh-token / device-key 守卫对齐）。
+
+### 进阶：HUKS AES-GCM 封装范式（NONCE not IV · AE_TAG 双位置 · 版本化封套）
+
+`SecureStore` 用 HUKS 包 AES-GCM 落盘敏感值时，有两个 OpenHarmony Keystore 框架**特有**的坑：
+
+1. **GCM 用 `HUKS_TAG_NONCE`**（12 字节，CSPRNG），不是 `HUKS_TAG_IV`。nonce 必须 `cryptoFramework.createRandom().generateRandomSync(12)`（见 §7 / `CSPRNG-002`）。
+2. **GCM 认证 tag（`HUKS_TAG_AE_TAG`，16 字节）返回位置不固定**：`finishSession` 可能把它作为独立的 `HUKS_TAG_AE_TAG` **property** 返回，**也可能直接追加在 `outData` 末尾**。健壮实现两者都兜，否则换个 ROM / API 版本就解不开：
+
+```typescript
+// 加密：优先从 properties 找 AE_TAG，找不到从 outData 尾部切 16 字节
+let cipherBytes = result.outData
+let aeTagBytes = findHuksBytesParam(result.properties, huks.HuksTag.HUKS_TAG_AE_TAG)
+if (aeTagBytes === null && result.outData.length > GCM_TAG_BYTES /* 16 */) {
+  const tagOffset = result.outData.length - GCM_TAG_BYTES
+  cipherBytes = result.outData.slice(0, tagOffset)
+  aeTagBytes  = result.outData.slice(tagOffset)
+}
+// 解密：把 AE_TAG 显式作为 property 传回
+if (aeTagBytes !== null) {
+  properties.push({ tag: huks.HuksTag.HUKS_TAG_AE_TAG, value: aeTagBytes })
+}
+```
+
+3. **版本化封套**：用 `gcm2|nonce|tag|cipher` 四段（带魔数前缀），解密时**保留对旧两段 `nonce|cipher` 的兼容**，已落盘数据平滑升级、不丢。
+
+完整可跑骨架见 `samples/templates/huks-secure-store/`。反哺溯源 OctoDesk N5 · `3dbe1d42c`（harden native auth and server routing，SecureStore 迁 GCM NONCE/AE_TAG）。
 
 ## 9. HarmonyOS Pasteboard 提示时机 —— 不要 eager peek
 
@@ -637,7 +683,155 @@ if (supportsRealtimeBlur()) {
 - 不要为了过视觉门禁手写产品色；颜色、rim、sheen、shadow 应来自设计 token 生成物。
 - 不要在模拟器单帧看起来可用后跳过真机；WebView 合成和 GPU 负载差异主要在真机暴露。
 
-## 14. 反检查清单（上 PR 前过一遍）
+## 14. WebView 前后台生命周期统一管理（HarmonyOS）
+
+Native Shell + WebView 架构里"app 切后台"这件事 ArkWeb **不会自动处理**——JS 定时器继续跑、SSE 流继续收、原生心跳继续发。鸿蒙的 `UIAbility` 生命周期、ArkWeb 引擎、bridge 的 web 侧监听器是三个独立时钟，必须手动对齐。这一节是 OctoDesk N5（移动端 GA 前加固）的整段实战。
+
+### 14.1 Ability 前后台 → `WebviewController.onActive/onInactive`（暂停 JS 定时器）
+
+**陷阱**：`UIAbility.onBackground()` 触发时，ArkWeb 里 React 业务的 `setInterval` / 动画 / 轮询**照常运行**，后台持续吃 CPU 和电。很多人以为 WebView 会随 Ability 自动挂起——不会。
+
+**标准做法**：`onBackground/onForeground` 显式转发到 `WebviewController.onInactive()/onActive()`——**只有这两个方法**会暂停/恢复 ArkWeb 的 JS 定时器与渲染。controller 引用集中登记到 registry（别让 EntryAbility 直接持有 `@Entry struct`）：
+
+```typescript
+// RuntimeRegistry.ets —— controller 引用集中登记
+let webViewLifecycleController: webview.WebviewController | null = null
+export function setWebViewLifecycleController(c: webview.WebviewController | null): void {
+  webViewLifecycleController = c
+}
+export function pauseWebViewForBackground(): void {
+  try { webViewLifecycleController?.onInactive() } catch (_e) { /* 冷启时 ArkWeb 可能未 attach */ }
+}
+export function resumeWebViewForForeground(): void {
+  try { webViewLifecycleController?.onActive() } catch (_e) {}
+}
+
+// EntryAbility.ets
+onBackground(): void { pauseWebViewForBackground(); this.setAppLifecycleState('background') }
+onForeground(): void { resumeWebViewForForeground(); this.setAppLifecycleState('foreground') }
+
+// WebViewHost：onControllerAttached 里 setWebViewLifecycleController(controller)；
+// aboutToDisappear 里 onInactive() + setWebViewLifecycleController(null) 解绑防泄漏
+```
+
+约束：controller 只有 `onControllerAttached` 之后才可用；所有调用包 try-catch；`aboutToDisappear` 必须解绑 registry 引用置 null（否则对已销毁 controller 调用 / 引用泄漏）。
+
+**鸿蒙特异性（强）**：三端对照最说明问题——**iOS WKWebView 根本没有 `pauseTimers` 等价能力**；Android 走 `ProcessLifecycleOwner` + `WebView.pauseTimers()`；鸿蒙独有 `UIAbility.onBackground` → `WebviewController.onInactive()` 这条链路。另外**别把"失焦"当"后台"**：下拉通知栏 / 多任务预览导致的 inactive ≠ 真后台，用 Ability 的 `onForeground/onBackground` 区分（14.3 的分级取消依赖这个语义）。
+
+### 14.2 handshake-replay 不变量：native→web 状态事件不能比 bridge 监听器早
+
+**陷阱**：app 启动早期 native 已经知道当前前后台 / 折叠态 / 断点，但 WebView 的 bridge listener 还没建好——这些在 handshake **之前**发出的 state-change 事件**没有接收方，直接丢失**。WebView 拿到缺省 / 过期状态，表现为"刚启动布局错乱""后台标志没生效"，偶发难复现。这是 Native Shell + WebView 的**结构性时序问题**。
+
+**标准做法**：native shell 持续维护"当前状态快照"，在 **handshake 完成回调**里**强制重发**（`force` 绕过去重），lifecycle 与 window layout 都要 replay：
+
+```typescript
+// 发射带去重 + force 旁路
+emitAppLifecycle(state: string, hint: string | null = null, force: boolean = false): void {
+  if (!force && this.lastState === state && this.lastHint === hint) return
+  this.lastState = state; this.lastHint = hint
+  this.emitToJs(/* app.lifecycle event */)
+}
+
+// EntryAbility：握手完成后 setTimeout(0) 补发当前快照
+this.bridgeRuntime.attachHandshakeCompletedHandler((): void => {
+  setTimeout((): void => {
+    this.emitCurrentAppLifecycle(true)          // force 重发 lifecycle
+    this.windowLayoutObserver?.replayCurrent()  // 重放 window layout 快照
+  }, 0)
+})
+
+// WindowLayoutObserver.replayCurrent()：有缓存重放缓存，无缓存现采一次
+replayCurrent(): void {
+  let payload = this.latestPayload
+  if (payload === null) { payload = this.snapshot(); this.latestPayload = payload }
+  this.emit(payload)
+}
+```
+
+web 侧建**一个统一 store** 合并 native 信号 + document visibility fallback，所有后台策略消费同一来源，别各处自己解析生命周期。`onDestroy` 记得 `detachHandshakeCompletedHandler()` 解绑。
+
+**鸿蒙特异性（模式通用、实现绑定鸿蒙 API）**："handshake 后 force-replay 当前状态"对任何 native-shell + webview 架构都成立（三端都做了），鸿蒙实现绑定 `UIAbility` 生命周期 + `WebviewController` + 握手回调。与 §2（`javaScriptProxy` 生命周期顺序）互补：§2 讲"proxy 要在 web 加载前 attach"，本节讲"proxy 建好之前发的事件会丢、要补发"。
+
+### 14.3 后台分级 grace-cancel：inactive 不杀、background 宽限后才杀
+
+**陷阱**：交互型 SSE 流（AI 回答）和 Desktop Remote 心跳在后台继续占网络 / CPU；但一进后台立刻 kill 也不对——用户短暂切走看一眼通知再回来体验很差，且鸿蒙网络栈 http 流不随 Ability 后台自动暂停。
+
+**标准做法**：按生命周期**分级**——`inactive`（失焦）**不**取消；`background`（真后台）起**一次性宽限计时器**，到点**二次确认仍在后台**才 `cancelAll()`；任何回前台 / inactive 清掉计时器：
+
+```typescript
+const BACKGROUND_CANCEL_GRACE_MS: number = 20_000
+
+handleAppLifecycle(state: string): void {
+  this.lifecycleState = state
+  if (this.backgroundCancelTimer !== null) {
+    clearTimeout(this.backgroundCancelTimer); this.backgroundCancelTimer = null
+  }
+  if (state !== 'background') return                            // inactive / foreground 不取消
+  this.backgroundCancelTimer = setTimeout((): void => {
+    this.backgroundCancelTimer = null
+    if (this.lifecycleState === 'background') this.cancelAll()  // 二次确认仍在后台
+  }, BACKGROUND_CANCEL_GRACE_MS)
+}
+```
+
+Desktop Remote 心跳配套：后台 `suspendForBackground()`（静默关 socket、保留 resume ticket），前台 `resumeFromBackground()` 复用既有 trusted-device resume 而非新建会话；前台**不自动续跑**已取消的答案（用户没在看时别偷跑）。
+
+**鸿蒙特异性（中）**：`inactive vs background` 分级由鸿蒙 Ability 生命周期语义直接驱动；grace-cancel 思路通用，但接入点（`@kit.NetworkKit` http 流、Ability 生命周期）是鸿蒙的。
+
+### 14.4 附带：`display.densityPixels` 不可靠时 fallback 要可观测
+
+`display.getDefaultDisplaySync().densityPixels` 并非所有设备 / 时机都返回有效值，静默 fallback 到 2.0(xhdpi) 会让 dp 断点算错且无人知道。fallback 路径**用 `hilog.warn` 记一次**（`didLog` 去重防刷屏），把"我在用兜底值"变成可观测信号：
+
+```typescript
+let didLogDensityFallback = false
+function densityFactor(): number {
+  try {
+    const d = display.getDefaultDisplaySync().densityPixels
+    if (Number.isFinite(d) && d > 0) return d
+  } catch (_e) { /* fall through */ }
+  if (!didLogDensityFallback) {
+    didLogDensityFallback = true
+    hilog.warn(DOMAIN, 'WindowLayoutObserver', 'densityPixels unavailable; fallback 2.0')
+  }
+  return 2.0
+}
+```
+
+> 反哺溯源 OctoDesk N5（移动端 GA 前加固）· `b714e653c`（后台暂停 WebView 定时器）/ `0b7bab762`（app.lifecycle 统一发射 + handshake replay）/ `bdcc6d686`（后台流与心跳 grace-cancel）/ `d49c97971`（form-factor + densityPixels）。
+
+## 15. ArkWeb 文件下载：data-URL 拦截 + cancel 误报失败（HarmonyOS）
+
+**陷阱**：WebView 里点下载一个 `data:...;base64,...` URL（典型：桌面远程预览把文件生成成 data-URL 交前端下载），ArkWeb 的 `WebDownloadDelegate` **不原生处理 `data:` 协议**——native 下载走不通。而且若为接管下载调 `item.cancel()`，**`cancel()` 会触发 `onDownloadFailed` 回调**，用户看到莫名其妙的"下载失败"toast。
+
+**标准做法**：`onBeforeDownload` 里 sniff `data:` → 记下这个 download 的 guid（标记为"我主动取消的"）→ `item.cancel()` → 自己 base64 解码 + `fileIo` 写盘；`onDownloadFailed` 里识别 guid 把误报吞掉：
+
+```typescript
+private downloadDelegate: webview.WebDownloadDelegate = new webview.WebDownloadDelegate()
+private manualDownloadGuids: Set<string> = new Set<string>()
+
+this.downloadDelegate.onBeforeDownload((item: webview.WebDownloadItem): void => {
+  if (item.getUrl().startsWith('data:')) {
+    this.rememberManualDownload(item.getGuid())     // 标记主动取消
+    item.cancel()
+    void this.writeDataUrlToDisk(item.getUrl(), sanitizeSuggestedFileName(item.getSuggestedFileName()))
+  }
+})
+this.downloadDelegate.onDownloadFailed((item: webview.WebDownloadItem): void => {
+  if (this.consumeManualDownload(item.getGuid())) return   // 是我取消的，吞掉失败通知
+  // ... 真实失败才提示
+})
+```
+
+要点：
+- **大小上限**：base64 解码前先估算解码后字节数，超过 `MAX_DATA_URL_DOWNLOAD_BYTES`（如 32MB）直接拒，别把整段 data-URL decode 进内存。
+- **文件名 sanitize**：data-URL 的 `name=` / `filename=` meta 不可信，过 `sanitizeSuggestedFileName`（拒路径分隔符 `/ \`、控制字符、`..`），再 `fileIo.openSync(CREATE | TRUNC | READ_WRITE)` + `writeSync`，`finally closeSync`。
+- **`manualDownloadGuids` 若是 ArkUI 状态记得 copy-on-write**（见 `STATE-009`）——`Set.add/.delete` 原地变更不被观察；OctoDesk 把它改成 `const next = new Set(this.set); next.add(g); this.set = next`。
+
+**鸿蒙特异性（强）**：ArkWeb `WebDownloadDelegate` 对 data-URL 的处理缺口、`cancel()` 触发 `onDownloadFailed` 都是 ArkWeb 具体行为；Android WebView `DownloadListener` / iOS WKWebView 的下载语义完全不同。
+
+> 反哺溯源 OctoDesk N5 · `3f4df3578`（harden desktop remote file previews）。
+
+## 16. 反检查清单（上 PR 前过一遍）
 
 - [ ] handshake 的 `granted` 来自 handler 注册表，不是 enum
 - [ ] `BridgeCapability` enum 新增条目都有对应 handler，或者明确 reject + reason
@@ -655,8 +849,14 @@ if (supportsRealtimeBlur()) {
 - [ ] HMS ScanKit dual-import + `QR_CODE` 新名 + page-bound `UIAbilityContext`（§11）
 - [ ] 原生 blur 有 API guard、单岛范围、opaque fallback、真机 Profiler/截图证据（§13）
 - [ ] `addJavascriptInterface` / 已废弃 `picker.PhotoViewPicker` / `decodeWithStream` 全 0 命中（scanner 覆盖：`ARKTS-DEPRECATED-PICKER` / `ARKTS-DEPRECATED-DECODE`）
+- [ ] WebView 前后台：`UIAbility.onBackground/onForeground` 转发 `WebviewController.onInactive()/onActive()`，`aboutToDisappear` 解绑 controller（§14.1）
+- [ ] native→web 状态事件（lifecycle / window layout）在 handshake 回调里 force-replay 当前快照，`onDestroy` 解绑 handshake handler（§14.2）
+- [ ] 后台 SSE / 心跳分级取消：inactive 不杀、background 宽限后二次确认才 `cancelAll()`（§14.3）
+- [ ] `data:` URL 下载手动拦截（cancel + base64 + fileIo + 大小上限 + 文件名 sanitize），`onDownloadFailed` 吞掉主动 cancel 的误报（§15）
+- [ ] cancel / ack 类操作取消目标走 payload，不用 envelope 信封 id 兜底（§3）
+- [ ] HUKS AES-GCM 用 `HUKS_TAG_NONCE` + AE_TAG 双位置兜底 + 版本化封套（§8）
 
-## 15. 相关 scan-arkts 规则
+## 17. 相关 scan-arkts 规则
 
 | 规则 ID | 严重度 | 覆盖什么 |
 |--------|--------|---------|
@@ -664,7 +864,7 @@ if (supportsRealtimeBlur()) {
 | `SEC-002` | High | hilog `%{public}` 输出 token / password / 身份证 |
 | `SEC-007` | Medium | MD5 / SHA1 / DES 弱算法 |
 | `CSPRNG-001` | High in security/, Medium otherwise | `Math.random()` 在加密上下文（含 PKCE verifier） |
-| `CSPRNG-002` | High | `HUKS_TAG_IV` 同文件无 `cryptoFramework.createRandom`（IV 似非 CSPRNG） |
+| `CSPRNG-002` | High | `HUKS_TAG_IV` / `HUKS_TAG_NONCE` 同文件无 `cryptoFramework.createRandom`（GCM nonce / IV 似非 CSPRNG） |
 | `ARKTS-DEPRECATED-PICKER` | High | `picker.PhotoViewPicker`（用 `photoAccessHelper`） |
 | `ARKTS-DEPRECATED-DECODE` | High | `TextDecoder.decodeWithStream`（已弃用） |
 | `KIT-001` | Medium | `http.createHttp()` 未 destroy |
@@ -672,7 +872,7 @@ if (supportsRealtimeBlur()) {
 | `KIT-004` | High | HMS ScanKit `ScanType.QRCODE` 已改名 `QR_CODE`，旧值 undefined |
 | `DB-001` | High | `ResultSet` / `RdbStore` 未 close |
 
-## 16. 相关文档
+## 18. 相关文档
 
 - `01-language-arkts/02-typescript-to-arkts-migration.md` — ArkTS 严格模式禁用项
 - `03-platform-apis/` — Kit 系统能力索引
@@ -684,4 +884,4 @@ if (supportsRealtimeBlur()) {
 
 ---
 
-> **来源**：本文 13 类陷阱沉淀自 2026-05 一个真实下游消费者（企业级 AI 工作面 macOS / iPadOS / Android / HarmonyOS 四端套件）实战教训 + 评审反馈。具体出处可能因后续脱敏调整不再可追溯，但所有陷阱都在三端的至少一端实际遇到过、并被代码 review 拍板进规则。新增条目欢迎附最小复现路径。
+> **来源**：本文 15 类陷阱沉淀自 2026-05 起一个真实下游消费者（企业级 AI 工作面 macOS / iPadOS / Android / HarmonyOS 四端套件）实战教训 + 评审反馈。具体出处可能因后续脱敏调整不再可追溯，但所有陷阱都在三端的至少一端实际遇到过、并被代码 review 拍板进规则。新增条目欢迎附最小复现路径。

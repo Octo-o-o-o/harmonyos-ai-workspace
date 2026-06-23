@@ -15,6 +15,21 @@
 - `samples/templates/error-event-builder/`: 配套最小骨架 —— `ErrorEventBuilder.ets` 含 `reportError` + `failAndUnregister` 双 helper + 4 个不同 fail 状态调用点对比（pre-registration vs post-registration cleanup）。反哺溯源 OctoDesk wave G3 refactor commit `3d4eb635`。
 - Codex 项目级分发补齐：`.agents/skills/` 纳入仓库 / npm files / `tools/install.sh --targets=codex`，让 Codex CLI / Desktop 能自动发现 8 个 HarmonyOS Skills。
 - Codex MCP 配置补齐：新增 `tools/setup-codex-mcp.sh`，显式把 `mcp-harmonyos` 注册进用户级 Codex MCP 配置；`doctor` 会检查 `codex mcp list` 是否真的可见。
+- **BYOK / OpenAI 兼容 streaming bridge 取 token usage 的可复用规则**（三端一致 iOS/Android/HarmonyOS）：原生外壳把 provider `/chat/completions` 的 SSE 逐帧透传给 WebView 时**默认没有 usage**——OpenAI streaming 规范要求请求体显式带 `"stream_options": {"include_usage": true}` 才会在末帧给 usage chunk；原生构造请求体时必须补这个字段（WebView 只拿 `data:` body，拿不到 HTTP response envelope）。ArkTS V1 侧：嵌套字段用**具名 `const streamOptions: Record<string, Object> = {...}` 再引用**，不在 body 字面量里内联嵌套 object literal（沿用一贯 object-literal 约束）。忽略该字段的 provider 自然省略 usage，下游优雅降级为无 exec-meta。反哺溯源 OctoDesk 移动端聊天「执行明细捕获管道」P3（personal-provider 仅 usage、无工具）。
+
+#### 2026-06-23 · OctoDesk N5 反哺（移动端 GA 前加固：WebView 生命周期 + ArkWeb 下载 + HUKS GCM）
+
+来自 OctoDesk Mobile Companion `apps/harmonyos/**`（`codex/integrate-figma-design-2026-06-23` 分支）移动端 GA 前加固一批 commit 的实战教训，逐条已读源码核验：
+
+- **`05-best-practices/bridge-integration-pitfalls.md` §14 新增「WebView 前后台生命周期统一管理（HarmonyOS）」**：Native Shell + WebView 三个独立时钟（`UIAbility` 生命周期 / ArkWeb 引擎 / bridge web 监听器）的对齐实战。① `UIAbility.onBackground/onForeground` 必须转发 `WebviewController.onInactive()/onActive()` 才会暂停/恢复 ArkWeb 的 JS 定时器（**鸿蒙独有链路**：iOS WKWebView 无 `pauseTimers` 等价、Android 走 `ProcessLifecycleOwner`）；② handshake-replay 不变量——native 状态事件在 bridge 监听器建立前发出会丢失，须在握手完成回调里 `force` 重发当前 lifecycle / window layout 快照（结构性时序坑）；③ 后台分级 grace-cancel——`inactive` 失焦不取消、`background` 真后台起 20s 宽限计时器二次确认才 `cancelAll()` SSE/心跳；④ `display.densityPixels` 不可靠时 fallback 用 `hilog.warn` 可观测化。反哺溯源 OctoDesk N5 commits `b714e653c` / `0b7bab762` / `bdcc6d686` / `d49c97971`。
+- **`05-best-practices/bridge-integration-pitfalls.md` §15 新增「ArkWeb 文件下载：data-URL 拦截 + cancel 误报失败（HarmonyOS）」**：ArkWeb `WebDownloadDelegate` 不原生处理 `data:` 协议，须在 `onBeforeDownload` 里 `item.cancel()` + 手动 base64 解码 + `fileIo` 写盘（带 `MAX_DATA_URL_DOWNLOAD_BYTES` 上限 + `sanitizeSuggestedFileName`）；而 `item.cancel()` 会触发 `onDownloadFailed`，须用 `manualDownloadGuids` 集合识别并吞掉误报。原 §14-§16（反检查清单 / 相关规则 / 相关文档）顺延为 §16-§18。反哺溯源 OctoDesk N5 commit `3f4df3578`。
+- **§3 补短规则「指向其它消息的操作取消目标走 payload」**：`sse.cancel` / `upload.cancel` 这类"取消另一条消息"的操作，取消目标必须从 payload 显式解码——cancel 信封自己有新 `id`，用 `correlationId ?? envelope.id` 兜底会在 `correlationId` 为空时去取消不存在的流，原流不停。反哺溯源 OctoDesk N5 commit `16db3e689`。
+- **§8 补进阶「HUKS AES-GCM 封装范式」+ §7 补 NONCE 提示**：GCM 用 `HUKS_TAG_NONCE`（不是 `HUKS_TAG_IV`）+ 显式 `HUKS_TAG_AE_TAG`（返回位置不固定：独立 property 或 outData 尾部 16 字节，两者都兜）+ 版本化封套 `gcm2|nonce|tag|cipher`（兼容旧两段）。反哺溯源 OctoDesk N5 commit `3dbe1d42c`（SecureStore 迁 GCM NONCE/AE_TAG）。
+- **`scan-arkts.sh` `CSPRNG-002` 扩匹配 `HUKS_TAG_NONCE`（真实漏检修复）**：原规则只 grep `HUKS_TAG_IV`，N5 把 `SecureStore` 迁到 `HUKS_TAG_NONCE` 后非 CSPRNG nonce 会漏检；GCM nonce 重用比 CBC IV 重用更致命（泄漏认证密钥流、可伪造密文）。`BadSecurityKit.ets` fixture 加 NONCE 命中点验证扩展正则；正/反向手动验证（NONCE+createRandom 不误报、裸 NONCE 命中）通过。
+- **`scan-arkts.sh` `STATE-009` 补 `Set.add()`**：原正则 `(set|delete|clear)` 漏了 Set 原地添加 `.add()`（OctoDesk `WebViewHost.manualDownloadGuids` 真实案例），ArkUI 状态里 `Set.add` 同样不触发重渲染、须 copy-on-write。
+- **`samples/templates/huks-secure-store/` 升级到生产正确范式**：`SecureStore.ets` 从最简 `ivHex|cipherHex`（IV）迁到 `gcm2|nonceHex|tagHex|cipherHex`（`HUKS_TAG_NONCE` + 显式 `HUKS_TAG_AE_TAG` 双位置兜底 + 版本化封套 + 新增 `findHuksBytesParam` helper），README 同步更新约束 #2 与格式说明。`scan-arkts.sh` 升级后仍 exit 0（nonce 来自 `cryptoFramework.createRandom`）。
+- **`README.md` 接线层陷阱计数 13 → 15**（同步新增 §14/§15）。
+- **回归**：`tools/test-suite.sh` 全量 **34 passed, 0 failed**（fixture exit code / 12 个 sample template clean / --json / --stats / 安装 sanity 全绿）。
 
 ### Fixed
 

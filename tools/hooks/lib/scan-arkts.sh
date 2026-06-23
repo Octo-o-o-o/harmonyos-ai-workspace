@@ -469,7 +469,7 @@ if grep -qE '\bawait\s' "$TMP" 2>/dev/null; then
   done < <(scan_lines 'catch\s*\(' | head -20)
 fi
 
-# STATE-009: Map / Set 就地 set / delete / clear 但外层是 @State
+# STATE-009: Map / Set 就地 set / delete / clear / add 但外层是 @State
 # v0.6 升级：原 v0.5 的 EXCLUDE_NAMES 前缀白名单是补丁。改用 in_arkui_class
 # 上下文检查——只在 ArkUI 类内部触发。普通 class（PrefStore / SecretStore /
 # RdbAdapter）的 `this.prefs.delete()` 是 KV/DB API 调用，永远不该报。
@@ -481,8 +481,8 @@ while IFS= read -r match; do
     continue
   fi
   emit_high "STATE-009" "$ln" "${content:0:80}" \
-    "Map / Set 就地 set / delete / clear 不触发重渲染。改写：const next = new Map(this.m); next.set(...); this.m = next;"
-done < <(scan_lines '\bthis\.[a-zA-Z_]\w*\.(set|delete|clear)\s*\(' | head -10)
+    "Map / Set 就地 set / delete / clear / add 不触发重渲染（Set.add 同理）。改写：const next = new Set(this.s); next.add(...); this.s = next;"
+done < <(scan_lines '\bthis\.[a-zA-Z_]\w*\.(set|delete|clear|add)\s*\(' | head -10)
 
 # SEC-001: 硬编码看起来像 token / api-key / secret 的字符串字面量
 while IFS= read -r match; do
@@ -562,25 +562,28 @@ while IFS= read -r match; do
   fi
 done < <(scan_lines '\bMath\.random\s*\(' | head -10)
 
-# CSPRNG-002: HUKS_TAG_IV value 必须来自 CSPRNG。
-# 来自 OctoDesk N2 实战教训（2026-05-14 harmonyos-app-cleanup commit）：
-# HUKS AES-GCM 的 IV 是密码学敏感字段，必须用 cryptoFramework.createRandom()
+# CSPRNG-002: HUKS_TAG_IV / HUKS_TAG_NONCE value 必须来自 CSPRNG。
+# 来自 OctoDesk N2（2026-05-14 harmonyos-app-cleanup）+ N5（2026-06 SecureStore 迁 GCM NONCE）实战教训：
+# HUKS AES-GCM 的 IV / nonce 是密码学敏感字段，必须用 cryptoFramework.createRandom()
 # .generateRandomSync(...) 产生；曾出现 IV 来自 Math.random / Date.now /
 # 硬编码数组的实例，会让 AES-GCM 退化为可预测，单次 nonce 重复即完全 break。
+# 注意 GCM 正规写法用 HUKS_TAG_NONCE（不是 IV）—— N5 把 SecureStore 迁到 NONCE 后，
+# 只 grep IV 的旧规则会漏检，故同时覆盖两者。GCM nonce 重用比 CBC 的 IV 重用更致命：
+# 直接泄漏认证密钥流、可伪造密文。
 #
 # 检测启发式：
-#   - 文件出现 huks.HuksTag.HUKS_TAG_IV (或 HuksTag.HUKS_TAG_IV)
+#   - 文件出现 huks.HuksTag.HUKS_TAG_IV / HUKS_TAG_NONCE (或省略 huks. 前缀)
 #   - AND 同文件没有 cryptoFramework.createRandom 引用
-#   → emit_high CSPRNG-002（强提示：HUKS IV 似乎不是 CSPRNG）
+#   → emit_high CSPRNG-002（强提示：HUKS IV / nonce 似乎不是 CSPRNG）
 #
-# 用 scan-ignore: CSPRNG-002 跳过（如 IV 来自跨文件的可信封装函数）。
-if grep -qE '\b(huks\.)?HuksTag\.HUKS_TAG_IV\b' "$TMP" 2>/dev/null \
+# 用 scan-ignore: CSPRNG-002 跳过（如 IV / nonce 来自跨文件的可信封装函数）。
+if grep -qE '\b(huks\.)?HuksTag\.(HUKS_TAG_IV|HUKS_TAG_NONCE)\b' "$TMP" 2>/dev/null \
    && ! grep -qE 'cryptoFramework\.createRandom' "$TMP" 2>/dev/null \
    && ! grep -qE 'scan-ignore:\s*CSPRNG-002' "$TMP" 2>/dev/null; then
-  ln_iv=$(grep -nE '\b(huks\.)?HuksTag\.HUKS_TAG_IV\b' "$TMP" | head -1 | cut -d: -f1)
-  content_iv=$(grep -E '\b(huks\.)?HuksTag\.HUKS_TAG_IV\b' "$TMP" | head -1 | sed 's/^[[:space:]]*//')
+  ln_iv=$(grep -nE '\b(huks\.)?HuksTag\.(HUKS_TAG_IV|HUKS_TAG_NONCE)\b' "$TMP" | head -1 | cut -d: -f1)
+  content_iv=$(grep -E '\b(huks\.)?HuksTag\.(HUKS_TAG_IV|HUKS_TAG_NONCE)\b' "$TMP" | head -1 | sed 's/^[[:space:]]*//')
   emit_high "CSPRNG-002" "${ln_iv:-1}" "${content_iv:0:80}" \
-    "HUKS_TAG_IV 似乎不来自 CSPRNG（同文件没有 cryptoFramework.createRandom）。AES-GCM IV 必须用 cryptoFramework.createRandom().generateRandomSync(N).data，重复 IV 立即 break。如 IV 来自可信封装函数，加 // scan-ignore: CSPRNG-002"
+    "HUKS_TAG_IV / HUKS_TAG_NONCE 似乎不来自 CSPRNG（同文件没有 cryptoFramework.createRandom）。AES-GCM 的 IV / nonce 必须用 cryptoFramework.createRandom().generateRandomSync(N).data，nonce 重用立即 break（GCM 下比 IV 更致命）。如来自可信封装函数，加 // scan-ignore: CSPRNG-002"
 fi
 
 # DB-001: ResultSet / RdbStore 取出后无 close

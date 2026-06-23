@@ -1,9 +1,10 @@
 // Test fixture · 触发 v0.3 新增规则
-// 期望钩子命中：SEC-002, SEC-007, DB-001, KIT-002, AGC-RJ-014, PERF-002
+// 期望钩子命中：SEC-002, SEC-007, DB-001, KIT-002, AGC-RJ-014, PERF-002, CSPRNG-002
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { relationalStore } from '@kit.ArkData';
 import { image } from '@kit.ImageKit';
+import { huks } from '@kit.UniversalKeystoreKit';
 
 const DOMAIN = 0xBEEF;
 
@@ -32,6 +33,17 @@ class App {
     const imageSource = image.createImageSource(buf);
     const px = await imageSource.createPixelMap();
     // 漏了 imageSource.release()
+  }
+
+  // CSPRNG-002: HUKS AES-GCM nonce 用硬编码数组而非 cryptoFramework（反模式）
+  buildGcmOptions(): huks.HuksOptions {
+    const nonce = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);  // 非 CSPRNG
+    return {
+      properties: [
+        { tag: huks.HuksTag.HUKS_TAG_NONCE, value: nonce },
+      ],
+      inData: new Uint8Array(0),
+    };
   }
 }
 

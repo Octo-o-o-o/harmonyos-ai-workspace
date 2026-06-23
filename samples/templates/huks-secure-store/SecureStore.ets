@@ -4,7 +4,9 @@
 // 模式：
 //   - 单条字符串值 → @kit.ArkData preferences 落盘
 //   - 写入前用 HUKS AES-256-GCM 包装（key 在 HUKS 内不可导出）
-//   - 存储格式：`ivHex|cipherHex`（带认证 tag 在 GCM mode 里随密文）
+//   - 存储格式：`gcm2|nonceHex|tagHex|cipherHex`（版本化封套）
+//   - GCM 用 HUKS_TAG_NONCE（不是 IV）+ 显式 HUKS_TAG_AE_TAG 认证 tag；
+//     tag 返回位置不固定（独立 property 或追加在 outData 尾），两者都兜
 //
 // ArkTS V1 约束：
 //   - BusinessError 显式 catch
@@ -20,6 +22,8 @@ import { getUIAbilityContext } from '../runtime/RuntimeRegistry'
 
 const PREFS_NAME: string = 'app.securestore'
 const HUKS_ALIAS: string = 'app.securestore.aesKey'
+const GCM_ENVELOPE_V2: string = 'gcm2'   // 版本化封套魔数前缀
+const GCM_TAG_BYTES: number = 16         // AES-GCM 认证 tag 固定 16 字节
 
 // ─── 公开接口 ─────────────────────────────────────────────────
 
@@ -143,12 +147,12 @@ export class HuksWrappedPreferenceStore implements SecureStore {
     }
   }
 
-  /** UTF-8 string → `ivHex|cipherHex` */
+  /** UTF-8 string → `gcm2|nonceHex|tagHex|cipherHex` */
   private async wrap(value: string): Promise<string> {
-    // AES-GCM IV must come from a CSPRNG. Math.random() reused once
-    // breaks the entire GCM mode (key recovery). cryptoFramework's
-    // createRandom() is backed by the device hardware RNG.
-    const iv: Uint8Array = cryptoFramework.createRandom().generateRandomSync(12).data
+    // AES-GCM 的 nonce 必须来自 CSPRNG —— Math.random() 重用一次就彻底 break
+    // GCM（key recovery）。cryptoFramework.createRandom() 走设备硬件 RNG。
+    // 注意：GCM 用 HUKS_TAG_NONCE，不是 HUKS_TAG_IV（IV 是 CBC/CTR 的命名）。
+    const nonce: Uint8Array = cryptoFramework.createRandom().generateRandomSync(12).data
     const encoder = new util.TextEncoder()
     const plaintext = encoder.encodeInto(value)
 
@@ -159,7 +163,7 @@ export class HuksWrappedPreferenceStore implements SecureStore {
         { tag: huks.HuksTag.HUKS_TAG_PURPOSE, value: huks.HuksKeyPurpose.HUKS_KEY_PURPOSE_ENCRYPT },
         { tag: huks.HuksTag.HUKS_TAG_PADDING, value: huks.HuksKeyPadding.HUKS_PADDING_NONE },
         { tag: huks.HuksTag.HUKS_TAG_BLOCK_MODE, value: huks.HuksCipherMode.HUKS_MODE_GCM },
-        { tag: huks.HuksTag.HUKS_TAG_IV, value: iv },
+        { tag: huks.HuksTag.HUKS_TAG_NONCE, value: nonce },
       ],
       inData: plaintext,
     }
@@ -175,17 +179,33 @@ export class HuksWrappedPreferenceStore implements SecureStore {
     if (!result.outData) {
       throw new Error('SecureStore.wrap: HUKS finishSession 返回空 outData')
     }
-    return bytesToHex(iv) + '|' + bytesToHex(result.outData)
+    // GCM 认证 tag（16B）返回位置不固定：可能是独立的 HUKS_TAG_AE_TAG property，
+    // 也可能直接追加在 outData 末尾。两者都兜，否则换 ROM / API 版本就解不开。
+    let cipherBytes: Uint8Array = result.outData
+    let aeTagBytes: Uint8Array | null = findHuksBytesParam(result.properties, huks.HuksTag.HUKS_TAG_AE_TAG)
+    if (aeTagBytes === null && result.outData.length > GCM_TAG_BYTES) {
+      const tagOffset = result.outData.length - GCM_TAG_BYTES
+      cipherBytes = result.outData.slice(0, tagOffset)
+      aeTagBytes = result.outData.slice(tagOffset)
+    }
+    if (aeTagBytes === null) {
+      throw new Error('SecureStore.wrap: 未取到 GCM 认证 tag（HUKS_TAG_AE_TAG）')
+    }
+    // 版本化封套：魔数前缀方便日后格式升级时识别
+    return GCM_ENVELOPE_V2 + '|' + bytesToHex(nonce) + '|' + bytesToHex(aeTagBytes) + '|' + bytesToHex(cipherBytes)
   }
 
-  /** `ivHex|cipherHex` → UTF-8 string */
+  /** `gcm2|nonceHex|tagHex|cipherHex` → UTF-8 string */
   private async unwrap(combined: string): Promise<string> {
-    const sep = combined.indexOf('|')
-    if (sep < 0) {
-      throw new Error('SecureStore.unwrap: 损坏的密文（缺 IV 分隔）')
+    const parts = combined.split('|')
+    if (parts.length !== 4 || parts[0] !== GCM_ENVELOPE_V2) {
+      // 若你有更早的 `ivHex|cipherHex` 历史数据，在这里加一条 fallback：用
+      // HUKS_TAG_IV + 2 段解码（见 05-best-practices/bridge-integration-pitfalls.md §8）。
+      throw new Error('SecureStore.unwrap: 损坏或未知格式的密文封套')
     }
-    const iv = hexToBytes(combined.substring(0, sep))
-    const cipher = hexToBytes(combined.substring(sep + 1))
+    const nonce = hexToBytes(parts[1])
+    const aeTag = hexToBytes(parts[2])
+    const cipher = hexToBytes(parts[3])
 
     const opts: huks.HuksOptions = {
       properties: [
@@ -194,7 +214,8 @@ export class HuksWrappedPreferenceStore implements SecureStore {
         { tag: huks.HuksTag.HUKS_TAG_PURPOSE, value: huks.HuksKeyPurpose.HUKS_KEY_PURPOSE_DECRYPT },
         { tag: huks.HuksTag.HUKS_TAG_PADDING, value: huks.HuksKeyPadding.HUKS_PADDING_NONE },
         { tag: huks.HuksTag.HUKS_TAG_BLOCK_MODE, value: huks.HuksCipherMode.HUKS_MODE_GCM },
-        { tag: huks.HuksTag.HUKS_TAG_IV, value: iv },
+        { tag: huks.HuksTag.HUKS_TAG_NONCE, value: nonce },
+        { tag: huks.HuksTag.HUKS_TAG_AE_TAG, value: aeTag },
       ],
       inData: cipher,
     }
@@ -243,4 +264,18 @@ function hexToBytes(hex: string): Uint8Array {
     out[i] = ((hi << 4) | lo) & 0xff
   }
   return out
+}
+
+/** 从 HUKS finishSession 返回的 properties 里取某个 tag 的 bytes（找不到返回 null） */
+function findHuksBytesParam(params: Array<huks.HuksParam> | undefined, tag: huks.HuksTag): Uint8Array | null {
+  if (!params) {
+    return null
+  }
+  for (let i = 0; i < params.length; i++) {
+    const value = params[i].value
+    if (params[i].tag === tag && value instanceof Uint8Array) {
+      return value
+    }
+  }
+  return null
 }

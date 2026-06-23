@@ -40,7 +40,7 @@
 | `STATE-003` | `this.user.name = 'A'` 对象字段直改（无 `@Observed`） | `this.user = { ...this.user, name: 'A' }` 或类加 `@Observed` | 高频 |
 | `STATE-006` | `Toggle({ on: this.x })` 父子双向绑定丢 `$$` | `Toggle({ on: $$this.x })` | 常见 |
 | `STATE-008` | `build()` 内调 `console`/`fetch`/`await`/`setTimeout` | 副作用挪到 `aboutToAppear` / `onClick` 等 | 高频 |
-| `STATE-009` | `this.cache.set('k', v)` Map/Set 就地 mutation | `const next = new Map(this.cache); next.set(...); this.cache = next` | 中频 |
+| `STATE-009` | `this.cache.set(...)` / `this.set.add(...)` Map/Set 就地 mutation（`set`/`delete`/`clear`/`add`） | `const next = new Set(this.set); next.add(...); this.set = next` | 中频 |
 | `STATE-010` | Per-host store 用单 key（如 `cwd`）分桶 → 多 host 状态串扰 | key 改 `${serverId}:${cwd}` 联合 | 多 host 必现 |
 | `STATE-011` | `SessionStore.appendTimelineItem` 直接写绕过 `TimelineReducer.applyFetchedEntries` → timestamp 等元数据丢失 | 历史拉取也走 reducer：`reducer.applyFetchedEntries(agentId, entries)` | 中频（绕路径常见） |
 
@@ -74,7 +74,7 @@
 | `SEC-002` | `hilog %{public}` 输出敏感字段（token / 身份证 / password 等） | 用 `%{private}` 或脱敏 `mask()` 后再打 | ✅ |
 | `SEC-007` | `MD5` / `SHA1` / `DES` 弱算法 | SHA-256+ / AES-GCM（`@kit.CryptoArchitectureKit`） | ✅ |
 | `CSPRNG-001` | `Math.random()` 用于 IV / nonce / signature / PKCE verifier 等加密上下文（路径 `/security/` 或 `/crypto/` → High；含 `cryptoFramework` / `nonce` / `aesGcm` / `huks` / `hmac` 等关键字 → High；否则 Medium） | `cryptoFramework.createRandom().generateRandomSync(N)`；inline-suppress: `// scan-ignore: CSPRNG-001` | ✅ |
-| `CSPRNG-002` | HUKS `HUKS_TAG_IV` 同文件无 `cryptoFramework.createRandom` 引用（AES-GCM IV 重复一次就完全 break） | IV 必须从 CSPRNG 取；inline-suppress 仅适用 IV 来自可信跨文件封装 | ✅ |
+| `CSPRNG-002` | HUKS `HUKS_TAG_IV` / `HUKS_TAG_NONCE` 同文件无 `cryptoFramework.createRandom` 引用（GCM nonce 重用比 IV 更致命，泄漏认证密钥流） | nonce / IV 必须从 CSPRNG 取；inline-suppress 仅适用来自可信跨文件封装 | ✅ |
 | `DB-001` | ResultSet / RdbStore 取出后未 `.close()` | `try { ... } finally { rs.close() }` | ✅ |
 | `COMPAT-001` | 用 API 21+ 新 Kit 但无 `canIUse` 守护 | `if (canIUse('SystemCapability.Foo')) { ... }` | ✅ |
 | `AGC-RJ-014` | UI 硬编码中文字符串 | `Text($r('app.string.xxx'))` + 资源文件 | ✅ |

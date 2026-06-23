@@ -21,7 +21,7 @@
 ## 约束（必须满足）
 
 1. **HUKS key 必须懒生成**——首次 `set()` 时检查并生成；不要在 app 启动时一次性建（用户卸载/重装会丢密钥，进而导致 unwrap 失败）。
-2. **GCM 模式必须配 IV**——本 recipe 用 12 字节随机 IV，与密文一起 hex 编码存（`ivHex|cipherHex`）。
+2. **GCM 模式用 NONCE + 认证 tag**——本 recipe 用 12 字节 CSPRNG nonce（`HUKS_TAG_NONCE`，**不是** IV）+ 显式 16 字节认证 tag（`HUKS_TAG_AE_TAG`），版本化封套 `gcm2|nonceHex|tagHex|cipherHex`。tag 返回位置不固定（独立 property 或追加在 outData 尾部），两者都要兜，否则换 ROM / API 版本可能解不开。
 3. **`huks.deleteKeyItem` 必须包在 try/catch** 里——key 不存在会抛错，wipeAll 需要幂等。
 4. **取 UIAbilityContext 不能走 AppStorage.get<UIAbilityContext>**——HarmonyOS 6.x 起 `varValueCheckFailed`；本 recipe 用 module-level singleton 模式存。
 5. **不要在 ArkUI 组件 `aboutToAppear` 里同步调用 set/get**——HUKS 涉及 IPC，必须 `await`。
