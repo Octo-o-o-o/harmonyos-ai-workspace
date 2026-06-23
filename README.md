@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/Octo-o-o-o/harmonyos-ai-workspace)](https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/latest)
 
-> **一行命令把"鸿蒙领域规则包"装进你的 app，让 Claude / Codex / Cursor / Copilot 写出能编译过的鸿蒙代码。**
+> **把鸿蒙 AI 协作装进你的 app：规则、Skills、钩子、脚手架和调试闭环一起交给 Claude / Codex / Cursor / Copilot，让 AI 写出的 ArkTS 更接近"能编译、能运行、能上架"。**
 
 ```bash
 cd ~/WorkSpace/apps/my-harmony-app    # 进你的鸿蒙 app 根目录
@@ -13,17 +13,67 @@ npx -y harmonyos-ai-workspace          # 30 秒搞定，0 改你的源码
 
 ---
 
-## 这个项目对谁有帮助？
+## 这个项目是什么？
+
+**HarmonyOS AI Workspace 是一个面向鸿蒙应用开发的 AI 编码工作区安装器。**
+
+它不是新的 IDE，也不是业务模板，更不是运行时依赖。它做的是把鸿蒙开发里 AI 最容易踩错的知识、规则和校验工具，安装到你的真实 HarmonyOS app 项目里：
+
+| 它提供 | 用来解决 |
+| --- | --- |
+| `AGENTS.md` / `CLAUDE.md` / Skills / Cursor / Copilot 规则 | 让不同 AI 助手在同一套鸿蒙约束下工作 |
+| ArkTS / ArkUI / OHPM / AGC 上架规则 | 降低 `any`、状态不刷新、伪包名、旧 API、拒审项等高频错误 |
+| Edit 后钩子和扫描脚本 | 在 AI 写完 `.ets` / `.ts` / `oh-package.json5` 后立刻把违规反馈给 AI |
+| `harmony-dev-cycle.sh` 调试闭环 | 让 AI agent 能跑 `build → install → run → hilog`，少依赖 DevEco GUI 手工切换 |
+| 模板、case study、官方文档镜像入口 | 给 AI 和开发者一套可引用的鸿蒙工程经验库 |
+
+项目目标很直接：**让 AI 成为可控的鸿蒙开发搭档，而不是只会生成"看起来像 TypeScript、实际过不了 ArkTS 编译"的代码补全器。**
+
+---
+
+## 目标客户
 
 | 你是 | 你会得到 |
 | --- | --- |
-| 🆕 **vibe coder（不熟鸿蒙，让 AI 写）** | AI 不再写 ArkTS 编译错；不再瞎编 OHPM 包名；不再让 UI 不刷新；编译失败时 AI 能精确定位 |
-| 🛠 **老 HarmonyOS 开发者（让 AI 协助）** | 一套大家都遵守的硬约束（V1/V2 选型、状态铁律、装饰器规范）；编辑 `.ets` 后自动校验；提审 Top 20 拒因预防式提示 |
-| 👥 **团队 lead（多人多 AI 工具）** | 同一份规则同时喂 Claude Code / Codex / Cursor / Copilot；钩子保证违规 0 漏过；新人 git clone 即拥有完整规则 |
+| 🆕 **vibe coder / 新手开发者** | 你不需要先背完 ArkTS 限制；AI 会被项目规则约束，写错时也会被扫描器及时拦住 |
+| 🛠 **HarmonyOS 应用工程师** | 你可以把重复的语言规则、状态管理铁律、Kit API 习惯、构建排错流程交给 AI 和钩子处理 |
+| 👥 **团队 lead / 架构负责人** | 你可以把一套鸿蒙工程规范同时分发给 Claude Code、Codex、Cursor、Copilot，并接入 pre-commit / CI |
+| 🧩 **工具链 / 平台团队** | 你可以把它作为组织内 HarmonyOS AI 开发基线，再按业务模块扩展自家规则、模板和审查清单 |
 
 **前置要求**：你在用 Claude Code / Codex CLI / Cursor / GitHub Copilot 中至少一个；本仓库不是独立 IDE，是给它们装的"鸿蒙领域规则包"。
 
 没装过 AI 助手 / DevEco Studio？看 [`docs/SETUP-FROM-SCRATCH.md`](docs/SETUP-FROM-SCRATCH.md)（macOS 干净状态到 hello world，30-60 分钟）。
+
+---
+
+## 它应该怎么用？
+
+最常见的使用方式是：**不要在本仓库里写你的业务 app；把规则安装进你自己的鸿蒙 app 根目录。**
+
+```
+~/WorkSpace/
+├── HarmonyOS_DevSpace/              # 本仓库：规则、脚本、模板、文档、case study
+└── apps/
+    └── my-harmony-app/              # 你的真实 DevEco / HarmonyOS app
+        ├── entry/
+        ├── oh-package.json5
+        ├── AGENTS.md                # npx 安装后写入
+        ├── .agents/skills/          # Codex 使用
+        ├── CLAUDE.md                # Claude Code 使用
+        ├── .claude/skills/          # Claude Code 使用
+        └── tools/                   # 扫描、构建、调试脚本
+```
+
+日常工作流：
+
+1. 在真实 app 根目录运行 `npx -y harmonyos-ai-workspace`。
+2. 从同一个 app 根目录启动 `claude` / `codex`，或用 Cursor / Copilot 打开这个项目。
+3. 直接让 AI 改 `.ets` / `.ts` / `module.json5` / `oh-package.json5`，不需要每次重复粘贴鸿蒙规则。
+4. AI 编辑后，Claude Code 会触发 PostToolUse 钩子；其他工具可手动或通过 pre-commit 跑 `tools/hooks/lib/scan-arkts.sh`。
+5. 功能完成后跑 `bash tools/harmony-dev-cycle.sh quick-check`，需要真编译时跑 `build-check` 或 `cycle-once`。
+6. 团队场景把扫描脚本接到 pre-commit / CI，让所有 AI 工具和所有人共享同一套底线。
+
+如果你只是想学习、贡献或维护这套规则，再 `git clone` 本仓库；如果你的 HarmonyOS shell 在大 monorepo 子目录里，用 [`samples/integrations/monorepo-consumer/`](samples/integrations/monorepo-consumer/) 的 wrapper 模式。
 
 ---
 
@@ -40,7 +90,7 @@ npx -y harmonyos-ai-workspace          # 30 秒搞定，0 改你的源码
 
 ---
 
-## 30 秒装好（推荐）
+## 使用方式 1：装进已有鸿蒙 app（推荐，30 秒）
 
 ```bash
 # 1) 进你的鸿蒙 app 根目录
@@ -52,6 +102,8 @@ npx -y harmonyos-ai-workspace
 # 3) 启动你的 AI 助手——CLAUDE.md / AGENTS.md 自动加载
 claude    # 或 codex / cursor
 ```
+
+安装位置必须是**你的 app 根目录**，也就是能看到 `entry/`、`oh-package.json5`、`build-profile.json5` 的地方。安装器默认写入 Claude + Codex 规则；Cursor / Copilot 需要时用 `--targets` 打开。
 
 **v0.4 起的安全保障**：
 - ✅ 已存在的 `CLAUDE.md` / `AGENTS.md` 会被**保护**（绝不覆盖）
@@ -104,7 +156,7 @@ rm -rf test
 
 ---
 
-## 📖 完整使用说明书
+## 完整操作手册
 
 **装好之后怎么开始干活？** → [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md)
 
@@ -239,15 +291,16 @@ last_verified_docs_snapshot: "2026-05-07"
 
 ---
 
-## 替代安装方式
+## 其他接入方式
 
-### 用法 A2：curl one-liner（不依赖 npm）
+### curl 安装（不依赖 npm）
 
 ```bash
+cd ~/WorkSpace/apps/my-harmony-app
 curl -fsSL https://raw.githubusercontent.com/Octo-o-o-o/harmonyos-ai-workspace/main/tools/install.sh | bash
 ```
 
-### 用法 B：clone 整个工作区（学习 / 贡献用）
+### clone 整个工作区（学习 / 贡献 / 维护规则）
 
 ```bash
 git clone https://github.com/Octo-o-o-o/harmonyos-ai-workspace.git ~/WorkSpace/HarmonyOS_DevSpace
@@ -258,7 +311,11 @@ bash tools/verify-environment.sh        # 检查本机环境
 
 适合：想系统学习鸿蒙、想让 AI 在本目录开发、想给本仓库贡献。
 
-### 用法 C：从零开始（macOS 干净状态）
+### monorepo 子目录接入
+
+如果你的鸿蒙 shell 只是大仓里的一个子目录，不想把规则文件复制到仓库根目录，参考 [`samples/integrations/monorepo-consumer/`](samples/integrations/monorepo-consumer/)：用少量 wrapper 把 AI 上下文和扫描范围 scope 到 HarmonyOS 子项目，保留单一规则来源。
+
+### 从零开始（macOS 干净状态）
 
 ```bash
 git clone https://github.com/Octo-o-o-o/harmonyos-ai-workspace.git ~/WorkSpace/HarmonyOS_DevSpace
@@ -356,7 +413,7 @@ grep -rln 'Octo-o-o-o' --include='*.md' --include='*.sh' --include='*.json' . | 
 
 ---
 
-## 关键事实（2026-05）
+## 关键事实（以版本契约为准）
 
 - **当前消费稳定版**：HarmonyOS 6.0.2 / **API 22**（2026-01-23 起推送）
 - **首发稳定版**：HarmonyOS 6.0.1 / **API 21**（2025-11-25）
