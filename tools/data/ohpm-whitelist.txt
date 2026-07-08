@@ -39,3 +39,12 @@
 
 # 路由 / 导航
 @ohos/router
+
+# 网络 / 通信（TPC 官方移植，registry openapi 核验 2026-07-09）
+@ohos/axios
+@ohos/socketio
+
+# 加密 / 纯 JS 白名单包（OHPM packageType=WHITELIST，无 @ohos 前缀直接用）
+@ohos/crypto-js
+dayjs
+lodash

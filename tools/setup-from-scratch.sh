@@ -98,7 +98,7 @@ else
   hint "  4) 双击 DMG → 拖 DevEco-Studio 到 Applications"
   hint "  5) 首次启动会被 Gatekeeper 拦截："
   hint "     系统设置 → 隐私与安全 → 允许 DevEco-Studio 运行"
-  hint "  6) 完成首次向导（Node 选 Install / SDK 选 API 21+22 + LTS / Ohpm Install）"
+  hint "  6) 完成首次向导（Node 选 Install / SDK 选 API 23+24 + LTS / Ohpm Install）"
   echo
   if [[ "$ASSUME_YES" == "1" ]]; then
     info "已加 -y，自动打开下载页"

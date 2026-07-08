@@ -1,6 +1,6 @@
 ---
 name: state-management
-verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
+verified_against: harmonyos-6.1.1-api24  # docs-checked 2026-07-09（对照官方 6.1.x release notes 核验，未逐条真机重跑）
 description: |
   ArkUI V1 / V2 状态管理装饰器选型 + "数据变了 UI 不刷新" 诊断。
   **激活条件**（满足任一即激活）：
@@ -113,7 +113,7 @@ V2 没有 `@Link`，要双向用 `@Param` + `@Event` 一对：
 
 ## V2 完整范例（鸿蒙 6 推荐风格）
 
-V2 在 API 12+ 推出、API 21/22 已成熟。下面是覆盖 V2 全部 11 装饰器的完整范例：
+V2 在 API 12+ 推出、API 21–24 已成熟（API 23 起 PersistenceV2 的 `globalConnect` 支持集合类型持久化：Array/Map/Set/Date/collections.*）。下面是覆盖 V2 全部 11 装饰器的完整范例：
 
 ### 范例 1 · `@Local` + `@Param` + `@Event`：基础双向数据流
 

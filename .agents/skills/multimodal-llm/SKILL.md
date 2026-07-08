@@ -1,6 +1,6 @@
 ---
 name: multimodal-llm
-verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
+verified_against: harmonyos-6.1.1-api24  # docs-checked 2026-07-09（对照官方 6.1.x release notes 核验，未逐条真机重跑）
 description: |
   在鸿蒙 ArkTS 里调多模态 LLM API（OpenAI Vision / Whisper / DALL-E、Anthropic Vision、Gemini 等）的领域专项。
   **激活条件**（满足任一即激活）：
@@ -15,7 +15,7 @@ description: |
 
 # 多模态 LLM 调用 · ArkTS 领域专项
 
-> 鸿蒙写 LLM 客户端跟 Web / Node.js 写最大的区别：**ArkTS 严格类型不允许 union**，且 OHPM 没有 `axios` / `openai-sdk`，所有 HTTP 都得靠 `@kit.NetworkKit` 自己拼。
+> 鸿蒙写 LLM 客户端跟 Web / Node.js 写最大的区别：**ArkTS 严格类型不允许 union**，且没有官方 `openai-sdk`（OHPM 有 `@ohos/axios` 移植版，但 SSE 流式仍建议直接用 `@kit.NetworkKit` 自己拼，控制力更强）。
 >
 > 本 SKILL 给"约束 + 关键模式"，不给完整 SDK 代码（每家 API 演化快，固定代码会过期）。
 

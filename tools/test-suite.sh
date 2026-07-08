@@ -106,6 +106,20 @@ else
   assert_fail "bad-oh-package.json5 → exit=$rc (expected 2)"
 fi
 
+# 真实包 fixture 必须 exit=0（防黑名单误杀回归：v0.4.x 曾误杀 @ohos/axios）
+OHPM_GOOD_ERR=$(bash tools/check-ohpm-deps.sh tools/hooks/test-fixtures/good-oh-package.json5 2>&1 >/dev/null)
+rc=$?
+if [[ "$rc" == "0" ]]; then
+  assert_pass "good-oh-package.json5（含 @ohos/axios / dayjs）→ exit=0"
+else
+  assert_fail "good-oh-package.json5 → exit=$rc (expected 0): $OHPM_GOOD_ERR"
+fi
+if echo "$OHPM_GOOD_ERR" | grep -q "OHPM-FAKE"; then
+  assert_fail "good-oh-package.json5 出现 OHPM-FAKE 误杀：$OHPM_GOOD_ERR"
+else
+  assert_pass "good-oh-package.json5 无 OHPM-FAKE 误杀"
+fi
+
 # ─── 6) harmony-dev-cycle.sh 轻量入口不依赖 DevEco ─────────
 echo
 echo "[6/7] harmony-dev-cycle"

@@ -17,7 +17,7 @@
 请按以下约束在 [文件路径] 写/改 [功能描述]：
 
 约束：
-- HarmonyOS 6（targetSDK API 21 / 6.0.1，minSDK API 12），ArkTS + ArkUI 声明式
+- HarmonyOS 6（targetSDK API 23 / 6.1.0，minSDK API 12），ArkTS + ArkUI 声明式
 - 装饰器系列：V1（或 V2，二选一，不混用）
 - import 走 @kit.*（不用 @ohos.* 旧式）
 - 严格遵守 ArkTS 规则（禁 any / var / 解构 / 索引访问 / 对象字面量无注解 / for-in / delete 等）

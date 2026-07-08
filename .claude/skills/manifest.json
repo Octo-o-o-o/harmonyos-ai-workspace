@@ -1,16 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "name": "harmonyos-ai-workspace",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "description": "鸿蒙开发参考工作区的 Claude Skills 集合，按需触发，可独立分发为 Plugin",
   "license": "MIT",
   "homepage": "https://github.com/Octo-o-o-o/harmonyos-ai-workspace",
   "platform": {
     "harmonyos": {
       "min_api": 12,
-      "target_api": 21,
-      "current_consumer": 22,
-      "developer_beta": "6.1"
+      "target_api": 23,
+      "latest_release": 24,
+      "developer_beta": "7.0 (API 26)"
     }
   },
   "skills": [
@@ -76,6 +76,14 @@
       "title": "ArkUI Web 组件 H5 桥",
       "triggers": ["Web 组件 / 嵌入 H5", "javaScriptProxy", "runJavaScript", "Markdown 离线渲染器", "ResizeObserver 高度自适应"],
       "category": "domain",
+      "criticality": "medium"
+    },
+    {
+      "id": "testing-quality",
+      "path": "testing-quality/SKILL.md",
+      "title": "测试与质量评估",
+      "triggers": ["写测试 / 单元测试 / UI 测试 / 自动化测试", "@ohos/hypium / @kit.TestKit / Driver / ohosTest", "hdc shell aa test", "上架前自测 / 云测 / 性能摸底 / 稳定性 wukong"],
+      "category": "quality",
       "criticality": "medium"
     }
   ],

@@ -1,6 +1,6 @@
 # Recipe · 华为账号 / 第三方登录（指引型）
 
-> verified_against: harmonyos-6.0.2-api22 · last sync 2026-05-07
+> verified_against: harmonyos-6.1.1-api24 · docs-checked 2026-07-09
 >
 > 关联规则：`AGC-RJ-001`（隐私政策）、`SEC-001..002`（不硬编码密钥 / 不打 token 日志）、`AGC-RJ-003`（实名认证 / 资质）
 

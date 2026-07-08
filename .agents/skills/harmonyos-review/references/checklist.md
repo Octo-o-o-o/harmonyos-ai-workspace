@@ -115,6 +115,15 @@
 | KIT-006 | Background Tasks Kit 不滥用，遵守平台后台执行约束 | Medium |
 | KIT-007 | 跨进程通信走 RPC（@kit.AbilityKit），不用文件共享 | Medium |
 
+## 10. 测试与质量（TEST）
+
+| ID | 检查项 | 严重级 |
+| --- | --- | --- |
+| TEST-001 | 核心业务逻辑（service / utils / viewmodel 层）有 hypium 单测覆盖；全无测试时提示补齐（不阻断） | Medium |
+| TEST-002 | ohosTest 用例不硬编码生产环境 endpoint / 真实用户凭据（测试与生产隔离） | High |
+
+> 展开指南见 [`testing-quality`](../../testing-quality/SKILL.md) skill（hypium / UiTest / `aa test` / 云测工位）。
+
 ---
 
 ## 引用方式

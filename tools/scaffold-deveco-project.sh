@@ -17,10 +17,10 @@
 #   --bundle <bundleName>     Bundle name, e.g. com.example.app (REQUIRED)
 #   --dir <path>              Target directory (default: current dir)
 #   --vendor <name>           Vendor field (default: same prefix as bundle)
-#   --api-target <int>        Target API version in app.json5 (default: 22)
+#   --api-target <int>        Target API version in app.json5 (default: 23)
 #   --api-min <int>           Min API version in app.json5 (default: 12)
 #   --sdk-version <str>       DevEco SDK string for build-profile.json5
-#                             (default: "6.1.1(24)")
+#                             (default: "6.1.0(23)"; keep in sync with --api-target)
 #   --module-name <name>      Entry module name (default: entry)
 #   --with-boilerplate        Also generate a hello-world EntryAbility + Index page
 #                             (use only for brand-new projects with no ArkTS source)
@@ -50,9 +50,9 @@ set -euo pipefail
 BUNDLE_NAME=""
 TARGET_DIR="."
 VENDOR=""
-API_TARGET="22"
+API_TARGET="23"
 API_MIN="12"
-SDK_VERSION="6.1.1(24)"
+SDK_VERSION="6.1.0(23)"   # 与 API_TARGET 保持一致；要 API 24 就同时给 --api-target 24 --sdk-version "6.1.1(24)"
 MODULE_NAME="entry"
 WITH_BOILERPLATE=0
 FORCE=0

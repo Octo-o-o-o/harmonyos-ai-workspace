@@ -1,7 +1,11 @@
 # OHPM 黑名单 · 已知由 AI 虚构 / 常被混淆的伪包名
 # 格式：<fake-name>|<reason or correct-name>
-# 来源：CSDN / 掘金 / 华为开发者论坛真实案例 + 团队测试
+# 来源：CSDN / 掘金 / 华为开发者论坛真实案例 + 团队测试 + registry openapi 核验（2026-07-09）
 # 维护：欢迎 PR；新增前请确认 https://ohpm.openharmony.cn/ 搜索后**不存在**
+#
+# ⚠️ 维护纪律（2026-07 教训）：黑名单只收录**核验过的当前事实**。
+#   TPC（OpenHarmony 三方库中心）持续在移植 npm 知名库——"不存在"是时变事实，
+#   每次 release 前逐条重核。本清单曾把真实存在的 @ohos/axios 误判为虚构包。
 #
 # 注意：脚本会先读取本文件，再合并 check-ohpm-deps.sh 内联的核心条目
 
@@ -13,18 +17,18 @@
 @ohos/preact|不存在；同上
 @ohos/next|不存在；不要把 Next.js 概念套到鸿蒙
 
-# ─── HTTP 客户端（用 @kit.NetworkKit） ───
-@ohos/axios|不存在；ArkTS 没有 axios，用 @kit.NetworkKit 的 http
+# ─── HTTP 客户端 ───
+# 注意：@ohos/axios 真实存在（TPC 官方移植，registry 核验 2026-07-09），已移入白名单
 @ohos/fetch|不存在；用 @kit.NetworkKit 的 http
 @ohos/got|不存在；同上
 @ohos/superagent|不存在；同上
 
-# ─── 工具库（用 @kit.ArkTS / 自实现） ───
-@ohos/lodash|不存在；用 @kit.ArkTS 的 ArrayList / HashMap 或自实现
+# ─── 工具库（用 @kit.ArkTS / 白名单纯 JS 包 / 自实现） ───
+@ohos/lodash|不存在；OHPM 有白名单化纯 JS 包 lodash（无前缀），或用 @kit.ArkTS 的 ArrayList / HashMap
 @ohos/underscore|不存在；同上
 @ohos/ramda|不存在；同上
-@ohos/moment|不存在；用 @kit.LocalizationKit 的 i18n.DateTimeFormat
-@ohos/dayjs|不存在；同上
+@ohos/moment|不存在；用 @kit.LocalizationKit 的 i18n.DateTimeFormat 或白名单包 dayjs
+@ohos/dayjs|不存在；OHPM 直接用 dayjs（无前缀，白名单化纯 JS 包）
 @ohos/date-fns|不存在；同上
 @ohos/uuid|不存在；用 @kit.AbilityKit 的能力或自实现
 @ohos/jsonwebtoken|不存在；用 @kit.AuthenticationKit 或自实现
@@ -32,7 +36,7 @@
 # ─── 后端 / Node 包（鸿蒙不在 Node 生态） ───
 @ohos/express|不存在；鸿蒙不在 Node 生态
 @ohos/koa|不存在；同上
-@ohos/socket.io-client|不存在；用 @kit.NetworkKit 的 webSocket
+@ohos/socket.io-client|不存在；真实包名是 @ohos/socketio（TPC 移植版），或用 @kit.NetworkKit 的 webSocket
 
 # ─── 易混淆名称（真实包名不带后缀 / 前缀） ───
 @ohos/lottie-player|不存在；真实包名是 @ohos/lottie（不带 -player）

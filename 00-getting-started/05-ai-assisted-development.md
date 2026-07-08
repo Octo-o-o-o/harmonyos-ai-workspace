@@ -62,7 +62,7 @@ DevEco Studio 是必须开的（它有官方 LSP、Inspector、Profiler、Linter
 我要在 entry/src/main/ets/pages/X.ets 加一个组件。
 
 约束（请严格遵守）：
-- HarmonyOS 6（targetSDK API 21 或 22，minSDK API 12），使用 ArkTS + ArkUI 声明式语法
+- HarmonyOS 6（targetSDK API 23 或 24，minSDK API 12），使用 ArkTS + ArkUI 声明式语法
 - 装饰器只用 V1 系列（@Entry @Component @State @Prop @Link @Provide @Consume）
   ※ 不要用 V2（@ComponentV2 @Local @Param @Event）除非我明确要求
 - import 全部走 @kit.*（例如 @kit.ArkUI / @kit.NetworkKit），禁止 @ohos.*
@@ -193,7 +193,7 @@ GitHub：<https://github.com/fadinglight9291117/mcp-harmonyos>
 
 ### 6.3 DevEco Studio 自带 CodeGenie / DeepSeek-R1
 
-- DevEco Studio 6.x 内置 AI 代码助手（CodeGenie），免费接 DeepSeek-R1
+- DevEco Studio 内置 AI 代码助手（CodeGenie），免费接 DeepSeek-R1；HDC 2026 起另有独立的 DevEco Code（鸿蒙 AI agent，内置免费 GLM-5.1）与 DevEco CLI（给 Claude Code / Cursor 等第三方 agent 挂鸿蒙工具链）
 - **侧边栏 AI 图标** → 输入提示词
 - 优势：Huawei 训练，对 ArkTS / ArkUI 更准；可直接读项目上下文
 - 劣势：交互不如 Claude Code 灵活，agent 能力弱

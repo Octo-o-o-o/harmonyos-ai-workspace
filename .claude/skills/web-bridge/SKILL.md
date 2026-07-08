@@ -1,6 +1,6 @@
 ---
 name: web-bridge
-verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
+verified_against: harmonyos-6.1.1-api24  # docs-checked 2026-07-09（对照官方 6.1.x release notes 核验，未逐条真机重跑）
 description: |
   ArkUI Web 组件 + H5 ↔ ArkTS 双向桥（javaScriptProxy / runJavaScript / postMessage）的领域专项。
   **激活条件**（满足任一即激活）：

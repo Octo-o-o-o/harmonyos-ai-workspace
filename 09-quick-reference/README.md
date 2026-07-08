@@ -163,10 +163,14 @@ hvigorw --sync                          # 同步
 hvigorw clean
 hvigorw assembleHap -p buildMode=debug
 hvigorw assembleApp -p buildMode=release
-hvigorw test
 hvigorw codeLinter
 hvigorw tasks --all
 hvigorw :entry:assembleHap
+
+# 设备上测试（ohosTest）——完整跑法见 testing-quality skill
+hvigorw --mode module -p module=entry@ohosTest -p buildMode=test assembleHap
+hdc shell aa test -b <bundle> -m entry_test -s unittest OpenHarmonyTestRunner
+# 或一键：bash tools/harmony-dev-cycle.sh test
 ```
 
 ### OHPM

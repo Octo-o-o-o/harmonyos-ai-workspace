@@ -117,8 +117,9 @@
 | `PERM-*` | 权限管理 | 5 条 | `references/checklist.md` § 6 |
 | `COMPAT-*` | API 兼容 | 5 条 | `references/checklist.md` § 8 |
 | `AGC-RJ-*` | 上架审核拒因 | 20 条 | `07-publishing/checklist-2026-rejection-top20.md` |
+| `TEST-*` | 测试与质量 | 2 条 | `references/checklist.md` § 10 |
 
-合计 **88 条**带稳定 ID 的规则跨四类生命周期阶段。
+合计 **90 条**带稳定 ID 的规则跨四类生命周期阶段。
 
 ### 引用格式（强制）
 

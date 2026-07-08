@@ -400,7 +400,7 @@ error: install failed due to older sdk version in the device.
 ### 教训
 - **layered icon 默认 foreground 不是真透明**——Read / 预览看是空白，必须用 PIL/sips 读 alpha 通道才能确认。修了 background 没修 foreground = 桌面幽灵图案。**详见 [`runtime-pitfalls`](../../.claude/skills/runtime-pitfalls/SKILL.md) § 十七**。
 - **资源在 AppScope + product 双份**——AppGallery / 全局图标走 AppScope，product 只覆盖 ability 级。任何品牌资源替换都要两处同步。
-- **compatibleSdkVersion 必须 ≤ 真机 OS API**——DevEco 默认模板可能选最新（24），但真机往往跑稳定版（22/23）。错误码 9568297 是这条规则违反的明确信号。HarmonyOS 6 编号易混：OS 6.0.0=API 20 / 6.0.1=21 / 6.0.2=22 / 6.1.0=23 / 6.1.1=24。**详见 [`build-debug`](../../.claude/skills/build-debug/SKILL.md) 错误码段**。
+- **compatibleSdkVersion 必须 ≤ 真机 OS API**——DevEco 默认模板可能选最新（24），但存量真机可能仍跑 22/23。错误码 9568297 是这条规则违反的明确信号。编号易混：OS 6.0.0=API 20 / 6.0.1=21 / 6.0.2=22 / 6.1.0=23 / 6.1.1=24 / 7.0=26（无 25）。**详见 [`build-debug`](../../.claude/skills/build-debug/SKILL.md) 错误码段**。
 
 ---
 

@@ -10,7 +10,7 @@ DevEco Studio 是华为为 HarmonyOS / OpenHarmony 推出的官方 IDE，基于 
 2. 点击「立即下载」，跳转登录页
 3. 登录华为账号（没有的话先注册：<https://id.huawei.com>）
 4. 在版本列表中选择：
-   - **DevEco Studio 6.0.x**（推荐，对应 HarmonyOS 6 系列：API 21 / 6.0.1 稳定版、API 22 / 6.0.2 现行消费版）
+   - **DevEco Studio 6.1.x**（推荐，对应 HarmonyOS 6.1 系列：API 23 / 6.1.0 消费推送主力、API 24 / 6.1.1 最新 Release）；预览线 **26.0.0 Beta**（版本号切年份制，支持 API 26 / HarmonyOS 7，内置 Node 24）
    - **macOS (ARM)** —— Apple Silicon (M1/M2/M3/M4)
    - **macOS (X86)** —— Intel Mac
 5. 文件名形如：`devecostudio-mac-arm64-6.0.0.xxx.dmg`，约 1.2-1.6 GB
@@ -47,7 +47,7 @@ codesign -dv /Applications/DevEco-Studio.app 2>&1 | head -3
 ### 3.2 配置 Node.js
 
 向导会询问：
-- **Set up Node.js Path**: 选 "Install"，让 IDE 下载内置的 Node 18.20.x（推荐，避免和系统 Node 冲突）
+- **Set up Node.js Path**: 选 "Install"，让 IDE 下载内置 Node（6.1.x 为 18.20.x；26.0.0 Beta 起为 Node 24。推荐内置，避免和系统 Node 冲突）
 - 或选 "Local"，指向已有的 Node（要求 16.20+ / 18.20+）
 
 ### 3.3 配置 Ohpm
@@ -57,7 +57,7 @@ codesign -dv /Applications/DevEco-Studio.app 2>&1 | head -3
 ### 3.4 配置 SDK
 
 - 默认安装路径：`~/Library/Huawei/Sdk`
-- 选择 **API Level 12 ~ 22**，建议至少勾选 API 21（消费稳定版，2025-11-25 首发）+ API 22（最新 6.0.2，2026-01-23 推送）+ 一个长期兼容线（如 API 12 / API 18）
+- 选择 **API Level 12 ~ 24**，建议至少勾选 API 23（6.1.0，2026-04-20 Release，消费推送主力）+ API 24（6.1.1，2026-05-26 Release）+ 一个长期兼容线（如 API 12 / API 18）
 - 勾选 "Native Toolchain"（如果你要写 C/C++ NAPI 模块）
 - 同意所有 License
 
@@ -130,7 +130,7 @@ rm -rf ~/Library/Huawei/HarmonyOSDeviceEmulator
 | --- | --- |
 | IDE 启动闪退 | 在 `~/Library/Logs/Huawei/DevEco-Studio*/idea.log` 看堆栈；多半是 JBR 缺失，重装 |
 | Gradle / Hvigor 同步失败 | 删除 `~/.hvigor`、项目下 `.hvigor` 与 `oh_modules`，重新 sync |
-| OHPM SSL 错误 | `ohpm config set strict-ssl false`，并把 IDE 升到 6.0.1+ |
+| OHPM SSL 错误 | `ohpm config set strict-ssl false`，并把 IDE 升到 6.1.x |
 | 模拟器无法启动 | macOS 系统设置 → Privacy & Security → 允许 Hypervisor；重启 Mac |
 | "无法验证开发者" | `xattr -dr com.apple.quarantine /Applications/DevEco-Studio.app` |
 

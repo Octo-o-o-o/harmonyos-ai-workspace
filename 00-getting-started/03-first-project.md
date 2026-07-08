@@ -9,7 +9,7 @@
    - **Project name**: `HelloHarmony`
    - **Bundle name**: `com.example.helloharmony`（反向域名，会写入 `app.json5`）
    - **Save location**: `~/WorkSpace/HarmonyOS_DevSpace/samples/hello-harmony/`
-   - **Compile SDK**: API 21（默认推荐，消费稳定版）；如需 6.0.2 新能力可上 API 22
+   - **Compile SDK**: API 23（默认推荐，消费推送主力）；如需 API 24 新能力可上 24
    - **Model**: **Stage**（必选；FA 已废弃）
    - **Language**: **ArkTS**
    - **Device type**: 勾选 Phone / Tablet
@@ -117,7 +117,7 @@ struct Index {
 ### 模拟器（推荐起步）
 
 1. **Tools → Device Manager**
-2. 选 Phone 模板，API 21（或 22），启动
+2. 选 Phone 模板，API 23（或 24），启动
 3. 工具栏选中模拟器，点绿色 ▶ Run
 4. 首次运行 Hvigor 会构建 HAP，约 30-60 秒
 

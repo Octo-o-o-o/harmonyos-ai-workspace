@@ -130,7 +130,7 @@ if [[ "$FAIL" -gt 0 ]]; then
     echo "  · DevEco Studio 未装："
     echo "      1) https://developer.huawei.com/consumer/cn/deveco-studio/"
     echo "      2) 登录华为账号 → 下 macOS DMG → 装到 /Applications/"
-    echo "      3) 首次启动配 Node/Ohpm/SDK（建议 API 21+22 + 一个 LTS）"
+    echo "      3) 首次启动配 Node/Ohpm/SDK（建议 API 23+24 + 一个 LTS）"
   fi
 
   for c in hdc ohpm hvigorw; do

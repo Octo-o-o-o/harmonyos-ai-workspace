@@ -20,5 +20,6 @@
 | `harmonyos-review` | 9 大类规则审查与报告模板 |
 | `multimodal-llm` | OpenAI / Anthropic / Gemini 多模态与 SSE 调用 |
 | `web-bridge` | ArkUI Web 组件与 H5 ↔ ArkTS 桥 |
+| `testing-quality` | hypium 单测 / UiTest / `aa test` / 云测·SmartPerf·wukong 质量工位 |
 
 Codex 仍以 `AGENTS.md` 为跨工具硬约束入口；这里的 skills 用于按任务触发更细的上下文。

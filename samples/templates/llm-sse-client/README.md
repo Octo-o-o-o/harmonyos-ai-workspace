@@ -4,7 +4,7 @@
 >
 > **真实出处**：OctoDesk Mobile 的 `SseStreamManager.ets` 简化版。已剥去鉴权 token provider / endpoint 白名单等业务，保留与 SSE 协议本身相关的稳定模式。
 >
-> verified_against: harmonyos-6.0.2-api22
+> verified_against: harmonyos-6.1.1-api24 (docs-checked 2026-07-09)
 
 ## 什么时候用
 

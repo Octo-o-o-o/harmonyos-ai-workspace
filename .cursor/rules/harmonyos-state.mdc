@@ -109,7 +109,7 @@ V2 没有 `@Link`，要双向用 `@Param` + `@Event` 一对：
 
 ## V2 完整范例（鸿蒙 6 推荐风格）
 
-V2 在 API 12+ 推出、API 21/22 已成熟。下面是覆盖 V2 全部 11 装饰器的完整范例：
+V2 在 API 12+ 推出、API 21–24 已成熟（API 23 起 PersistenceV2 的 `globalConnect` 支持集合类型持久化：Array/Map/Set/Date/collections.*）。下面是覆盖 V2 全部 11 装饰器的完整范例：
 
 ### 范例 1 · `@Local` + `@Param` + `@Event`：基础双向数据流
 

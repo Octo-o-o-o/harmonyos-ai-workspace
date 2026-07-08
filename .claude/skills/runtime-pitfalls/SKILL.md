@@ -1,6 +1,6 @@
 ---
 name: runtime-pitfalls
-verified_against: harmonyos-6.1.0-api23  # last sync 2026-05-22
+verified_against: harmonyos-6.1.1-api24  # docs-checked 2026-07-09（对照官方 6.1.x release notes 核验，未逐条真机重跑）
 description: |
   鸿蒙工程**运行时装配陷阱**——ArkTS 语法无错但项目跑不起来 / 行为不正确的工程层坑。
   来源：真实 LLM 对话客户端 app M3-M13 + paseo-harmony Phase A/B 实战反馈。

@@ -1,6 +1,6 @@
 ---
 name: harmonyos-build-debug
-verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
+verified_against: harmonyos-6.1.1-api24  # docs-checked 2026-07-09（对照官方 6.1.x release notes 核验，未逐条真机重跑）
 description: |
   HarmonyOS Hvigor / OHPM / hdc 工具链 + 错误码诊断。
   **激活条件**（满足任一即激活）：
@@ -105,7 +105,7 @@ hdc -t <id> shell param get const.product.model               # → e.g. MLR-AL1
 #    targetSdkVersion 可保留高版本，不影响安装
 ```
 
-**注意**：`6.1.0(23)` 这种写法是 "OS 6.1.0, API 23"——HarmonyOS 6 期间 API 编号 ≠ OS 子版本号（HarmonyOS 6.0.0=API 20 / 6.0.1=21 / 6.0.2=22 / 6.1.0=23 / 6.1.1=24）。
+**注意**：`6.1.0(23)` 这种写法是 "OS 6.1.0, API 23"——HarmonyOS 6 期间 API 编号 ≠ OS 子版本号（HarmonyOS 6.0.0=API 20 / 6.0.1=21 / 6.0.2=22 / 6.1.0=23 / 6.1.1=24 / 7.0=26，**官方跳过了 API 25**）。
 
 ## 签名三件套
 
@@ -188,6 +188,15 @@ which hdc     && hdc --version
 ## 多模块工程改名 · 三处必须同步
 
 详见 [`runtime-pitfalls`](../runtime-pitfalls/SKILL.md) § 三 + `tools/check-rename-module.sh` 自动校验。
+
+## 官方 DevEco CLI（HDC 2026 起，可选，与本仓工具分工）
+
+华为官方 `@deveco/deveco-cli`（`npm i -g @deveco/deveco-cli`，Apache 2.0，要求 DevEco Studio ≥ 6.1.0，macOS/Windows）把 ohpm/hvigor/hdc/**模拟器**/hilog 封装为单一 CLI：`devecocli create / build / run / log / doc`，另有 `devecocli init --agent codex` 装官方 skill、`--mcp` 配 deveco-mcp（ArkTS/C++ 语法检查）。
+
+**分工判断**：
+- 要**启动模拟器**、官方脚手架、官方文档检索 → 用 devecocli（本仓 `harmony-dev-cycle.sh` 做不了模拟器拉起）
+- 要**规则扫描 / OHPM 伪包校验 / 编辑钩子 / AGC 拒因预检** → 本仓工具（官方 CLI 无此能力）
+- build→install→run→log 闭环两者都行；已装 devecocli 的项目可混用，互不冲突
 
 ## 进一步参考
 

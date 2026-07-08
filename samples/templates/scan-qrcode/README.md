@@ -4,7 +4,7 @@
 >
 > **真实出处**：OctoDesk Mobile 的 `DesktopRemoteQrScanner.ets` 简化版。
 >
-> verified_against: harmonyos-6.0.2-api22
+> verified_against: harmonyos-6.1.1-api24 (docs-checked 2026-07-09)
 
 ## 什么时候用
 

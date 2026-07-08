@@ -134,6 +134,18 @@ hdc -t <device-id> file recv /data/local/tmp/screen.png ./screen.png
 
 ---
 
+## 官方选项：deveco-mcp（HDC 2026 起）
+
+华为官方 DevEco CLI（`@deveco/deveco-cli`）自带 **deveco-mcp** server（ArkTS `.ets` 与 C/C++ 语法检查的统一 `check` 工具），一条命令注册：
+
+```bash
+npm i -g @deveco/deveco-cli
+devecocli init --mcp --agent claude-code --project ./    # 工程级
+devecocli init --mcp                                     # 用户级
+```
+
+与本仓的关系：deveco-mcp 的语法检查发生在 **AI 主动调用时**；本仓 PostToolUse 钩子是 **每次编辑后强制触发**且带 60+ 编号规则与 OHPM 校验。两者可共存——官方 MCP 补"真编译器视角"，本仓钩子保"违规零漏过"。要求 DevEco Studio ≥ 6.1.0，macOS / Windows。
+
 ## 维护者注
 
 如果 G 后续重新活跃（v0.2.0+ 发布、`system_prompt.py` 补全），考虑：
@@ -141,4 +153,4 @@ hdc -t <device-id> file recv /data/local/tmp/screen.png ./screen.png
 1. 把本指引升级为"默认接入 G"
 2. 在 `tools/install.sh` 加 `--with-mcp-control` flag 自动配置
 
-监测方法：每季度 review `https://github.com/XixianLiang/HarmonyOS-mcp-server/releases`。
+监测方法：每季度 review `https://github.com/XixianLiang/HarmonyOS-mcp-server/releases`；同时关注官方 `deveco-mcp` 能力扩展（<https://gitcode.com/openharmony-sig/codegenie_tools>）。

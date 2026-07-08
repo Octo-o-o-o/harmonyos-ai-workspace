@@ -396,6 +396,8 @@ bash tools/check-ohpm-deps.sh
 bash tools/run-linter.sh --strict
 ```
 
+**第 9 步（云端）：AGC 云测上架自检**——AppGallery Connect → 应用上架 → 软件包管理 → 点软件包"操作"列的"启动自检"（或 应用测试 → 邀请测试 → 启动自检）。云端真机农场自动检测兼容性 / 稳定性 / 性能 / 功耗 / UX / 隐私并出报告，能提前暴露本清单里的多数拒因，**每次提审前建议必跑**。
+
 ---
 
 ## 拒因申诉

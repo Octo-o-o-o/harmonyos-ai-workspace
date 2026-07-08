@@ -1,5 +1,5 @@
 // Recipe · LazyForEach 用的 IDataSource 标准实现
-// verified_against: harmonyos-6.0.2-api22
+// verified_against: harmonyos-6.1.1-api24 (docs-checked 2026-07-09)
 
 export class ListDataSource<T> implements IDataSource {
   private items: T[] = [];

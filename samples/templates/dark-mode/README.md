@@ -1,6 +1,6 @@
 # Recipe · 深色模式（系统主题跟随 + 资源文件适配）
 
-> verified_against: harmonyos-6.0.2-api22 · last sync 2026-05-07
+> verified_against: harmonyos-6.1.1-api24 · docs-checked 2026-07-09
 >
 > 关联规则：`AGC-RJ-016`（未适配深色模式 = 影响评分）
 

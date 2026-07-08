@@ -56,7 +56,7 @@ bash tools/install-deveco-prereqs.sh
 
 1. 打开 <https://developer.huawei.com/consumer/cn/deveco-studio/>
 2. 没有华为账号 → 注册：<https://id.huawei.com>
-3. 登录后选最新稳定版 DevEco Studio（**6.0.x**，对应 HarmonyOS 6 / API 21-22）
+3. 登录后选最新稳定版 DevEco Studio（**6.1.x**，对应 HarmonyOS 6.1 / API 23-24；预览线 26.0.0 Beta 支持 API 26）
 4. 选 **macOS (ARM)**（M1/M2/M3/M4）或 **(X86)**（Intel）
 5. 下载 ~1.6 GB 的 `.dmg`
 6. 双击 DMG → 把 `DevEco-Studio` 拖到 `Applications`
@@ -65,7 +65,7 @@ bash tools/install-deveco-prereqs.sh
 8. 进入首次启动向导：
    - **Node.js**：选 "Install"（让 IDE 装内置 18.20，避免冲突）
    - **Ohpm**：选 "Install"
-   - **SDK**：勾 **API 21**（消费稳定）+ **API 22**（最新）+ 一个 LTS（如 API 12）
+   - **SDK**：勾 **API 23**（消费推送主力）+ **API 24**（最新 Release）+ 一个长期兼容线（如 API 12）
    - 同意 License → 等 SDK 下载（5-30 分钟）
 
 **镜像加速**（国内）：在 IDE **Help → Edit Custom Properties** 加：
@@ -129,7 +129,7 @@ codex --version       # 装了再查
    - Project name: `MyFirstApp`
    - Bundle name: `com.example.myfirstapp`
    - Save location: `~/WorkSpace/apps/my-first-app/`
-   - Compile SDK: **API 21** 或 **22**
+   - Compile SDK: **API 23** 或 **24**
    - Model: **Stage**（FA 已废弃）
    - Language: **ArkTS**
 5. 点 Finish 等 Hvigor sync 完

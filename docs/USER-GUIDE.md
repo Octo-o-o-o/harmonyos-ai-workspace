@@ -138,7 +138,7 @@ Codex 走 `AGENTS.md` 标准，并额外读取 `.agents/skills/` 项目级 Skill
 | 能力 | Claude Code | Codex CLI |
 | --- | --- | --- |
 | 项目宪法自动加载 | ✅ `CLAUDE.md` | ✅ `AGENTS.md`（[agents.md](https://agents.md/) 标准）|
-| 8 SKILL 按需触发 | ✅ frontmatter 自动激活 | ✅ `.agents/skills/` 自动发现 |
+| 9 SKILL 按需触发 | ✅ frontmatter 自动激活 | ✅ `.agents/skills/` 自动发现 |
 | Edit 后钩子强校验 | ✅ PostToolUse 触发 | ❌ 自己跑 `bash tools/hooks/post-edit.sh` 或 git pre-commit |
 | `.cursor/rules/` / `.github/copilot-instructions.md` 同源 | ✅ | ✅ |
 | MCP-HarmonyOS | ✅ `.mcp.json` | ✅ `bash tools/setup-codex-mcp.sh` |
@@ -307,9 +307,9 @@ scanner 输出三类告警：
 
 | 类型 | 含义 | 怎么办 |
 | --- | --- | --- |
-| `OHPM-FAKE · High` | 黑名单或 `ohpm view` 明确 not-found | 停手——这是 AI 编的假包名，去 https://ohpm.openharmony.cn/ 搜真名 |
+| `OHPM-FAKE · High` | 黑名单或 OHPM registry 明确查无此包 | 停手——这是 AI 编的假包名，去 https://ohpm.openharmony.cn/ 搜真名 |
 | `OHPM-NET · Low` | registry 502/超时/网络错 | 不阻断；网通后重跑 `npm test` 自查 |
-| `OHPM-UNKNOWN · Medium` | `ohpm view` 返回非零但既非 not-found 也非网络错 | 手动在 https://ohpm.openharmony.cn/ 搜确认 |
+| `OHPM-UNKNOWN · Medium` | 在线核验（registry openapi / `ohpm info`）返回异常但既非 not-found 也非网络错 | 手动在 https://ohpm.openharmony.cn/ 搜确认 |
 
 ---
 

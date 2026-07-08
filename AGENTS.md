@@ -8,7 +8,7 @@
 
 ## 0. Skills 触发索引
 
-Codex / Codex Desktop 默认读取 `.agents/skills/`，Claude Code 默认读取 `.claude/skills/`；两处各有 8 个同源 SKILL.md。手动判断索引：
+Codex / Codex Desktop 默认读取 `.agents/skills/`，Claude Code 默认读取 `.claude/skills/`；两处各有 9 个同源 SKILL.md。手动判断索引：
 
 | 用户场景 | skill | 内容 |
 | --- | --- | --- |
@@ -16,8 +16,9 @@ Codex / Codex Desktop 默认读取 `.agents/skills/`，Claude Code 默认读取 
 | 状态装饰器 / "UI 不刷新" / V1 vs V2 | `state-management` | 替换引用铁律 + V1/V2 |
 | Hvigor / OHPM / hdc / 错误码 | `harmonyos-build-debug` | 命令速查 + 错误码 |
 | 签名 / AGC 上架 / 审核被拒 | `harmonyos-signing-publish` | 三件套 + Top 20 拒因 |
-| review 代码 / PR 审查 / 上架前自查 | `harmonyos-review` | 9 大类 60+ 编号规则 |
+| review 代码 / PR 审查 / 上架前自查 | `harmonyos-review` | 10 大类 60+ 编号规则 |
 | 主题切换 / 模块改名 / `string.json` 空数组 / HUKS 加密 / `DEVECO_SDK_HOME` / 替换品牌图标（layered icon） | `runtime-pitfalls` | 17 类工程装配陷阱（一～十七，含 NavPathStack 白屏 / emoji 渲染 / Button padding / build() 单 root / timeline timestamp / per-host store / daemon workspaceId / layered icon foreground 透明） |
+| 写测试 / hypium / UiTest / `aa test` / 上架前自测·云测·性能摸底 | `testing-quality` | Local vs ohosTest 铁律 + hypium/UiTest 速查 + `aa test` CLI + 质量评估工位 |
 | OpenAI Vision / Whisper / DALL-E / SSE 流式 / `string\|object[]` union | `multimodal-llm` | LLM 客户端领域 |
 | ArkUI Web 组件 / `javaScriptProxy` / `runJavaScript` / Markdown 离线渲染 | `web-bridge` | H5↔ArkTS 桥 |
 
@@ -35,11 +36,13 @@ Codex / Codex Desktop 默认读取 `.agents/skills/`，Claude Code 默认读取 
 
 ## 1. 项目环境
 
-- HarmonyOS 6 系列：当前消费稳定线 **API 22（HarmonyOS 6.0.2）**，2026-01-23 起推送；**API 21（6.0.1）** 是 2025-11-25 首发版，新项目 targetSDK 默认建议 API 21、minSDK API 12
-- API 20 = 2025-09-25 仅开发者版，**不要选作 targetSDK**
-- ArkTS + ArkUI 声明式
-- macOS 26.5 (Apple Silicon)，DevEco Studio 6.x
-- 命令行工具已配置 PATH：`ohpm` `hvigorw` `hdc`
+- HarmonyOS 6 系列：最新 Release **API 24（HarmonyOS 6.1.1，2026-05-26）**；消费推送主力 **API 23（6.1.0，2026-04-20 起）**；新项目 targetSDK 默认建议 API 23、minSDK API 12（要 API 24 新能力才上 24）
+- **HarmonyOS 7 = API 26**（2026-06-12 起 Developer Beta1，官方跳过 API 25），**生产不要选**
+- API 20 = 2025-09-25 仅开发者版，**不要选作 targetSDK**；API 21/22 = 历史稳定线（2025-11/2026-01）
+- ArkTS + ArkUI 声明式（动态 ArkTS 是生产主线；`use static` 静态模式 ArkTS-Sta 演进中，生产不用）
+- macOS 26.5 (Apple Silicon)，DevEco Studio 6.1.x（预览线 26.0.0 Beta1 起版本号切年份制、内置 Node 18 → 24）
+- 命令行工具已配置 PATH：`ohpm` `hvigorw` `hdc`（ohpm 6.x 起 `view` 改名 `info`）
+- 官方 AI 工具（可选）：DevEco Code / DevEco CLI（`@deveco/deveco-cli`）与本仓互补，见 `04-build-debug-tools/README.md`
 
 ## 2. 文档优先级
 
@@ -94,7 +97,7 @@ hvigorw assembleHap -p buildMode=debug
 # ArkTS 反模式快扫（毫秒级，60+ 规则）
 bash tools/hooks/lib/scan-arkts.sh entry/src/main/ets/pages/X.ets
 
-# OHPM 包名校验（黑名单 + 白名单 + ohpm CLI）
+# OHPM 包名校验（黑名单 + 白名单 + registry 在线核验）
 bash tools/check-ohpm-deps.sh entry/oh-package.json5
 
 # 真编译期 lint（依赖 DevEco SDK，不依赖 GUI）
@@ -106,7 +109,7 @@ bash tools/generate-ai-configs.sh --targets=cursor,copilot
 
 ## 7. 不要发明 API
 
-ArkTS / ArkUI / Kit API 在 API 12 → 22 之间多次变化。训练数据多停留在旧版，**写 API 调用前先在 `upstream-docs/.../reference/` 中验证签名**。
+ArkTS / ArkUI / Kit API 在 API 12 → 24 之间多次变化。训练数据多停留在旧版，**写 API 调用前先在 `upstream-docs/.../reference/` 中验证签名**。
 
 ## 7.5 状态更新必须替换引用（LLM 第一大坑，ArkEval 数据 42%）
 
@@ -126,8 +129,9 @@ V1 中嵌套对象字段要响应式：类加 `@Observed` + 引用加 `@ObjectLi
 
 ## 9. 不要引入不兼容依赖
 
-- 不能 `import` npm 包；只能用 OHPM（[https://ohpm.openharmony.cn](https://ohpm.openharmony.cn)）发布的 `.har`
-- axios / lodash / moment 等 npm 名包**不存在于鸿蒙生态**，用对应 Kit 替代
+- 不能直接 `import` npm 包；只能用 OHPM（[https://ohpm.openharmony.cn](https://ohpm.openharmony.cn)）上真实存在的包
+- npm 知名库三种形态：TPC 移植版真实存在（`@ohos/axios` / `@ohos/socketio` / `@ohos/crypto-js`）；纯 JS 白名单包无前缀直用（`dayjs` / `lodash`）；多数不存在（`@ohos/dayjs` / `@ohos/uuid` 是 AI 想当然的假名）
+- **包名先核验再写**（`ohpm info <pkg>` 或 OHPM 官网搜索）；首选系统 Kit（HTTP 用 `@kit.NetworkKit`），三方包是补充
 
 ## 10. 用户提需求时若没说
 

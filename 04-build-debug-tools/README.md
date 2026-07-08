@@ -114,7 +114,15 @@ grep -E "(ERROR|ArkTS Compiler Error)" /tmp/last-build.log
 
 # 三、已经 build 过时，只重装、启动、抓日志
 ~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh device-check --logs-secs 5
+
+# 四、跑设备上测试（ohosTest）：构建两 HAP → 安装 → aa test → 摘要
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh test
+#   额外 aa test 过滤参数原样透传：
+~/WorkSpace/HarmonyOS_DevSpace/tools/harmony-dev-cycle.sh test -s class LoginUiTest
+#   测试 module 名默认 <module>_test（DevEco 模板约定），可用 TEST_MODULE 环境变量覆盖
 ```
+
+测试写法（hypium / UiTest / 断言速查 / 常见坑）见 [`testing-quality` skill](../.claude/skills/testing-quality/SKILL.md) + 模板 [`samples/templates/hypium-uitest/`](../samples/templates/hypium-uitest/)。
 
 ### `hilog` 能看到什么
 
@@ -229,7 +237,7 @@ ohpm publish                                    # 发布到私有 / 公共仓库
 
 ```json5
 {
-  "modelVersion": "5.0.0",
+  "modelVersion": "6.1.0",
   "name": "myapp",
   "version": "1.0.0",
   "description": "Demo",
@@ -237,7 +245,7 @@ ohpm publish                                    # 发布到私有 / 公共仓库
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "@ohos/axios": "^2.2.5"
+    "@ohos/axios": "^2.2.12"
   },
   "devDependencies": {}
 }
@@ -415,9 +423,26 @@ hdc install ./entry/build/default/outputs/default/entry-default-signed.hap
 | HAP 安装报 9568305 | 包体过大或 abc 文件未编译，clean 后重建 |
 | ECCN: 9568322 | 签名 / profile 不匹配，重新生成签名 |
 
-## 8. 参考
+## 8. 官方 DevEco CLI（HDC 2026 起，可选互补件）
+
+华为在 HDC 2026 发布了两个官方 AI 开发工具，与本仓工具**互补不冲突**：
+
+- **DevEco Code**：开箱即用的鸿蒙 AI agent（OpenCode 扩展，内置免费 GLM-5.1 + 鸿蒙知识库 + build/run/verify_ui 工具）。适合不想自己攒 AI 工作流的开发者。
+- **DevEco CLI**（`@deveco/deveco-cli`，Apache 2.0）：把 ohpm / hvigor / hdc / **模拟器** / hilog 封装成单一 CLI，并给第三方 AI agent（Claude Code / Cursor / OpenCode…）提供官方 skill 与 deveco-mcp（ArkTS/C++ 语法检查）。
+
+```bash
+npm install -g @deveco/deveco-cli        # 要求 DevEco Studio ≥ 6.1.0；macOS / Windows（无 Linux）
+devecocli init --agent claude-code       # 装官方 skill 到 Claude Code
+devecocli init --mcp --agent claude-code --project ./   # 配 deveco-mcp（工程级）
+devecocli create / build / run / log / doc              # 全流程原子命令
+```
+
+**分工**：模拟器拉起、官方脚手架、官方文档检索 → devecocli；规则扫描 / OHPM 伪包校验 / 编辑钩子 / AGC 拒因预检 / 实战反哺知识 → 本仓。两者可在同一工程共存。
+
+## 9. 参考
 
 - Hvigor 官方：`upstream-docs/.../tools/hvigor/`
 - OHPM 官方：`upstream-docs/.../tools/ohpm-tool.md`
 - hdc 详解：`upstream-docs/.../tools/hdc.md`
 - DevEco 工具：`upstream-docs/.../tools/`
+- DevEco CLI 开源仓：<https://gitcode.com/openharmony-sig/codegenie_tools>

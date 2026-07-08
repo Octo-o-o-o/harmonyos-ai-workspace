@@ -150,21 +150,23 @@ this.cache = next;
 
 ## 1. 项目背景
 
-- **目标平台**：HarmonyOS 6 系列
-  - **API 22（HarmonyOS 6.0.2）**：当前消费版稳定线，2026-01-23 起向 Mate 80 / Mate 70 / Pura 80 等推送
-  - **API 21（HarmonyOS 6.0.1）**：2025-11-25 随 Mate 80 首发的稳定版
-  - **API 20（HarmonyOS 6.0.0）**：2025-09-25 仅开发者版（developer release），非消费稳定版，不要在生产 app targetSDK 选它
-  - **HarmonyOS 开发者 Beta（API 23 起）**：华为下一波预览，跟随发布节奏（关注新特性可选用，**生产 app 不要选**）
+- **目标平台**：HarmonyOS 6 系列（HarmonyOS 7 预览中）
+  - **API 24（HarmonyOS 6.1.1）**：最新 Release，2026-05-26 API/SDK/IDE 全 Release（ROM 推送以华为升级名单为准）
+  - **API 23（HarmonyOS 6.1.0）**：2026-04-20 Release，消费推送主力（Pura 系列首发；HarmonyOS 6 设备当时破 5500 万）
+  - **API 22（HarmonyOS 6.0.2）/ API 21（6.0.1）**：2026-01-23 / 2025-11-25 的历史稳定线，存量设备仍多
+  - **API 20（HarmonyOS 6.0.0）**：2025-09-25 仅开发者版（developer release），不要在生产 app targetSDK 选它
+  - **HarmonyOS 7 Developer Beta1（API 26）**：2026-06-12 HDC 2026 发布（**官方跳过了 API 25**）；限定机型公测，**生产 app 不要选**
   - **向下兼容 HarmonyOS 5（API 12+）**：仍是大部分应用的最低 minSDK
 - **开发设备**：Mac（Apple Silicon，macOS 26.5）
-- **主语言**：ArkTS（TypeScript 增强版）
+- **主语言**：ArkTS（TypeScript 增强版；动态 ArkTS 是生产主线，`use static` 静态模式 ArkTS-Sta 仍在演进中，见 § 0.4 末尾）
 - **UI 框架**：ArkUI（声明式）
-- **IDE**：DevEco Studio 6.x（自带 SDK / Node / Hvigor / OHPM / 模拟器）
-- **包管理**：OHPM（OpenHarmony Package Manager）
+- **IDE**：DevEco Studio 6.1.x（自带 SDK / Node / Hvigor / OHPM / 模拟器）；预览线 26.0.0 Beta1 起版本号切年份制、内置 Node 18 → 24
+- **包管理**：OHPM（OpenHarmony Package Manager；ohpm 6.x 起 `view` 子命令改名 `info`）
 - **构建工具**：Hvigor
 - **设备调试**：hdc（HarmonyOS Device Connector，类似 adb）
+- **官方 AI 工具**（HDC 2026 起）：DevEco Code（鸿蒙 AI agent，OpenCode 扩展）+ DevEco CLI（`@deveco/deveco-cli`，构建/模拟器/日志原子能力 + deveco-mcp）；与本仓库互补，见 `04-build-debug-tools/README.md`
 
-> **新项目 targetSDK 默认建议**：API 21，minSDK API 12。需要 6.0.2 新能力（如更新过的 Kit 接口）才上 API 22。
+> **新项目 targetSDK 默认建议**：API 23，minSDK API 12。需要 API 24 新能力（如 ArkWeb 下载回调增强、AbilityStage 动态资源）才上 24。
 >
 > 自 2025-06-20 起，"HarmonyOS NEXT" 后缀已被官方弃用，统一称作 HarmonyOS 6 / 5。文档中出现的 "NEXT" 与现行 HarmonyOS 是同一系统线（纯鸿蒙、不再兼容 Android）。
 
@@ -189,7 +191,7 @@ this.cache = next;
 
 ## 2.5 Skills 触发索引
 
-`.claude/skills/` 下的 8 个 SKILL.md 由 Claude Code 按 frontmatter 自动激活；Codex 对应镜像在 `.agents/skills/`。下表是手动判断时的索引：
+`.claude/skills/` 下的 9 个 SKILL.md 由 Claude Code 按 frontmatter 自动激活；Codex 对应镜像在 `.agents/skills/`。下表是手动判断时的索引：
 
 | 用户场景 | 应激活的 skill | 核心内容 |
 | --- | --- | --- |
@@ -197,8 +199,9 @@ this.cache = next;
 | 用状态装饰器 / "UI 不刷新" / V1 vs V2 选型 | `state-management` | 替换引用铁律、V1/V2 对照、错误诊断 |
 | 打包 / Hvigor / OHPM / hdc / 错误码诊断 | `harmonyos-build-debug` | 三种产物、命令速查、错误码 |
 | 配签名 / 申请证书 / AGC 上架 / 审核被拒 | `harmonyos-signing-publish` | 三件套、AGC 流程、Top 20 拒因 |
-| review 鸿蒙代码 / PR 审查 / 上架前自查 | `harmonyos-review` | 9 大类 60+ 编号规则扫描 + 报告模板 |
+| review 鸿蒙代码 / PR 审查 / 上架前自查 | `harmonyos-review` | 10 大类 60+ 编号规则扫描 + 报告模板 |
 | 主题切换 / 模块改名 / `string.json` 空数组 / HUKS 加密 / `DEVECO_SDK_HOME` / 替换品牌图标（layered icon） 工程装配 | `runtime-pitfalls` | 17 类工程层装配陷阱（一～十七，grep 扫不出来的运行期 BUG，含 NavPathStack 白屏 / emoji 渲染 / Button padding / build() 单 root / timeline timestamp / per-host store / daemon workspaceId / layered icon foreground 透明） |
+| 写测试 / hypium / UiTest / `aa test` / 上架前自测·云测·性能摸底 | `testing-quality` | Local vs ohosTest 铁律、hypium/UiTest 速查、`aa test` CLI、质量评估工位（云测/SmartPerf/wukong/Profiler） |
 | OpenAI Vision / Whisper / DALL-E / SSE 流式 / `string\|object[]` union content | `multimodal-llm` | LLM 客户端领域专项 |
 | ArkUI Web 组件 / `javaScriptProxy` 稳定实例 / `runJavaScript` 时序 / Markdown 离线渲染器 | `web-bridge` | H5↔ArkTS 桥 |
 
@@ -225,8 +228,8 @@ HarmonyOS_DevSpace/
 ├── .gitignore                  ← 鸿蒙生态调过的 ignore 列表
 ├── .claude/
 │   ├── settings.json           ← PostToolUse 钩子配置
-│   └── skills/                 ← 8 个 Claude Code SKILL.md（详见 § 2.5）
-├── .agents/skills/             ← 8 个 Codex 项目级 SKILL.md 镜像
+│   └── skills/                 ← 9 个 Claude Code SKILL.md（详见 § 2.5）
+├── .agents/skills/             ← 9 个 Codex 项目级 SKILL.md 镜像
 ├── tools/                      ← 钩子 / 校验 / 安装 / fan-out 脚本
 │   ├── hooks/                  ← post-edit.sh + lib/* + test-fixtures/
 │   ├── install.sh              ← curl-pipeable 安装到 app
@@ -336,7 +339,7 @@ MyApp/
 | --- | --- |
 | OS | macOS 26.5（Apple Silicon arm64） |
 | Homebrew | 已就绪 (`/opt/homebrew`) |
-| Node.js | 已有 v22；DevEco 6.x 内置 Node 18.20.x，建议 IDE 内使用其内置版本，CLI 用系统 Node 22 |
+| Node.js | 已有 v22；DevEco 6.1.x 内置 Node 18.20.x，26.0.0 Beta 起内置 Node 24（hvigor/ohpm 自定义插件需适配）；IDE 内用其内置版本，CLI 用系统 Node 22 |
 | JDK | DevEco 自带 JBR（JetBrains Runtime），不需要单独装 JDK |
 | DevEco Studio | 安装步骤见 [`00-getting-started/02-deveco-studio-install.md`](00-getting-started/02-deveco-studio-install.md) |
 | HarmonyOS SDK | DevEco 安装时随之配置 |
@@ -455,9 +458,9 @@ hvigorw assembleHap -p buildMode=debug  # 真编译
 
 ### 11.2 不允许的依赖
 
-- 不能 `import` npm 包（除非也发到 OHPM）
-- AI 常推荐 axios / lodash / moment → 在 ArkTS 里改用 `@kit.NetworkKit` http / 自写 / `@kit.LocalizationKit`
-- 发现别人在依赖里加 `@ohos/lottie-player`（不存在）/ `@ohos/axios`（不存在）等：钩子 `tools/check-ohpm-deps.sh` 会拦截
+- 不能直接 `import` npm 包——只能用 OHPM 上真实存在的包
+- npm 知名库在 OHPM 的三种形态：① TPC 官方移植版（`@ohos/axios`、`@ohos/socketio`、`@ohos/crypto-js` 等，真实存在）；② 白名单化纯 JS 包（`dayjs`、`lodash`，无前缀直接用）；③ 不存在（多数）。**包名必须先核验**：<https://ohpm.openharmony.cn/> 或 `ohpm info <pkg>`
+- AI 想当然的包名（`@ohos/dayjs` / `@ohos/uuid` / `@ohos/lottie-player` 均不存在）：钩子 `tools/check-ohpm-deps.sh` 会拦截；首选仍是系统能力（`@kit.NetworkKit` http / `@kit.LocalizationKit`），三方包是补充
 
 ### 11.3 文件类型分发
 

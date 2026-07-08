@@ -1,5 +1,5 @@
 // Recipe · 长列表 + 下拉刷新 + 上拉加载
-// verified_against: harmonyos-6.0.2-api22
+// verified_against: harmonyos-6.1.1-api24 (docs-checked 2026-07-09)
 //
 // 关联规则：
 //   PERF-002 长列表用 LazyForEach

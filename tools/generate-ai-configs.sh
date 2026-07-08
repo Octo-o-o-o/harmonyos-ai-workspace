@@ -95,8 +95,8 @@ strip_frontmatter() {
 # 这段是手写而非从源文件抽取——AGENTS.md 是 6.7KB 放不进 Copilot 4KB 安全区
 build_core_essence() {
   cat <<'EOF'
-> 平台：HarmonyOS 6 系列（API 22 / 21 现行稳定，API 23 Developer Beta）
-> ArkTS + ArkUI 声明式 + Stage 模型
+> 平台：HarmonyOS 6 系列（API 24 最新 Release / API 23 消费推送主力；HarmonyOS 7 = API 26 Developer Beta，无 API 25）
+> ArkTS + ArkUI 声明式 + Stage 模型 · 新项目 targetSDK 建议 API 23 / minSDK 12
 
 **训练数据警告**：LLM 对 ArkTS 训练数据稀缺，**默认会写出 TypeScript 风格但 ArkTS 编译器拒绝的代码**。
 
@@ -140,9 +140,9 @@ V1：嵌套对象用 `@Observed` 类 + `@ObjectLink`；V2：`@ObservedV2` 类 + 
 - `.ts` 纯逻辑
 - 不要把 UI 写到 `.ts`
 
-### 6. 不能 import npm 包
+### 6. 不能直接 import npm 包
 
-`axios` / `lodash` / `moment` 等**不存在于鸿蒙生态**。HTTP 用 `@kit.NetworkKit`，日期工具自写或用 `@kit.LocalizationKit`。
+只能用 OHPM 上真实存在的包：TPC 移植版（`@ohos/axios`）与白名单纯 JS 包（`dayjs`/`lodash`）存在；`@ohos/dayjs`、`@ohos/uuid` 等想当然的名字**不存在**。包名先在 <https://ohpm.openharmony.cn/> 核验；首选系统 Kit（HTTP 用 `@kit.NetworkKit`）。
 
 ### 7. 改完代码必跑
 
@@ -154,7 +154,7 @@ hvigorw assembleHap -p buildMode=debug
 
 ### 8. 不要发明 API
 
-ArkTS / Kit API 在 API 12 → 22 多次变化，**写 API 前先在 `upstream-docs/openharmony-docs/zh-cn/application-dev/reference/` 验证签名**。不确定时告诉用户「我无法验证此 API 当前形态」，**不要编代码**。
+ArkTS / Kit API 在 API 12 → 24 多次变化，**写 API 前先在 `upstream-docs/openharmony-docs/zh-cn/application-dev/reference/` 验证签名**。不确定时告诉用户「我无法验证此 API 当前形态」，**不要编代码**。
 
 ## 详细规则按场景自动激活
 

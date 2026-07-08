@@ -21,6 +21,9 @@
 #   harmony-dev-cycle.sh build              # compile + package HAP
 #   harmony-dev-cycle.sh install            # install latest HAP to attached emulator/device
 #   harmony-dev-cycle.sh run                # launch mainElement ability
+#   harmony-dev-cycle.sh test [aa-args]     # build main+ohosTest HAPs → install → `aa test`
+#                                           #   (Instrument Test on device; extra -s filters pass through;
+#                                           #    test module defaults to <module>_test, override via TEST_MODULE env)
 #   harmony-dev-cycle.sh logs [filter]      # tail hilog (with optional grep filter)
 #   harmony-dev-cycle.sh logs-grab [secs]   # non-interactive: capture N seconds of hilog to /tmp
 #   harmony-dev-cycle.sh devices            # list connected emulators/devices
@@ -361,6 +364,65 @@ do_cycle() {
   do_logs
 }
 
+do_test() {
+  # Instrument Test（ohosTest）设备路线：
+  #   构建主 HAP + ohosTest HAP（buildMode=test，hvigor 内置的测试编译模式）
+  #   → 安装两个 HAP → hdc shell aa test 触发 OpenHarmonyTestRunner。
+  # Local 单元测试（src/test/）没有官方 CLI 记载，建议 DevEco GUI 跑。
+  # 额外的 aa test 过滤参数原样透传，如：test -s class LoginUiTest
+  local test_module="${TEST_MODULE:-${MODULE_NAME}_test}"
+
+  cd "$PROJECT_DIR"
+  echo ">>> building main HAP (buildMode=test)"
+  "$HVIGORW" --mode module \
+    -p module="$MODULE_NAME"@default \
+    -p product=default \
+    -p buildMode=test \
+    assembleHap --no-daemon
+  echo ">>> building ohosTest HAP"
+  "$HVIGORW" --mode module \
+    -p module="$MODULE_NAME"@ohosTest \
+    -p buildMode=test \
+    assembleHap --no-daemon
+
+  local MAIN_HAP TEST_HAP
+  MAIN_HAP=$(find "$PROJECT_DIR/$MODULE_NAME/build" -path '*outputs/default/*.hap' -print 2>/dev/null | head -1)
+  TEST_HAP=$(find "$PROJECT_DIR/$MODULE_NAME/build" -path '*outputs/ohosTest/*.hap' -print 2>/dev/null | head -1)
+  [[ -z "$MAIN_HAP" ]] && { echo "ERROR: main HAP not found under $MODULE_NAME/build/**/outputs/default/" >&2; exit 1; }
+  [[ -z "$TEST_HAP" ]] && { echo "ERROR: ohosTest HAP not found under $MODULE_NAME/build/**/outputs/ohosTest/（检查 ohosTest 签名配置，未签名会构建失败）" >&2; exit 1; }
+
+  echo ">>> installing $MAIN_HAP"
+  hdc_with_target install -r "$MAIN_HAP"
+  echo ">>> installing $TEST_HAP"
+  hdc_with_target install -r "$TEST_HAP"
+
+  echo ">>> running: aa test -b $BUNDLE -m $test_module -s unittest OpenHarmonyTestRunner $*"
+  local out rc=0
+  out=$(hdc_with_target shell aa test -b "$BUNDLE" -m "$test_module" -s unittest OpenHarmonyTestRunner -s timeout 15000 "$@" 2>&1) || rc=$?
+  printf '%s\n' "$out"
+  echo "--- summary ---"
+  printf '%s\n' "$out" | grep -E "OHOS_REPORT_(RESULT|CODE|STATUS: taskconsuming)" | tail -10 || true
+
+  # 官方判定口径（unittest-guidelines）：
+  #   OHOS_REPORT_RESULT: stream=Tests run: N, Failure: F, Error: E, Pass: P, Ignore: I
+  # 通过 = RESULT 行存在 且 Failure=0 且 Error=0 且 aa test 退出码为 0。
+  # 注意不能对全文 grep "Failure"——成功输出也固定含 "Failure: 0" 字样。
+  local result_line failures errors
+  result_line=$(printf '%s\n' "$out" | grep -E "OHOS_REPORT_RESULT: stream=Tests run:" | tail -1 || true)
+  if [[ -z "$result_line" ]]; then
+    echo "RESULT: EXECUTION ERROR — 未收到 OHOS_REPORT_RESULT（runner 未启动？检查设备连接 / ohosTest 签名 / -m 模块名，aa rc=$rc）"
+    return 1
+  fi
+  failures=$(printf '%s' "$result_line" | sed -E 's/.*Failure: ([0-9]+).*/\1/')
+  errors=$(printf '%s' "$result_line" | sed -E 's/.*Error: ([0-9]+).*/\1/')
+  if [[ "$failures" == "0" && "$errors" == "0" && "$rc" == "0" ]]; then
+    echo "RESULT: PASSED（$result_line）"
+    return 0
+  fi
+  echo "RESULT: FAILED（Failure=$failures Error=$errors, aa rc=$rc；详情见上方输出）"
+  return 1
+}
+
 # ---------- dispatch ----------
 case "$cmd" in
   quick-check) do_quick_check "$@" ;;
@@ -370,10 +432,11 @@ case "$cmd" in
   build) do_build "$@" ;;
   install) do_install ;;
   run) do_run ;;
+  test) do_test "$@" ;;
   logs) do_logs "$@" ;;
   logs-grab) do_logs_grab "$@" ;;
   devices) do_devices ;;
   clean) do_clean ;;
   cycle) do_cycle ;;
-  *) echo "usage: $0 {quick-check|build-check|device-check|cycle-once|build|install|run|logs [filter]|logs-grab [secs]|devices|clean|cycle} [--dir <path>] [--bundle <id>] [--ability <name>] [--module <name>] [--target <tgt>] [--logs-secs <n>]" >&2; exit 1 ;;
+  *) echo "usage: $0 {quick-check|build-check|device-check|cycle-once|build|install|run|test [aa-test-args]|logs [filter]|logs-grab [secs]|devices|clean|cycle} [--dir <path>] [--bundle <id>] [--ability <name>] [--module <name>] [--target <tgt>] [--logs-secs <n>]" >&2; exit 1 ;;
 esac

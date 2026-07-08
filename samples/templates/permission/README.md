@@ -1,6 +1,6 @@
 # Recipe · 权限申请（位置 / 相机 / 通知 / 麦克风）
 
-> verified_against: harmonyos-6.0.2-api22 · last sync 2026-05-07
+> verified_against: harmonyos-6.1.1-api24 · docs-checked 2026-07-09
 >
 > 关联规则：`AGC-RJ-002`（权限申请合理性）、`PERM-001..005`（权限管理 5 条）
 

@@ -278,7 +278,7 @@ install() {
     fetch "$BASE_URL/.claude/settings.json"                                 ".claude/settings.json"
     fetch "$BASE_URL/.claude/skills/manifest.json"                          ".claude/skills/manifest.json"
     fetch "$BASE_URL/.claude/skills/README.md"                              ".claude/skills/README.md"
-    for skill in arkts-rules state-management build-debug signing-publish harmonyos-review runtime-pitfalls multimodal-llm web-bridge; do
+    for skill in arkts-rules state-management build-debug signing-publish harmonyos-review runtime-pitfalls multimodal-llm web-bridge testing-quality; do
       fetch "$BASE_URL/.claude/skills/$skill/SKILL.md"                      ".claude/skills/$skill/SKILL.md" || true
     done
     fetch "$BASE_URL/.claude/skills/harmonyos-review/references/checklist.md"        ".claude/skills/harmonyos-review/references/checklist.md" || true
@@ -291,7 +291,7 @@ install() {
   # 4) Codex 专属：项目级 skills
   if contains_target "codex"; then
     fetch "$BASE_URL/.agents/skills/README.md"                           ".agents/skills/README.md" || true
-    for skill in arkts-rules state-management build-debug signing-publish harmonyos-review runtime-pitfalls multimodal-llm web-bridge; do
+    for skill in arkts-rules state-management build-debug signing-publish harmonyos-review runtime-pitfalls multimodal-llm web-bridge testing-quality; do
       fetch "$BASE_URL/.agents/skills/$skill/SKILL.md"                   ".agents/skills/$skill/SKILL.md" || true
     done
     fetch "$BASE_URL/.agents/skills/harmonyos-review/references/checklist.md"        ".agents/skills/harmonyos-review/references/checklist.md" || true

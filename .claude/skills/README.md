@@ -10,10 +10,11 @@
 | [`state-management/`](state-management/SKILL.md) | 用状态装饰器、调试"UI 不刷新"、V1/V2 选型 | 替换引用铁律、V1/V2 对照、错误诊断、6 个完整 V2 范例 |
 | [`build-debug/`](build-debug/SKILL.md) | 打包、Hvigor、OHPM、hdc、错误码诊断 | 三种产物、命令速查、错误码、`DEVECO_SDK_HOME` 配置、OHPM 502 兜底 |
 | [`signing-publish/`](signing-publish/SKILL.md) | 配签名、申请证书、AGC 上架、审核被拒 | `.p12`/`.cer`/`.p7b` 三件套、AGC 流程、拒因清单 |
-| [`harmonyos-review/`](harmonyos-review/SKILL.md) | review 鸿蒙代码、PR 审查、上架前自查 | 9 大类 88 条编号规则扫描，产出带优先级 markdown 报告 |
+| [`harmonyos-review/`](harmonyos-review/SKILL.md) | review 鸿蒙代码、PR 审查、上架前自查 | 10 大类 90 条编号规则扫描，产出带优先级 markdown 报告 |
 | [`runtime-pitfalls/`](runtime-pitfalls/SKILL.md) | 改 build-profile / module.json5 / string.json，主题切换，Web 桥，模块改名，HUKS 加密 | **工程层装配陷阱**——ArkTS 语法对但跑不起来的坑（来自真鸿蒙 LLM app 的 M3-M12 实战） |
 | [`multimodal-llm/`](multimodal-llm/SKILL.md) | 调 GPT-4 Vision / Claude Vision / Gemini / Whisper / DALL-E、SSE 流式解析 | LLM 客户端领域专项：union content 拆双字段、流式 buffer 拼接、multipart 上传 |
 | [`web-bridge/`](web-bridge/SKILL.md) | ArkUI Web 组件、H5↔ArkTS 桥、javaScriptProxy、Markdown 离线渲染器 | Web 嵌入领域专项：proxy 稳定实例、ResizeObserver 高度自适应、安全设置 |
+| [`testing-quality/`](testing-quality/SKILL.md) | 写测试、hypium、UiTest、`aa test`、上架前自测 / 云测 / 性能摸底 | Local vs ohosTest 铁律、断言速查、CLI 跑法、质量评估工位（云测 / SmartPerf / wukong / Profiler） |
 
 机读元数据见 [`manifest.json`](manifest.json)（Skill 列表、触发关键词、未来 fan-out 目标路径）。
 

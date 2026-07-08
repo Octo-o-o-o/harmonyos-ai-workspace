@@ -6,7 +6,47 @@
 
 ## [Unreleased]
 
-### Added
+## [0.5.0] - 2026-07-09
+
+**主题：版本现实对齐 + OHPM 误判纠错 + 测试/质量评估补全**。调研与决策全文见 [`docs/RESEARCH-UPDATE-2026-07.cursor.fable.md`](docs/RESEARCH-UPDATE-2026-07.cursor.fable.md)（含同类项目借鉴评估 A×2/B×3/C×4 与方案自 review）。
+
+### Fixed（P0 事实修正）
+
+- **版本叙述全面过时（~80 处）**：仓库自 2026-05 停留在"API 22 现行稳定 / API 23 Developer Beta"。现实：**6.1.0(23) 2026-04-20 Release、6.1.1(24) 2026-05-26 Release、HarmonyOS 7(API 26) Developer Beta1 2026-06-12（官方跳过 API 25）**。统一更新 README 版本契约 / CLAUDE.md / AGENTS.md / llms.txt / manifest.json / 16 个 SKILL.md frontmatter / 00-getting-started ×4 / docs ×3 / 13 个模板标注 / scaffold·setup·verify 脚本默认值 / fan-out 再生成。新叙述：**最新 Release API 24 · 消费推送主力 API 23 · 新项目 target 23 / min 12 · API 26 仅尝鲜**。`verified_against` 升至 `harmonyos-6.1.1-api24`，注明为 **docs-checked**（对照官方 6.1.x release notes 核验规则仍成立，未逐条真机重跑——诚实标注）。
+- **`@ohos/axios` 黑名单误判（High 级误杀）**：registry openapi 实测该包**真实存在**（v2.2.12，TPC 官方移植，20 万+ 下载）。v0.4.x 的黑名单/文档把它当"AI 虚构包"典型例子是**错误的**。已移入白名单；同步纠正 README / CLAUDE.md §11.2 / AGENTS.md §9 / multimodal-llm skill 的"axios 不存在于鸿蒙生态"一刀切叙述 → 三层表述（不能直接 import npm / TPC 移植版与白名单纯 JS 包真实存在 / 用前必核验）。黑白名单头部新增维护纪律："不存在"是时变事实，每次 release 前逐条重核。
+  - 同轮核验：`@ohos/socketio`、`@ohos/crypto-js`、`dayjs`、`lodash`（WHITELIST 纯 JS 包）真实存在 → 加白名单；`@ohos/dayjs`、`@ohos/uuid`、`@ohos/lodash`、`@ohos/moment` 确认不存在 → 黑名单保留但理由改为指向真实替代
+- **`check-ohpm-deps.sh` 在线校验层失效**：ohpm 6.x 把 `view` 子命令改名 `info`（本机 6.1.2.268 实测 `unknown command 'view'`），原第 3 层全部退化为 UNKNOWN 噪音。重构：第 3 层改为 **OHPM registry openapi（curl）**（`"body":"success"` = 查无此包；实测比 ohpm CLI 的 registry 端点稳定）；第 3.5 层 ohpm CLI fallback 自动探测 `info`/`view`。另实测发现 ohpm 在 registry 502 时会误报 `NOTFOUND ... from all the registries`，网络错误分类正则新增 `bad gateway` 并保持 network 先于 not-found 的判定顺序。
+- `scaffold-deveco-project.sh` 内部不一致：`--api-target` 默认 22 与 `SDK_VERSION` 默认 `6.1.1(24)` 互相矛盾（会造出 compatibleSdkVersion > targetAPIVersion 的工程）。统一为 target 23 + `6.1.0(23)`。
+
+### Added（P1 测试/质量评估补全——全仓此前最大空白）
+
+- **新 skill `testing-quality`**（`.claude/skills/` + `.agents/skills/` 双镜像，第 9 个 skill）：Local Test vs ohosTest 铁律（最高频混淆）、hypium 断言族/hamock/数据驱动速查、UiTest Driver/ON API 工位表与反模式（坐标定位/delayMs 连堆/无 .id() 控件）、`aa test` 命令行全参数（`hvigorw buildMode=test` 构建两 HAP → 安装 → `OpenHarmonyTestRunner`）、上架前质量评估工位对照表（**AGC 云测上架自检** / DevEco Profiler / PerfTest / SmartPerf / wukong）、AI 写测试协作范式（先纯逻辑单测、jest 惯性 `toBe` 编译不过等）。命令均对照本地官方镜像 `application-test/` 指南与 DevEco 实际调用记录核验。
+- **新模板 `samples/templates/hypium-uitest/`**（第 9 个模板）：`CalcLogic.test.ets`（Local 纯逻辑单测，含 assertThrowError / 异步 done）+ `LoginPage.uitest.test.ets`（设备用例：startAbility → waitForIdle → ON.id 定位 → waitForComponent）+ README（放置位置 / 三种跑法 / 签名注意 / 上 PR checklist）。过 `scan-arkts.sh` 全规则（测试代码不包 try 属期望行为，用 inline-suppress 标注并示范该机制）。
+- **`harmony-dev-cycle.sh` 新增 `test` 子命令**：构建主 HAP + ohosTest HAP（`buildMode=test`）→ 双安装 → `hdc shell aa test -s unittest OpenHarmonyTestRunner` → `OHOS_REPORT_*` 摘要与 PASS/FAIL 判定；aa test 过滤参数原样透传；测试 module 名默认 `<module>_test` 可用 `TEST_MODULE` 覆盖。
+- **`harmonyos-review` 新增第 10 类 TEST 规则**：`TEST-001`（核心逻辑无 hypium 单测——Medium 提示）/ `TEST-002`（ohosTest 硬编码生产 endpoint/凭据——High）；report-template 规则计数 88 → 90。
+- `05-best-practices/README.md` §6 从 17 行提纲扩写为完整"测试与质量评估"节（Local/ohosTest/云测工位）。
+- 回归测试：新 fixture `good-oh-package.json5`（真实包名集）+ 2 条断言防黑名单误杀回归；`test-suite.sh` **40 passed, 0 failed**（新模板自动纳入 sample 扫描）。
+
+### Added（P1 生态知情——HDC 2026）
+
+- **官方 DevEco CLI / DevEco Code 集成指引**：`build-debug` skill 新增"官方 DevEco CLI 分工"节 + `04-build-debug-tools/README.md` §8（安装、`init --agent`、与本仓工具分工判断：模拟器拉起/官方脚手架/文档检索 → devecocli；规则扫描/OHPM 校验/编辑钩子/AGC 拒因预检 → 本仓）+ `docs/MCP-INTEGRATION.md` 新增 deveco-mcp 段。**定位：互补不替代，不引入代码依赖**。
+- **ArkTS-Sta（`use static` 静态模式）知情段**：`arkts-rules` skill 明确本仓规则针对动态 ArkTS；看到 `use static` 文件不要套用 V1/V2 状态规则与 NAPI 惯例；该特性演进中生产不用、不主动建议迁移。CLAUDE.md/AGENTS.md 背景行同步。
+- `signing-publish` skill + `07-publishing/checklist`：AGC **云测上架自检**步骤（提审前云端真机测兼容性/稳定性/性能/功耗/UX/隐私）+ 2026-01-07 截图新规提示 + 隐私合规头号拒因族提醒。
+- `state-management` skill：PersistenceV2 `globalConnect` 集合类型持久化（API 23+）一句补充。
+- build-debug API 编号对照表补 `7.0=26（无 API 25）`；`09-quick-reference` 补 ohosTest 测试命令段（删去无出处的裸 `hvigorw test` 行）。
+
+### Changed
+
+- 版本契约字段重构：`current_consumer_stable` → `latest_release_api`（24）+ `widely_deployed_api`（23），并注明"API/SDK/IDE 已全 Release，ROM 推送以华为升级名单为准"（不夸大 24 装机量）；删除语义混乱的 `arkts: ">= 1.2.0"` 行（ArkTS-Sta 出现后 1.2 有歧义）
+- Skill 计数 8 → 9、模板计数 8 → 9、review 9 大类 → 10 大类，全仓引用点同步（README / CLAUDE / AGENTS / llms.txt / USER-GUIDE / skills README / templates README / manifest / install.sh 两处下发清单）
+- `manifest.json` platform 字段：`target_api` 21 → 23、新增 `latest_release` 24、`developer_beta` "6.1" → "7.0 (API 26)"
+
+### 调研留档
+
+- 外部现实、同类项目借鉴评估（DengShiyingA/harmonyos-ai-skill 150★ 等 3 个 + 官方工具）、错误清点、方案 review 全文：[`docs/RESEARCH-UPDATE-2026-07.cursor.fable.md`](docs/RESEARCH-UPDATE-2026-07.cursor.fable.md)
+- 明确不做清单（防过度设计）：60+ Kit 百科（半衰期短）/ fan-out 扩 11+ 工具 / dev-cycle 包装 devecocli / PerfTest·SmartPerf·wukong 模板 / ArkTS-Sta 教程 / 为凑数硬加 scan 规则
+
+### Added（2026-05-23 → 2026-07-08 反哺积累，随本版一并发布）
 
 - `05-best-practices/bridge-integration-pitfalls.md` §8 进阶补充：**native-only 凭据 key 必须对 page world fail-closed（三端一致）** —— `storage.get/set` 命中 refresh token / device registration key 必须 `CAPABILITY_UNAVAILABLE`；受保护 key 列表提共享契约且**含 contract 键与原生键两套命名**（`octodesk.auth.refreshToken` vs `auth.refresh_token` 等）；`storage.wipe` 例外放行（否则 partial session-reset 清不到原生 token，含实测过的 partial-wipe scope 漏键 bug）；CI set-equality gate 防"某端多塞/漏拒"。反哺溯源 OctoDesk MOB-1（三端 refresh-token / device-key 守卫对齐）。
 - `05-best-practices/bridge-integration-pitfalls.md` §13: **原生毛玻璃 / blur 只能做有界增强** —— `backdropBlur` / `backgroundBlurStyle` 只允许在 API guard 后用于单个静态 island；禁止长列表、动态背景、嵌套 surface、blur 半径动画；必须有 token 等价 opaque fallback、WebView z-order 真机验证和 Profiler 帧耗时证据。原 §13-§15 顺延为 §14-§16，README "接线层陷阱" 计数 12 → 13。
@@ -36,7 +76,7 @@
 - **`README.md` 接线层陷阱计数 13 → 15**（同步新增 §14/§15）。
 - **回归**：`tools/test-suite.sh` 全量 **34 passed, 0 failed**（fixture exit code / 12 个 sample template clean / --json / --stats / 安装 sanity 全绿）。
 
-### Fixed
+### Fixed（同期反哺积累）
 
 - 修正 Codex 文档与安装提示：`AGENTS.md`、`README.md`、`docs/USER-GUIDE.md`、`llms.txt` 同步说明 `.agents/skills` 自动发现，以及 MCP 必须通过 `tools/setup-codex-mcp.sh` 写入用户级配置。
 - 修正 `bin/cli.js` 的 `doctor` 缺失提示版本号（`v0.4.5+`）。
@@ -596,7 +636,8 @@ ARKUI_DECORATORS='Component|ComponentV2|Observed|ObservedV2|Entry|CustomDialog|R
 - 版本叙述校正（API 21 = 2025-11-25 首发 / API 22 = 2026-01-23 推送）
 - ArkEval 数据驱动：「数组就地 mutation」提到 CLAUDE.md § 0.5 最高优先级
 
-[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.4.5...HEAD
+[Unreleased]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.5.0
 [0.4.5]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.5
 [0.4.4]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.4
 [0.4.3]: https://github.com/Octo-o-o-o/harmonyos-ai-workspace/releases/tag/v0.4.3

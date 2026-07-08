@@ -147,25 +147,32 @@ resources/
 
 权威路径：`upstream-docs/.../reference/apis-accessibility-kit/`
 
-## 6. 测试
+## 6. 测试与质量评估
 
-### 6.1 单元测试
+> 展开版见 [`testing-quality` skill](../.claude/skills/testing-quality/SKILL.md)（Local vs ohosTest 铁律、hypium/UiTest 速查、`aa test` CLI、AI 协作范式）+ 可跑模板 [`samples/templates/hypium-uitest/`](../samples/templates/hypium-uitest/)。
 
-- 文件位置：`entry/src/test/`
-- 框架：`@ohos/hypium`
-- 命令：`hvigorw test`
+### 6.1 单元测试（Local Test）
 
-### 6.2 UI 测试
+- 文件位置：`entry/src/test/ets/test/*.test.ets`——**纯逻辑专用**（宿主机跑，不能 import `@kit.*`）
+- 框架：`@ohos/hypium`（devDependencies，DevEco 模板自带）；断言是 `expect(x).assertEqual(y)` 族，不是 jest 的 `toBe`
+- 跑法：DevEco 右键 Run（带覆盖率）；先把系统 API 调用包成可注入 service，逻辑才可测
 
-- 文件位置：`entry/src/ohosTest/`
-- 工具：`UiTest`（类似 Espresso）
-- 跑前需要把 ohosTest 的签名也配上
+### 6.2 设备上测试（Instrument Test / ohosTest）
 
-### 6.3 端到端
+- 文件位置：`entry/src/ohosTest/ets/test/*.test.ets`——可用全部系统 API + UiTest（`Driver`/`ON`，import 自 `@kit.TestKit`）
+- ohosTest 是**独立 HAP，需要签名**；UI 用例只覆盖关键路径，控件定位靠 `.id()` 不靠坐标
+- CLI 跑法（CI / AI agent）：`bash tools/harmony-dev-cycle.sh test`（构建两 HAP → 安装 → `hdc shell aa test -s unittest OpenHarmonyTestRunner` → 摘要）
 
-- 用 hdc + 脚本驱动，或在 CI 中跑 ohosTest
+### 6.3 上架前质量评估工位
 
-权威路径：`upstream-docs/.../application-test/`
+| 工位 | 用途 |
+| --- | --- |
+| **AGC 云测（上架自检）** | 提审前必跑：云端真机测兼容性/稳定性/性能/功耗/UX/隐私（AGC → 软件包管理 → 启动自检） |
+| DevEco Profiler | 开发期 CPU/内存/帧率/启动耗时 |
+| PerfTest（API 20+） | 白盒性能：代码段耗时 + 场景化（启动时延/列表帧率） |
+| SmartPerf / wukong | 真机长跑指标采集 / 随机事件稳定性摸底 |
+
+权威路径：`upstream-docs/.../application-test/`（unittest / uitest / perftest / smartperf / wukong 指南齐全）
 
 ## 7. CI / 自动化
 

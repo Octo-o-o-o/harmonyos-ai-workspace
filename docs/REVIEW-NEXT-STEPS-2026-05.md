@@ -53,6 +53,8 @@
 
 ### 2. 单一版本契约
 
+> **状态更新（2026-07-09）**：全仓版本叙述已在 v0.5.0 统一为 API 24 Release / API 23 消费主力 / API 26 Beta（见 `docs/RESEARCH-UPDATE-2026-07.cursor.fable.md`）。`platform-matrix.json` 单源生成仍是候选项，未实施。
+
 **问题**：生成器仍写 `6.1 dev beta`，但其他文档已改 API 23 Developer Beta。
 
 **建议**：

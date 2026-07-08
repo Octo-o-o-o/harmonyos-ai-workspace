@@ -1,8 +1,8 @@
 ---
 name: harmonyos-review
-verified_against: harmonyos-6.0.2-api22  # last sync 2026-05-07
+verified_against: harmonyos-6.1.1-api24  # docs-checked 2026-07-09（对照官方 6.1.x release notes 核验，未逐条真机重跑）
 description: |
-  鸿蒙 ArkTS / ArkUI 代码审查 + 9 大类 60+ 规则扫描 + 优先级报告。
+  鸿蒙 ArkTS / ArkUI 代码审查 + 10 大类 60+ 规则扫描 + 优先级报告。
   **激活条件**（满足任一即激活）：
     - 用户说"review 这段鸿蒙代码" / "审一下 PR" / "审计 .ets 文件"
     - 用户问"上线前检查" / "提审前自查" / "技术债梳理"
@@ -17,7 +17,7 @@ description: |
 >
 > **不要**只看代码片段就给评分；必须按下面的清单逐项扫，然后用模板格式产出报告。
 
-## 审查 9 类规则
+## 审查 10 类规则
 
 每个类目对应 [`references/checklist.md`](references/checklist.md) 中的具体扫描项。
 
@@ -32,6 +32,7 @@ description: |
 | 7 | **性能** | `forEach + await` 反模式、`LazyForEach` 缺失、长列表无虚拟化、build() 副作用 |
 | 8 | **API 版本兼容** | `targetSdkVersion`、`canIUse('SystemCapability.X')` 守护、Deprecated API |
 | 9 | **Kit 使用规范** | `@kit.*` vs `@ohos.*` 旧式、错误的 BusinessError 处理、Promise 漏 await |
+| 10 | **测试与质量** | 核心逻辑 hypium 单测覆盖（TEST-001）、测试与生产环境隔离（TEST-002）；展开见 [`testing-quality`](../testing-quality/SKILL.md) |
 
 ## 推荐扫描顺序
 

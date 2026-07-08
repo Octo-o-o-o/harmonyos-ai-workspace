@@ -1,5 +1,5 @@
 // Recipe · 深色模式 · 系统主题跟随
-// verified_against: harmonyos-6.0.2-api22
+// verified_against: harmonyos-6.1.1-api24 (docs-checked 2026-07-09)
 
 import { mediaquery } from '@kit.ArkUI';
 import { hilog } from '@kit.PerformanceAnalysisKit';

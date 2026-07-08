@@ -1,5 +1,5 @@
 // Recipe · 权限申请助手
-// verified_against: harmonyos-6.0.2-api22
+// verified_against: harmonyos-6.1.1-api24 (docs-checked 2026-07-09)
 //
 // 用法：
 //   const ok = await requestPermissionWithUI('ohos.permission.LOCATION', '推荐附近服务');

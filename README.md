@@ -82,7 +82,7 @@ npx -y harmonyos-ai-workspace          # 30 秒搞定，0 改你的源码
 | 痛点 | 没装本仓库 | 装了之后 |
 | --- | --- | --- |
 | AI 写 ArkTS Pass@1 仅 **3.13%**（[ArkEval 论文](https://arxiv.org/html/2602.08866) 实测） | AI 写 100 行代码 ~97 行编译不过 | 规则注入 + 钩子校验，假阳率实测 **21% → 0%** |
-| AI 瞎编 OHPM 包（如 `@ohos/lottie-player`、`@ohos/axios`） | `ohpm install` 失败浪费 10 分钟 | 安装时三层校验：黑名单 → 白名单 → `ohpm view`，假包当场拦截 |
+| AI 瞎编 OHPM 包（如 `@ohos/lottie-player`、`@ohos/dayjs`） | `ohpm install` 失败浪费 10 分钟 | 安装时多层校验：黑名单 → 白名单 → OHPM registry 在线核验，假包当场拦截 |
 | AI 写 `this.list.push(x)` 状态不刷新（**LLM 第一坑**） | UI 不更新，调试半小时才发现 | 钩子立刻报 `STATE-002 · High`，给改写示例 |
 | AI 引用旧 API（DevEco 12 → 22 多次变化） | 用了已弃用的 `picker.PhotoViewPicker` | `ARKTS-DEPRECATED-PICKER` 即时拦截 + 给新 API |
 | AGC 上架前才发现拒因 | 提审被打回再修 = 1 周 | 20 条 `AGC-RJ-*` 稳定 ID 编辑时就提示 |
@@ -180,7 +180,7 @@ rm -rf test
 │        │ 启动时自动加载                                          │
 │        ▼                                                          │
 │   CLAUDE.md / AGENTS.md / .agents/skills / .cursor/rules / …     │
-│        │ AI 读到鸿蒙硬约束 + 8 SKILL 触发索引                    │
+│        │ AI 读到鸿蒙硬约束 + 9 SKILL 触发索引                    │
 │        ▼                                                          │
 │   AI 写代码 → Edit .ets / .ts / oh-package.json5                 │
 │        │                                                          │
@@ -216,12 +216,12 @@ rm -rf test
 | 资产 | 内容 |
 | --- | --- |
 | **AI 规则集** | `CLAUDE.md`（Claude Code）+ `AGENTS.md`（[agents.md 标准](https://agents.md/) 24+ 工具通用）+ 8 个按需触发的 [`.claude/skills/`](.claude/skills/) + Codex 镜像 [`.agents/skills/`](.agents/skills/) |
-| **8 个 SKILL** | 5 个默认 fan-out（`arkts-rules` / `state-management` / `build-debug` / `signing-publish` / `runtime-pitfalls`，对所有项目通用）+ 3 个领域专项（`harmonyos-review` / `multimodal-llm` / `web-bridge`）；Claude Code 读 `.claude/skills/`，Codex 读 `.agents/skills/` |
+| **9 个 SKILL** | 5 个默认 fan-out（`arkts-rules` / `state-management` / `build-debug` / `signing-publish` / `runtime-pitfalls`，对所有项目通用）+ 4 个领域专项（`harmonyos-review` / `multimodal-llm` / `web-bridge` / `testing-quality`）；Claude Code 读 `.claude/skills/`，Codex 读 `.agents/skills/` |
 | **PostToolUse 钩子链路** | Edit `.ets`/`.ts`/`oh-package.json5` 后自动跑 ArkTS 反模式扫描 + OHPM 包名核验 + 权限提示 |
 | **多工具 fan-out** | 5 个默认 SKILL → Cursor 6 个 `.mdc`（按 globs 触发，单文件 < 12KB）+ Copilot root `< 4KB` + `.github/instructions/*.md` 5 个按 `applyTo` 触发 |
 | **`doctor` 体检** | `npx harmonyos-ai-workspace doctor` 或 `bash tools/doctor.sh`：PASS/WARN/FAIL 三态报告，含钩子端到端自测（喂故意的 `STATE-002` 看是否被抓） |
 | **CLI 工具集** | `install.sh`（manifest + sha256 安装）/ `run-linter.sh`（离线 codeLinter）/ `check-ohpm-deps.sh`（4 类校验）/ `check-rename-module.sh`（模块改名一致性）/ `test-suite.sh`（19 项回归断言）/ **`scaffold-deveco-project.sh`**（一键补 DevEco 脚手架 11 文件）/ **`harmony-dev-cycle.sh`**（`quick-check` / `build-check` / `cycle-once` / `device-check`，绕开 DevEco GUI Run 按钮） |
-| **Recipe Templates** | 8 个可粘贴最小可用代码 — 基础 4 个：`permission/` / `list/` / `dark-mode/` / `login/`；进阶 4 个（OctoDesk 抽取）：`web-bridge-h5-shell/` / `llm-sse-client/` / `huks-secure-store/` / `scan-qrcode/` |
+| **Recipe Templates** | 9 个可粘贴最小可用代码 — 基础 4 个：`permission/` / `list/` / `dark-mode/` / `login/`；进阶 4 个（OctoDesk 抽取）：`web-bridge-h5-shell/` / `llm-sse-client/` / `huks-secure-store/` / `scan-qrcode/`；测试 1 个：`hypium-uitest/` |
 | **2026 提审 Top 20 拒因** | [`07-publishing/checklist-2026-rejection-top20.md`](07-publishing/checklist-2026-rejection-top20.md)，含 `AGC-RJ-001..020` 稳定 ID + 6 条高频项配可粘贴代码 |
 | **Case Studies** | [`docs/case-studies/llm-chat-app.md`](docs/case-studies/llm-chat-app.md) — 真鸿蒙 LLM 对话 app M3-M13 实战（M3-M12 原始里程碑 + M13 运维期 layered icon / 9568297），12 节"症状/错误信息/修复 diff/教训"四段式 + [`docs/case-studies/android-parity-migration.md`](docs/case-studies/android-parity-migration.md) — paseo-harmony 14 阶段 Phase A/B 真修复笔记 |
 | **测试 fixture** | 9 个回归 fixture 覆盖 inline 装饰器 / `@CustomDialog` / `@Reusable` / 普通工具类等边界 |
@@ -232,7 +232,7 @@ rm -rf test
 
 PostToolUse 钩子并非孤例（[`yibaiba/harmonyos-skills-pack`](https://github.com/yibaiba/harmonyos-skills-pack) 也有 hooks），本仓库的真实差异点：
 
-1. **OHPM 包名四类校验**（FAKE / NET / UNKNOWN / OK）+ 15s timeout —— [`tools/check-ohpm-deps.sh`](tools/check-ohpm-deps.sh)。同类无人做
+1. **OHPM 包名四类校验**（FAKE / NET / UNKNOWN / OK）+ registry openapi 在线核验 + 15s timeout —— [`tools/check-ohpm-deps.sh`](tools/check-ohpm-deps.sh)。同类无人做
 2. **AGC 提审 Top 20 拒因稳定 ID 体系**（`AGC-RJ-001..020`）+ 高频项配可粘贴代码 —— `harmonyos-review` skill 与扫描器可用同一编号互引
 3. **awk 装饰器上下文检测** + **inline-suppress** + **真 collapse 折叠** —— `tools/hooks/lib/scan-arkts.sh`，PrivateTalk 真工程实测假阳率 0%
 4. **install/uninstall manifest + sha256** —— v0.4.0 起，用户原 `CLAUDE.md` 永不被吞，本工具写的所有文件可精确卸载
@@ -247,7 +247,7 @@ PostToolUse 钩子并非孤例（[`yibaiba/harmonyos-skills-pack`](https://githu
 | 层 | 数量 | 位置 | 用途 |
 | --- | --- | --- | --- |
 | **自动化扫描**（钩子触发） | 32 条 | `tools/hooks/lib/scan-arkts.sh` 内联 + awk 装饰器上下文检测 | grep-based 快扫，毫秒级反馈；支持 [inline-suppress](.claude/skills/arkts-rules/SKILL.md#抑制-scanner-误报inline-suppress) |
-| **代码审查清单** | 36 条（9 大类） | `.claude/skills/harmonyos-review/references/checklist.md` | review skill 引用的稳定 ID（`SEC-001` / `STATE-002` / `KIT-003` 等） |
+| **代码审查清单** | 38 条（10 大类） | `.claude/skills/harmonyos-review/references/checklist.md` | review skill 引用的稳定 ID（`SEC-001` / `STATE-002` / `TEST-002` 等） |
 | **AGC 提审拒因** | 20 条 | `07-publishing/checklist-2026-rejection-top20.md` | 上架审核拒因映射，含 `AGC-RJ-*` 稳定 ID |
 | **OHPM 黑名单**（已知伪包） | ~25 项 | `tools/data/ohpm-blacklist.txt` + 脚本内联 | 防 AI 虚构包名 |
 
@@ -265,29 +265,30 @@ PostToolUse 钩子并非孤例（[`yibaiba/harmonyos-skills-pack`](https://githu
 # 鸿蒙系统侧（API 编号是单一权威，不同 API 对应不同 HarmonyOS 系统版本）
 harmonyos_system:
   min_supported_api:        12   # API 12 = HarmonyOS 5（NEXT）时代起，本仓库规则适用最低线
-  current_consumer_stable:  22   # API 22 = HarmonyOS 6.0.2，2026-01-23 起对 Mate 80/70/Pura 80 推送
-  first_stable_release:     21   # API 21 = HarmonyOS 6.0.1，2025-11-25 随 Mate 80 首发
-  developer_preview_api:    23   # API 23 Developer Beta（最新预览，跟随华为发布节奏 — 跑生产 app 别选）
-  recommended_target:       21   # 新项目推荐 targetSDK
+  latest_release_api:       24   # API 24 = HarmonyOS 6.1.1，2026-05-26 Release（API/SDK/IDE 全 Release；ROM 推送以华为升级名单为准）
+  widely_deployed_api:      23   # API 23 = HarmonyOS 6.1.0，2026-04-20 Release 起消费推送（Pura 系列首发）
+  developer_preview_api:    26   # API 26 = HarmonyOS 7 Developer Beta1（2026-06-12 HDC 发布；注意官方跳过了 API 25 — 跑生产 app 别选）
+  recommended_target:       23   # 新项目推荐 targetSDK（需要 API 24 新能力才上 24）
   recommended_min:          12   # 新项目推荐 minSDK
 
 toolchain:
-  arkts:          ">= 1.2.0"
-  deveco_studio:  ">= 6.0"
-  ohpm:           ">= 1.4"
+  deveco_studio:  ">= 6.1.0"     # 稳定线 6.1.1 Release；预览线 26.0.0 Beta1（版本号已切年份制，内置 Node 18 → 24）
+  ohpm:           ">= 6.0"       # ohpm 6.x 起 `view` 子命令改名 `info`
+  # ArkTS 无独立版本行：动态 ArkTS 随 SDK 走；ArkTS-Sta（`use static` 静态模式）仍在演进中，生产不用
 
 ai_assistants:
   claude_code:    ">= 0.5"
   codex_cli:      ">= 0.1"
   cursor:         ">= 1.0"
   copilot:        "ChatGPT-class instructions OK"
+  deveco_cli:     "可选；官方 @deveco/deveco-cli 与本仓工具互补（见 04-build-debug-tools）"
 
-last_verified_docs_snapshot: "2026-05-07"
+last_verified_docs_snapshot: "2026-07-09"
 ```
 
-> **如何读这张表**：API 编号才是单一权威——HarmonyOS 5 = API 12+ 时代，HarmonyOS 6 = API 21+ 时代。"6.0" / "6.0.2" / "6.1" 这种系统版本号会在不同发布节点指向不同 API 编号，直接看 API 数字最准。
+> **如何读这张表**：API 编号才是单一权威——HarmonyOS 5 = API 12+ 时代，HarmonyOS 6 = API 21–24，HarmonyOS 7 = API 26（无 25）。系统版本号 ↔ API 对照：`6.0.0=20（仅开发者版）· 6.0.1=21 · 6.0.2=22 · 6.1.0=23 · 6.1.1=24 · 7.0 Beta=26`。
 >
-> **生产应用选 API 22**（minSDK 12 / target 21–22 都行）；developer beta（API 23）当下仅尝鲜用。鸿蒙生态快速迭代：本仓库每次发版前在 `last_verified_docs_snapshot` 日期对齐一次"当前消费稳定版"。
+> **生产应用选 API 23–24**（minSDK 12）；HarmonyOS 7 Developer Beta（API 26）当下仅尝鲜用。鸿蒙生态快速迭代：本仓库每次发版前在 `last_verified_docs_snapshot` 日期对齐一次版本现实。
 
 ---
 
@@ -395,9 +396,9 @@ grep -rln 'Octo-o-o-o' --include='*.md' --include='*.sh' --include='*.json' . | 
 4. **import 用 `@kit.*`**，不要 `@ohos.*`（旧式）
 5. **V1 / V2 状态装饰器不混用**：一个 `.ets` 文件二选一；**默认 V1**（生态最成熟）
 6. **改完代码必跑**：`hvigorw codeLinter && hvigorw assembleHap -p buildMode=debug`
-7. **不要引入 npm 包**：只能用 OHPM 发布的 `.har`/`.hsp`
+7. **不要直接 import npm 包**：只能用 OHPM 上的包——TPC 官方移植版（如 `@ohos/axios`）与白名单化纯 JS 包（如 `dayjs`）真实存在，但**包名必须先在 <https://ohpm.openharmony.cn/> 核验**（`@ohos/dayjs`、`@ohos/uuid` 这类想当然的名字不存在）
 
-完整版见 [`CLAUDE.md`](CLAUDE.md) 第 0、11、12、13 节 + 8 个 SKILL（按需触发）。
+完整版见 [`CLAUDE.md`](CLAUDE.md) 第 0、11、12、13 节 + 9 个 SKILL（按需触发）。
 
 ---
 
@@ -407,7 +408,7 @@ grep -rln 'Octo-o-o-o' --include='*.md' --include='*.sh' --include='*.json' . | 
 - 🛠 [进阶用法 USAGE-GUIDE.md](docs/USAGE-GUIDE.md) — 多 app 共享规则、三层发布策略、AI 启动姿势、与同类项目对比
 - 🚀 [SETUP-FROM-SCRATCH.md](docs/SETUP-FROM-SCRATCH.md) — macOS 干净状态到第一行 `.ets` 跑通
 - 🔌 [MCP-INTEGRATION.md](docs/MCP-INTEGRATION.md) — 接入第二个 MCP（动作型，hdc 控设备）
-- 📋 [CLAUDE.md](CLAUDE.md) — Claude Code 项目级大宪章 + 8 SKILL 触发索引 + 目录全图
+- 📋 [CLAUDE.md](CLAUDE.md) — Claude Code 项目级大宪章 + 9 SKILL 触发索引 + 目录全图
 - 🤖 [AGENTS.md](AGENTS.md) — 跨工具通用宪法（24+ 工具兼容）
 - 📜 [CHANGELOG.md](CHANGELOG.md) — 完整版本历史
 
@@ -415,13 +416,14 @@ grep -rln 'Octo-o-o-o' --include='*.md' --include='*.sh' --include='*.json' . | 
 
 ## 关键事实（以版本契约为准）
 
-- **当前消费稳定版**：HarmonyOS 6.0.2 / **API 22**（2026-01-23 起推送）
-- **首发稳定版**：HarmonyOS 6.0.1 / **API 21**（2025-11-25）
-- **开发者 Beta**：API 23，跟随华为发布节奏
-- **新项目建议**：targetSDK API 21，minSDK API 12
+- **最新 Release**：HarmonyOS 6.1.1 / **API 24**（2026-05-26；API/SDK/IDE 全 Release）
+- **消费推送主力**：HarmonyOS 6.1.0 / **API 23**（2026-04-20 Release 起推送）
+- **开发者 Beta**：HarmonyOS 7 / **API 26**（2026-06-12 HDC 发布；官方跳过 API 25）
+- **新项目建议**：targetSDK API 23（要 API 24 新能力才上 24），minSDK API 12
 - **API 20 是 2025-09-25 仅开发者版**，不要选作 targetSDK
 - **主语言**：ArkTS（增强 TypeScript） / **UI**：ArkUI（声明式，V1 默认）/ **应用模型**：Stage（FA 已废弃）
 - **包格式**：`.hap`（单 module）/ `.app`（应用包）/ `.har`（静态库）/ `.hsp`（共享库）
+- **官方 AI 工具**：DevEco Code（鸿蒙 AI agent）/ DevEco CLI（`@deveco/deveco-cli`，构建原子能力）；与本仓库互补，见 [`04-build-debug-tools/README.md`](04-build-debug-tools/README.md)
 
 ---
 
@@ -447,6 +449,7 @@ grep -rln 'Octo-o-o-o' --include='*.md' --include='*.sh' --include='*.json' . | 
 - OpenHarmony 官网：<https://www.openharmony.cn/>
 - 华为开发者联盟：<https://developer.huawei.com/consumer/cn/>
 - DevEco Studio 下载：<https://developer.huawei.com/consumer/cn/deveco-studio/>
+- DevEco CLI（官方 agent 工具链，可与本仓共存）：<https://www.npmjs.com/package/@deveco/deveco-cli>
 - OHPM 包仓库：<https://ohpm.openharmony.cn/>
 - Anthropic Claude Code 文档：<https://docs.claude.com/en/docs/claude-code>
 - OpenAI Codex CLI：<https://github.com/openai/codex>

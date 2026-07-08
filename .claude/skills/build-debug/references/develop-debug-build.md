@@ -115,7 +115,7 @@ hdc fport tcp:9229 tcp:9229            # PC ↔ device
 | 401 | 参数错误 | 比对 `upstream-docs/.../reference/` 中签名 |
 | 801 | 设备不支持 | `canIUse('SystemCapability.X')` 守护 |
 | 16000050 | Ability 启动失败 | `module.json5` 的 abilities 配置 |
-| 9568297 | install failed due to older sdk version | HAP `compatibleSdkVersion` 高于设备 OS · `hdc shell param get const.ohos.apiversion` 查设备 API 后降版本；HarmonyOS 6 编号对照：6.0.0=API 20 / 6.0.1=21 / 6.0.2=22 / 6.1.0=23 / 6.1.1=24 |
+| 9568297 | install failed due to older sdk version | HAP `compatibleSdkVersion` 高于设备 OS · `hdc shell param get const.ohos.apiversion` 查设备 API 后降版本；编号对照：6.0.0=API 20 / 6.0.1=21 / 6.0.2=22 / 6.1.0=23 / 6.1.1=24 / 7.0=26（无 API 25） |
 | 9568305 | HAP 安装失败 | clean / 包过大 / 签名不一致 |
 | 9568322 | 签名校验失败 | profile 与 cert 不匹配 |
 

@@ -18,7 +18,7 @@
 DevEco Studio 6.x **自带** 以下组件，**通常不需要单独安装**：
 
 - JBR（JetBrains Runtime，相当于 OpenJDK 17）
-- Node.js 18.20.x（IDE 内置）
+- Node.js（IDE 内置：6.1.x 为 18.20.x，26.0.0 Beta 起为 24）
 - Hvigor（构建工具，类似 Gradle）
 - OHPM（包管理器，类似 npm）
 - HarmonyOS SDK（API 12 - 20）
@@ -107,7 +107,7 @@ ohpm config set https-proxy http://127.0.0.1:7890
 
 ```bash
 # 系统层
-node --version       # 22.x（系统）或 18.20.x（IDE 用）
+node --version       # 22.x（系统）；IDE 内置 18.20.x（6.1.x）/ 24（26.0.0 Beta）
 git --version
 brew --version
 

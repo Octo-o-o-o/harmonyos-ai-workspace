@@ -4,7 +4,7 @@
 >
 > **真实出处**：OctoDesk Mobile（4.3K 行生产工程）的 `BridgeJavaScriptProxy.ets` + `WebViewHost.ets` 简化版。已剥去鉴权 / 上传 / MDM / 推送等业务，保留**与桥本身相关的稳定模式**。
 >
-> verified_against: harmonyos-6.0.2-api22
+> verified_against: harmonyos-6.1.1-api24 (docs-checked 2026-07-09)
 
 ## 什么时候用
 

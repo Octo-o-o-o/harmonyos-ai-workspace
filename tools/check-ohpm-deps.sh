@@ -7,7 +7,9 @@
 # 校验策略（按可靠性降序）：
 #   1) 黑名单：已知由 AI 虚构 / 常被混淆的包名 → 直接报错
 #   2) 白名单：已知真实存在的核心包 → 标 ✓
-#   3) ohpm CLI 在场：用 `ohpm view <pkg>` 实时查
+#   3) OHPM registry openapi（curl）：实测比 ohpm CLI 的 registry 端点稳定
+#      · 返回包详情 JSON → 存在；返回 {"code":200,"body":"success"} → 查无此包
+#   3.5) ohpm CLI fallback：ohpm 6.x 用 `info`，旧版用 `view`（自动探测）
 #   4) 都不行：标 ? 让 AI 主动去 https://ohpm.openharmony.cn/ 确认
 #
 # Usage:
@@ -23,23 +25,27 @@ set -u
 # ─── 黑名单：已知由 AI 虚构或常被混淆的包名 ─────────────────────
 # 格式：每行 "<fake-name>|<reason>"
 # 可在外部文件 tools/data/ohpm-blacklist.txt 扩展
+#
+# ⚠️ 维护纪律（2026-07 教训）：黑名单只收录**核验过的当前事实**。
+#   TPC（OpenHarmony 三方库中心）持续在移植 npm 知名库——"不存在"是时变事实，
+#   每次 release 前用 registry openapi / `ohpm info` 逐条重核。
+#   本清单曾把真实存在的 @ohos/axios（TPC 官方移植，20 万+ 下载）误判为虚构包。
 BLACKLIST_INLINE=$(cat <<'EOF'
 @ohos/lottie-player|不存在；真实包名是 @ohos/lottie（不带 -player）
-@ohos/axios|不存在；ArkTS 没有 axios，用 @kit.NetworkKit 的 http
-@ohos/lodash|不存在；用 ArrayList / HashMap（@kit.ArkTS）
-@ohos/moment|不存在；用 @kit.LocalizationKit 的 i18n.DateTimeFormat
-@ohos/dayjs|不存在；用 @kit.LocalizationKit
+@ohos/lodash|不存在；OHPM 有白名单化纯 JS 包 lodash（无前缀），或用 ArrayList / HashMap（@kit.ArkTS）
+@ohos/moment|不存在；用 @kit.LocalizationKit 的 i18n.DateTimeFormat 或白名单包 dayjs
+@ohos/dayjs|不存在；OHPM 直接用 dayjs（无前缀，白名单化纯 JS 包）或 @kit.LocalizationKit
 @ohos/react|不存在；鸿蒙是 ArkUI 声明式，不是 React
 @ohos/vue|不存在；鸿蒙是 ArkUI 声明式
 @ohos/express|不存在；鸿蒙不在 Node 生态
-@ohos/jsonwebtoken|不存在；用 @kit.AuthenticationKit 或自实现
+@ohos/jsonwebtoken|不存在；用 @kit.AuthenticationKit 或自实现（TPC 有 ohos_jsonwebtoken 项目，包名需在 registry 核验后再用）
 @ohos/uuid|不存在；用 @kit.AbilityKit 或自实现
-@ohos/socket.io-client|不存在；用 @kit.NetworkKit 的 webSocket
+@ohos/socket.io-client|不存在；真实包名是 @ohos/socketio（TPC 移植版），或用 @kit.NetworkKit 的 webSocket
 EOF
 )
 
 # ─── 白名单：已知真实存在的核心 / 常用包 ───────────────────────
-# 来源：DevEco 默认模板、OHPM 热门下载、华为官方文档
+# 来源：DevEco 默认模板、OHPM 热门下载、华为官方文档、registry openapi 核验（2026-07-09）
 WHITELIST_INLINE=$(cat <<'EOF'
 @ohos/hypium
 @ohos/hamock
@@ -62,6 +68,11 @@ WHITELIST_INLINE=$(cat <<'EOF'
 @ohos/mcimagecompress
 @ohos/sm-crypto
 @ohos/turbomodule
+@ohos/axios
+@ohos/socketio
+@ohos/crypto-js
+dayjs
+lodash
 EOF
 )
 
@@ -117,8 +128,34 @@ fake_count=0
 unknown_count=0
 ok_count=0
 
+# ohpm 6.x 把 `view` 子命令改名为 `info`（2026 实测 6.1.2 已无 view）。
+# 懒探测：只有真正需要 CLI fallback 时才跑 --help（ohpm 启动 ~1.5s，
+# 钩子高频路径全命中黑白名单时不该白付这个成本）。
 OHPM_CLI=""
 command -v ohpm >/dev/null 2>&1 && OHPM_CLI="ohpm"
+OHPM_SUBCMD=""
+OHPM_SUBCMD_PROBED="0"
+
+probe_ohpm_subcmd() {
+  [[ "$OHPM_SUBCMD_PROBED" == "1" ]] && return 0
+  OHPM_SUBCMD_PROBED="1"
+  [[ -z "$OHPM_CLI" ]] && return 0
+  if "$OHPM_CLI" info --help >/dev/null 2>&1; then
+    OHPM_SUBCMD="info"
+  elif "$OHPM_CLI" view --help >/dev/null 2>&1; then
+    OHPM_SUBCMD="view"
+  fi
+}
+
+CURL_BIN=""
+command -v curl >/dev/null 2>&1 && CURL_BIN="curl"
+
+# URL-encode 包名里的 / 和 @（openapi 路径参数要求）
+urlencode_pkg() {
+  local s="$1"
+  s="${s//\//%2F}"
+  printf '%s' "$s"
+}
 
 while IFS= read -r pkg; do
   [[ -z "$pkg" ]] && continue
@@ -137,29 +174,51 @@ while IFS= read -r pkg; do
     continue
   fi
 
-  # 3) ohpm CLI 在场（DevEco 装好就有）
-  # v0.4 改：分类 ohpm view 的失败原因，避免 registry 502 / 网络问题被误判为
-  # OHPM-FAKE High 阻断 AI。失败时分三类：not-found / network / unknown。
-  if [[ -n "$OHPM_CLI" ]]; then
+  # 3) OHPM registry openapi（curl）——实测比 ohpm CLI 的 registry 端点稳定。
+  #    存在 → 返回包详情 JSON（含 "name"）；不存在 → {"code":200,"body":"success"}。
+  #    非公开接口可能变动：任何意外形态都按网络类降级，不阻断。
+  if [[ -n "$CURL_BIN" ]]; then
+    API_OUT=$("$CURL_BIN" -s --max-time 15 \
+      "https://ohpm.openharmony.cn/ohpmweb/registry/oh-package/openapi/v1/detail/$(urlencode_pkg "$pkg")" 2>/dev/null) || API_OUT=""
+    if [[ -n "$API_OUT" ]]; then
+      if printf '%s' "$API_OUT" | grep -q '"body":"success"'; then
+        printf '[OHPM-FAKE · High] %s: 包名 "%s" 在 OHPM registry 上明确不存在（openapi 查无此包）\n' "$REL" "$pkg" >&2
+        fake_count=$((fake_count + 1))
+        continue
+      fi
+      if printf '%s' "$API_OUT" | grep -q '"name"[[:space:]]*:'; then
+        ok_count=$((ok_count + 1))
+        continue
+      fi
+      # 意外响应形态（接口变动 / 网关错误页）→ 落到 CLI fallback / UNKNOWN
+    fi
+  fi
+
+  # 3.5) ohpm CLI fallback（DevEco 装好就有）
+  # v0.4 起分类失败原因，避免 registry 502 / 网络问题被误判为 OHPM-FAKE High。
+  # 注意顺序：先 network 后 not-found——ohpm 在 registry 502 时也会误报
+  # "NOTFOUND ... from all the registries"（2026-07 实测），必须先按网络错分类。
+  probe_ohpm_subcmd
+  if [[ -n "$OHPM_CLI" && -n "$OHPM_SUBCMD" ]]; then
     OHPM_RC=0
-    OHPM_OUT=$(timeout 15 "$OHPM_CLI" view "$pkg" 2>&1) || OHPM_RC=$?
+    OHPM_OUT=$(timeout 15 "$OHPM_CLI" "$OHPM_SUBCMD" "$pkg" 2>&1) || OHPM_RC=$?
     if [[ "$OHPM_RC" == "0" ]]; then
       ok_count=$((ok_count + 1))
       continue
     fi
     # timeout 自身的退出码 124 → 网络问题
-    if [[ "$OHPM_RC" == "124" ]] || echo "$OHPM_OUT" | grep -qiE "etimedout|econnrefused|enetunreach|getaddrinfo|connect.*failed|network|timeout|502|503|504|reset by peer|tls handshake|connection refused"; then
-      printf '[OHPM-NET · Low] %s: 包名 "%s" 因网络/registry 问题无法核验（ohpm view 网络错误，rc=%s）；不阻断，建议网通后重跑\n' "$REL" "$pkg" "$OHPM_RC" >&2
+    if [[ "$OHPM_RC" == "124" ]] || echo "$OHPM_OUT" | grep -qiE "etimedout|econnrefused|enetunreach|getaddrinfo|connect.*failed|network|timeout|502|503|504|bad gateway|reset by peer|tls handshake|connection refused"; then
+      printf '[OHPM-NET · Low] %s: 包名 "%s" 因网络/registry 问题无法核验（ohpm %s 网络错误，rc=%s）；不阻断，建议网通后重跑\n' "$REL" "$pkg" "$OHPM_SUBCMD" "$OHPM_RC" >&2
       unknown_count=$((unknown_count + 1))
       continue
     fi
-    if echo "$OHPM_OUT" | grep -qiE "not found|404|does not exist|no such package|package.*not.*exist"; then
-      printf '[OHPM-FAKE · High] %s: 包名 "%s" 在 OHPM registry 上明确不存在（ohpm view 报 not-found）\n' "$REL" "$pkg" >&2
+    if echo "$OHPM_OUT" | grep -qiE "not found|notfound|404|does not exist|no such package|package.*not.*exist"; then
+      printf '[OHPM-FAKE · High] %s: 包名 "%s" 在 OHPM registry 上明确不存在（ohpm %s 报 not-found）\n' "$REL" "$pkg" "$OHPM_SUBCMD" >&2
       fake_count=$((fake_count + 1))
       continue
     fi
     # 其他失败（鉴权 / 配置 / ohpm 自身错）→ 保守降级为 UNKNOWN，不当假包
-    printf '[OHPM-UNKNOWN · Medium] %s: 包名 "%s" ohpm view 返回 rc=%s 但既非 not-found 也非网络错；请手动在 https://ohpm.openharmony.cn/ 核验\n' "$REL" "$pkg" "$OHPM_RC" >&2
+    printf '[OHPM-UNKNOWN · Medium] %s: 包名 "%s" ohpm %s 返回 rc=%s 但既非 not-found 也非网络错；请手动在 https://ohpm.openharmony.cn/ 核验\n' "$REL" "$pkg" "$OHPM_SUBCMD" "$OHPM_RC" >&2
     unknown_count=$((unknown_count + 1))
     continue
   fi

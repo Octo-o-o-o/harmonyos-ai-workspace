@@ -1,6 +1,6 @@
 # Recipe 模板
 
-> 把"hello world 之后的第一个真功能"拆成 **8 个**高频小场景（基础 4 + 进阶 4）。每个 recipe 是**完整可运行**的最小代码 + 关键约束 + 反模式提醒，AI 写新功能时可参考。
+> 把"hello world 之后的第一个真功能"拆成 **9 个**高频小场景（基础 4 + 进阶 4 + 测试 1）。每个 recipe 是**完整可运行**的最小代码 + 关键约束 + 反模式提醒，AI 写新功能时可参考。
 >
 > **不是脚手架**——这些是片段，用来粘到你已有的 DevEco 工程里。完整工程见 [`docs/SETUP-FROM-SCRATCH.md`](../../docs/SETUP-FROM-SCRATCH.md)。
 
@@ -24,6 +24,12 @@
 | [`huks-secure-store/`](huks-secure-store/) | HUKS AES-256-GCM 包装 + preferences 落盘 + 懒生成 key + 卸载自动清理 | 完整代码（过 `scan-arkts.sh`；满足 `AGC-RJ-019` 敏感数据加密要求） |
 | [`scan-qrcode/`](scan-qrcode/) | HMS ScanKit 二维码扫码：dual-import + page-bound `UIAbilityContext` + 三种错误码到 outcome 映射 | 完整代码（过 `scan-arkts.sh`，KIT-003 / KIT-004 配套） |
 
+### 测试 1 个
+
+| Recipe | 内容 | 验证状态 |
+| --- | --- | --- |
+| [`hypium-uitest/`](hypium-uitest/) | hypium Local 纯逻辑单测 + UiTest 设备用例最小骨架 + `aa test` CLI 跑法 + 签名注意 | 完整代码（过 `scan-arkts.sh`；配套 `testing-quality` skill 与 `harmony-dev-cycle.sh test`） |
+
 ## 用法
 
 1. 找到对应场景的目录
@@ -35,7 +41,7 @@
 
 - 鸿蒙 API 6.x → 7.x 大版本迭代时审视一遍（约 12 月）
 - 每个 recipe 都引用了对应的 `XXX-NNN` 规则 ID。规则更新时同步 recipe 注释
-- 真实跑通过的 SDK 版本在每个 README 顶部标注（`verified_against: harmonyos-6.0.2-api22`）
+- 真实跑通过的 SDK 版本在每个 README 顶部标注（`verified_against: harmonyos-6.1.1-api24 (docs-checked 2026-07-09)`）
 
 ## 不在这里的内容
 
