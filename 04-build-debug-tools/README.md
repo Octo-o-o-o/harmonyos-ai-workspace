@@ -283,9 +283,13 @@ hdc install path/to/app.hap
 hdc install -r path/to/app.hap                    # 强制覆盖
 hdc uninstall com.example.demo
 hdc shell aa start -a EntryAbility -b com.example.demo
+hdc -t <id> shell aa start -a EntryAbility -b com.example.demo -m entry --ps apiBaseUrl https://staging.example.com
 hdc shell aa force-stop com.example.demo
 hdc shell aa dump -a                               # 列出运行的 abilities
+hdc shell bm dump -n com.example.demo              # 查看 bundle / version / permissions / profile
 ```
+
+`--ps` 适合 staging base URL、feature flag、fixture id 这类**非敏感**字符串，方便同一个 signed HAP 跑不同环境。不要把 OAuth secret、push secret、session token 放进 `aa start` 命令；这些仍应走 HUKS、服务端或 CI Secret。
 
 ### 文件传输
 
@@ -311,7 +315,19 @@ hdc shell                       # 进交互 shell
 hdc shell ps -A | grep entry   # 列进程
 hdc shell df -h                 # 磁盘
 hdc shell ls /data/storage/el2/base/haps/<bundle>/files
+hdc shell bm dump -n <bundle>   # 包元数据 / 权限 / profile 读回
 ```
+
+### UI 自动化 / 真机证据
+
+```bash
+hdc shell uitest dumpLayout                         # 导出当前 UI 树（具体参数以 uitest help 为准）
+hdc shell uitest uiInput click <x> <y>              # 坐标点击，适合 smoke 走查
+hdc shell snapshot_display -f /data/local/tmp/screen.png
+hdc file recv /data/local/tmp/screen.png ./
+```
+
+真机验收建议把 `hdc list targets`、`bm dump -n <bundle>`、HAP hash、关键截图、服务端 readback 放到同一 evidence 目录。对于 picker / upload / RAG，不要只看 UI 成功态：系统 picker 可见 fixture、上传 file record、ingest 状态、内容答案要分开记录。
 
 ### 端口转发
 

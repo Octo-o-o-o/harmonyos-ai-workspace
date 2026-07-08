@@ -151,7 +151,17 @@ CSS 侧：
 - 键盘打开时隐藏或上移底部 tabbar，避免两个 fixed dock 抢同一条底边。
 - ArkWeb 没有可靠的 JS API 直接读系统键盘高度；visualViewport 是最小跨端合同。
 
-## 四、Markdown 离线渲染器 · 标准模式
+## 四、Picker 上传 / RAG 验收边界
+
+WebView companion 如果通过 native picker 选择文件，再上传到服务端做 Chat/RAG，验收要拆成三道门：
+
+1. **系统 picker 可见 fixture**：`hdc file send` 到 `/data/local/tmp` 或应用沙盒，不等于 picker 能选到。文本 fixture 需要通过 Files / Gallery / 系统分享导入，或由用户手动放到 picker 可见位置。
+2. **上传 + ingest readback**：UI 显示"上传完成"只是第一层；还要看服务端 file record、ingest 状态和失败重试记录。
+3. **内容答案**：用 `.md` / `.txt` / PDF 中的唯一哨兵句提问，回答命中内容事实才算内容级 RAG。只回答文件名、MIME、大小，属于 metadata-bound smoke，不能替代内容 RAG。
+
+边界：picker URI 仍是 one-shot，不缓存、不后台轮询、不把本地路径交给 page world。图片 flow 如走视觉模型，单独标成 vision smoke。
+
+## 五、Markdown 离线渲染器 · 标准模式
 
 鸿蒙没有原生 markdown 组件。标配做法：
 
@@ -199,7 +209,7 @@ struct MarkdownView {
 - 不要用 CDN（用户离线时白屏）
 - bundle 体积 < 200 KB（`AGC-RJ-015` 包大小红线）
 
-## 五、Web 组件常被忽略的安全设置
+## 六、Web 组件常被忽略的安全设置
 
 ```typescript
 Web({ src, controller: this.controller })
@@ -217,13 +227,13 @@ Web({ src, controller: this.controller })
 
 **关联拒因**：[`AGC-RJ-001`](../../../07-publishing/checklist-2026-rejection-top20.md)（隐私）+ AGC 安全审核要求 https-only。
 
-## 六、性能注意
+## 七、性能注意
 
 - Web 组件初始化重：避免在长列表的 ListItem 里嵌 Web。改用"点击展开"
 - 同时多个 Web 组件 → 内存暴涨。如要多个 markdown 渲染器，**复用 1 个 Web + 切换内容**
 - 长内容用 `runJavaScript` 推 → 改成 `javaScriptProxy` 的 getter 让 H5 主动拉
 
-## 七、调试
+## 八、调试
 
 ```bash
 # 让 Web 组件支持 chrome://inspect 远程调试
@@ -246,6 +256,7 @@ webview.WebviewController.setWebDebuggingAccess(true);   // 仅 debug build 开
 // ❌ 4. 不解绑：aboutToDisappear 没 deleteJavaScriptRegister 导致内存泄漏
 // ❌ 5. 用 file:// 协议 / 信任所有 cert（AGC 拒）
 // ❌ 6. CDN 拉 markdown-it.js（用户离线白屏）
+// ❌ 7. 把 metadata-bound 文件名回答当成内容级 RAG 通过
 ```
 
 ## 进一步参考

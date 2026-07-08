@@ -187,7 +187,9 @@ ohpm config set registry https://ohpm.openharmony.cn/ohpm/
 hdc list targets
 hdc -t <id> install -r app.hap
 hdc shell aa start -a EntryAbility -b com.example.x
+hdc -t <id> shell aa start -a EntryAbility -b com.example.x -m entry --ps apiBaseUrl https://staging.example.com
 hdc shell aa force-stop com.example.x
+hdc -t <id> shell bm dump -n com.example.x
 hdc hilog | grep tag
 hdc hilog -L D|I|W|E
 hdc shell snapshot_display -f /data/local/tmp/s.png
@@ -330,7 +332,9 @@ import { util, ArrayList, HashMap, HashSet } from '@kit.ArkTS';
 | 401 | 参数错误 |
 | 801 | 设备不支持该能力 |
 | 16000050 | Ability 启动错误 |
+| 9568297 | compatibleSdkVersion 高于设备 OS |
 | 9568305 | HAP 安装包过大 / 校验失败 |
+| 9568322 | 签名 / profile 不匹配 |
 
 ## 13. 性能体检命令
 

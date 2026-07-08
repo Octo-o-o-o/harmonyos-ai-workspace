@@ -19,6 +19,8 @@
 - **N7 / 手机 WebView 软键盘与 `visualViewport` 规则**：`web-bridge` skill 与 `bridge-integration-pitfalls.md` 新增手机输入框 / composer 遮挡处理范式：统一 keyboard inset store，监听 `visualViewport.resize/scroll` + focus/resize，写 CSS var；禁止只靠 `100vh`、固定 padding 或每个组件各自猜键盘高度。
 - **N8 / 移动 raw socket 边界**：`03-platform-apis/README.md` 与 `bridge-integration-pitfalls.md` 明确 companion / WebView 架构不让 page world 驱动 IMAP / SMTP / CalDAV raw socket；默认走服务端 HTTPS relay。若产品本身是原生协议客户端，需单独 native capability + host/IP/TLS/HUKS/timeout/logging/smoke 门禁。
 - **N9 / scan 回归测试从 exit code 升级到 rule-id 断言**：`tools/test-suite.sh` 增 `assert_json_has_rule`，显式验证 `BadSecurityKit.ets` 命中 `CSPRNG-002`、`BadState.ets` 命中 `STATE-009`；`BadState.ets` 增 `Set.add` fixture，防止 N5 规则后续正则调整时静默退化。
+- **N10 / WebView theme override 同步规则**：`05-best-practices/bridge-integration-pitfalls.md` §2 补充 `ui.theme.applied` 类轻量事件的接线范式：WebView 已应用 light/dark 后，native shell 必须同步 `window.setWindowSystemBarProperties()` 与 ArkUI native island；AppStorage 只存轻量 string，不放 runtime class/function；该事件不进入 capability granted 集合、不要求 idempotencyKey。反哺溯源 OctoDesk Mobile/Desktop UI alignment v2 P6。
+- **N11 / HarmonyOS picker 上传与 RAG 真机验收规则**：`bridge-integration-pitfalls.md` 新增 §18，`web-bridge` skill 补充 picker → upload → ingest → Chat/RAG 三段验收边界：`hdc file send` 可写路径不等于系统 picker 可见 fixture；metadata-bound 文件名/MIME 回答不能替代内容级 RAG；发布证据必须拆分 picker-visible 文本 fixture、服务端 readback、内容答案哨兵句。`build-debug` skill、`04-build-debug-tools/README.md`、`09-quick-reference/README.md` 同步补 `aa start --ps` staging smoke、`bm dump -n` 读回和真机 evidence 收集口径。反哺溯源 OctoDesk Mobile Companion 2026-07 HarmonyOS physical follow-up。
 
 #### 2026-06-23 · OctoDesk N5 反哺（移动端 GA 前加固：WebView 生命周期 + ArkWeb 下载 + HUKS GCM）
 

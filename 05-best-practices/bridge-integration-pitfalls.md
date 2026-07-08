@@ -124,6 +124,21 @@ struct WebViewHost {
 - **Android**：handler 名（`addWebMessageListener` 的 `jsObjectName`）一旦定下来不能改 —— page world 的 JS 已经 hardcode 这个名字。改名等于断 bridge。
 - **iOS**：`WKUserContentController` 的 message handler 注册时机也是 `viewDidLoad` 之前，否则首屏握手会丢。
 
+### 附：WebView theme override 要同步 system bar 与 native island
+
+混合 shell 里 WebView 业务区通常自己解析 `prefers-color-scheme` / 用户主题偏好；HarmonyOS ArkUI 外壳如果只让 ArkWeb 自动变暗，会留下两个割裂面：
+
+- system bar foreground 还停在启动默认色，暗色页上可能读不清；
+- ArkUI native island（登录面板 / 设置岛 / permission prompt）仍只跟随系统 mediaquery，不跟随 WebView 内的显式 light/dark override。
+
+标准做法是加一个 Web → Native 的轻量 event（例如 `ui.theme.applied`），payload 只允许 `{ theme: 'light' | 'dark' }`，native 侧：
+
+- `window.setWindowSystemBarProperties()` 同步 `statusBarContentColor` / `navigationBarContentColor`；
+- native island 状态只通过轻量 string 进入 `AppStorage`（如 `octodeskAppliedTheme`），不要把 class/function/runtime singleton 放进 AppStorage；
+- ArkWeb 仍使用 `darkMode(WebDarkMode.Auto)` 让页面 `prefers-color-scheme` 正常工作，只有 WebView 已确认应用主题后再覆盖 native island。
+
+这个 event 是 UI hint，不是 capability，不应进入 granted 集合，也不应要求 idempotencyKey。
+
 ## 3. Mutating messages 必须带 `idempotencyKey`
 
 ### 陷阱
@@ -906,7 +921,47 @@ CSS 侧只认这个变量：
 
 > 反哺溯源 OctoDesk N6 · Mobile Mail IMAP Closeout：IMAP baseline 最终落在 server-side `imapflow` relay；移动端仅解禁 provider catalog 和 HTTPS bind/read，不增加 HarmonyOS 本地 IMAP/SMTP socket。
 
-## 18. 反检查清单（上 PR 前过一遍）
+## 18. Picker 上传 / RAG 真机验收：可见内容、上传成功、内容问答是三道门
+
+### 陷阱
+
+移动 companion / WebView app 常把"从本机文件提问"拆成 native picker → 上传 → 服务端 ingest → Chat/RAG。真机验收时有两个容易混在一起的误判：
+
+- `hdc file send` 能写进 `/data/local/tmp` 或应用沙盒，**不代表系统 picker 看得到**。系统 picker 只展示媒体库 / 文件提供方暴露的内容，shell 可写路径经常不可选。
+- 图片或截图上传后，Chat/RAG 能回答"文件名 / MIME / 大小"，只能证明 metadata path 通了，**不能证明文本内容已 ingest 并可被 RAG 检索**。
+
+这类误判会让 release gate 提前变绿：上传 UI 看起来完成，服务端也有 file record，但真实用户选择 `.md` / `.txt` / PDF 后内容问答仍可能失败。
+
+### 标准做法
+
+1. 准备 fixture 时先确认它在系统 picker 中可见：通过 Files / Gallery / 系统分享导入，或让用户手动放入 picker 可选位置；不要假设 `hdc file send` 到任意路径即可被 picker 选中。
+2. staging / QA 环境用 `Want` 参数注入非敏感配置，不把 secret 放进命令行：
+
+   ```bash
+   hdc -t <device-id> shell aa start \
+     -a EntryAbility \
+     -b com.example.app \
+     -m entry \
+     --ps apiBaseUrl https://staging.example.com
+   ```
+
+   `--ps` 只适合 base URL、feature flag、fixture id 这类非敏感字符串；OAuth secret、push secret、session token 仍走 HUKS / 服务端 / CI secret。
+3. 证据链至少分三段记录：
+   - shell / 包信息：`hdc list targets`、`hdc shell bm dump -n <bundle>`、HAP 文件 hash / build number；
+   - picker / upload：系统 picker 截图、上传完成截图、服务端 file record readback；
+   - ingest / answer：ingest 状态 readback，并用文本 fixture 里的唯一哨兵句提问，回答必须命中该句或可验证的内容事实。
+4. 图片 flow 如果走视觉模型，应标成 vision smoke；如果只回答文件名、MIME、尺寸，应标成 metadata-bound smoke，不能替代内容级 RAG。
+5. `uitest` 坐标点击 / 手工点击都可以作为真机走查手段，但必须把人工步骤和未覆盖权限弹窗写进证据，不要把"点击过上传按钮"等同于权限、picker、ingest、RAG 全通过。
+
+### 跨端注意
+
+- HarmonyOS picker URI 仍按 §6 的 one-shot 原则处理：不缓存 URI，不后台轮询，不把本地路径透给 WebView。
+- Folder Import 类能力如需后续可读，必须是显式授权 + 手动刷新；不要把桌面 watched folder 模型搬到移动端。
+- iOS / Android 也有类似陷阱：模拟器或 shell 可写路径不等于系统 picker 可见位置；release gate 应按"可见 fixture → 上传 → ingest → 内容答案"拆分证据。
+
+> 反哺溯源 OctoDesk Mobile Companion 2026-07 physical HarmonyOS follow-up：signed HAP staging `Want` 启动 + 系统 picker 上传 JPEG 证明 metadata-bound path；因 picker-visible 文本 fixture 未准备，内容级 RAG gate 保持 blocked。
+
+## 19. 反检查清单（上 PR 前过一遍）
 
 - [ ] handshake 的 `granted` 来自 handler 注册表，不是 enum
 - [ ] `BridgeCapability` enum 新增条目都有对应 handler，或者明确 reject + reason
@@ -930,10 +985,11 @@ CSS 侧只认这个变量：
 - [ ] `data:` URL 下载手动拦截（cancel + base64 + fileIo + 大小上限 + 文件名 sanitize），`onDownloadFailed` 吞掉主动 cancel 的误报（§15）
 - [ ] 手机 WebView 底部输入框 / composer 用 visualViewport → CSS var 管键盘 inset，不靠 `100vh` / 固定 padding（§16）
 - [ ] companion / WebView 架构不让 page world 驱动 IMAP / SMTP / CalDAV raw socket；默认走 HTTPS relay（§17）
+- [ ] picker / upload / RAG 验收拆成三道门：picker-visible 文本 fixture、上传+ingest readback、内容答案命中哨兵句；metadata-bound 回答不能替代内容级 RAG（§18）
 - [ ] cancel / ack 类操作取消目标走 payload，不用 envelope 信封 id 兜底（§3）
 - [ ] HUKS AES-GCM 用 `HUKS_TAG_NONCE` + AE_TAG 双位置兜底 + 版本化封套（§8）
 
-## 19. 相关 scan-arkts 规则
+## 20. 相关 scan-arkts 规则
 
 | 规则 ID | 严重度 | 覆盖什么 |
 |--------|--------|---------|
@@ -949,7 +1005,7 @@ CSS 侧只认这个变量：
 | `KIT-004` | High | HMS ScanKit `ScanType.QRCODE` 已改名 `QR_CODE`，旧值 undefined |
 | `DB-001` | High | `ResultSet` / `RdbStore` 未 close |
 
-## 20. 相关文档
+## 21. 相关文档
 
 - `01-language-arkts/02-typescript-to-arkts-migration.md` — ArkTS 严格模式禁用项
 - `03-platform-apis/` — Kit 系统能力索引
@@ -961,4 +1017,4 @@ CSS 侧只认这个变量：
 
 ---
 
-> **来源**：本文 17 类陷阱沉淀自 2026-05 起一个真实下游消费者（企业级 AI 工作面 macOS / iPadOS / Android / HarmonyOS 四端套件）实战教训 + 评审反馈。具体出处可能因后续脱敏调整不再可追溯，但所有陷阱都在三端的至少一端实际遇到过、并被代码 review 拍板进规则。新增条目欢迎附最小复现路径。
+> **来源**：本文 18 类陷阱沉淀自 2026-05 起一个真实下游消费者（企业级 AI 工作面 macOS / iPadOS / Android / HarmonyOS 四端套件）实战教训 + 评审反馈。具体出处可能因后续脱敏调整不再可追溯，但所有陷阱都在三端的至少一端实际遇到过、并被代码 review 拍板进规则。新增条目欢迎附最小复现路径。

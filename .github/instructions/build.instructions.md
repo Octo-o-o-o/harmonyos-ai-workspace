@@ -45,6 +45,8 @@ hdc list targets                                   # 列设备
 hdc -t <id> install -r entry/build/default/outputs/default/*.hap   # 安装
 hdc -t <id> uninstall com.example.x                # 卸载
 hdc shell aa start -a EntryAbility -b com.example.x   # 启动 Ability
+hdc -t <id> shell aa start -a EntryAbility -b com.example.x -m entry --ps apiBaseUrl https://staging.example.com   # staging smoke，非敏感参数
+hdc -t <id> shell bm dump -n com.example.x         # bundle / version / permissions / profile 读回
 hdc shell                                          # 进入 shell
 hdc hilog | grep MyTag                             # 查日志
 hdc fport tcp:9229 tcp:9229                        # 端口转发（NAPI / Web 调试）
@@ -55,6 +57,8 @@ hdc -t <id> shell param get const.product.software.version   # e.g. 6.1.0.117(SP
 hdc -t <id> shell param get const.ohos.apiversion            # e.g. 23
 hdc -t <id> shell param get const.product.model              # e.g. MLR-AL10
 ```
+
+`aa start --ps` 只放 base URL、feature flag、fixture id 等非敏感字符串；OAuth secret、push secret、session token 不进命令行。真机 evidence 里建议同时收 `hdc list targets`、`bm dump -n <bundle>`、HAP hash、关键截图和服务端 readback。
 
 ## hilog 正确写法
 

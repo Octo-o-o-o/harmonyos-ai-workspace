@@ -253,7 +253,7 @@ PostToolUse 钩子并非孤例（[`yibaiba/harmonyos-skills-pack`](https://githu
 
 合计 ~95 条编号规则，分布在四层；它们用于不同场景。
 
-**接线层陷阱**（scanner 抓不到、灰度才暴露的）单独整理在 [`05-best-practices/bridge-integration-pitfalls.md`](05-best-practices/bridge-integration-pitfalls.md)：17 类常见 Web Bridge + 原生外壳集成坑（capability 握手 fail-closed、`javaScriptProxy` 生命周期、idempotencyKey 强制、envelope schema validation、token / SecureStore 写入原子性、pasteboard 提示时机、App-Linking 双侧配置 + EntryAbility 双入口、HMS ScanKit dual-import、原生 blur 有界增强、WebView 前后台生命周期统一管理、ArkWeb data-URL 下载、手机 WebView 软键盘 / visualViewport、移动 raw socket 边界等），沉淀自下游真工程教训。
+**接线层陷阱**（scanner 抓不到、灰度才暴露的）单独整理在 [`05-best-practices/bridge-integration-pitfalls.md`](05-best-practices/bridge-integration-pitfalls.md)：18 类常见 Web Bridge + 原生外壳集成坑（capability 握手 fail-closed、`javaScriptProxy` 生命周期、idempotencyKey 强制、envelope schema validation、token / SecureStore 写入原子性、pasteboard 提示时机、App-Linking 双侧配置 + EntryAbility 双入口、HMS ScanKit dual-import、原生 blur 有界增强、WebView 前后台生命周期统一管理、ArkWeb data-URL 下载、手机 WebView 软键盘 / visualViewport、移动 raw socket 边界、picker 上传 / RAG 真机验收等），沉淀自下游真工程教训。
 
 **Monorepo 接入**：HarmonyOS shell 是大 monorepo 子目录的项目（不是 npm app 形态），参考 [`samples/integrations/monorepo-consumer/`](samples/integrations/monorepo-consumer/) —— 三个文件薄 wrapper、scope 到子目录、单一来源、零文件复制；包含 token 成本实测与降噪方案。
 
