@@ -2,7 +2,7 @@
 name: harmonyos-review
 verified_against: harmonyos-6.1.1-api24  # docs-checked 2026-07-09（对照官方 6.1.x release notes 核验，未逐条真机重跑）
 description: |
-  鸿蒙 ArkTS / ArkUI 代码审查 + 10 大类 60+ 规则扫描 + 优先级报告。
+  鸿蒙 ArkTS / ArkUI 代码审查 + 10 大类 75 条规则扫描 + 优先级报告。
   **激活条件**（满足任一即激活）：
     - 用户说"review 这段鸿蒙代码" / "审一下 PR" / "审计 .ets 文件"
     - 用户问"上线前检查" / "提审前自查" / "技术债梳理"

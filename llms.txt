@@ -2,7 +2,7 @@
 
 > 面向 Claude Code / Codex CLI / Cursor / Copilot / Aider 等 24+ AI 编码助手（[agents.md 标准](https://agents.md/)）的鸿蒙开发参考工作区。
 > HarmonyOS 6 系列（API 21–24；HarmonyOS 7 预览 = API 26）+ ArkTS + ArkUI，含官方文档镜像、严格语法规则、状态管理速查、构建调试 / 测试质量 / 上架签名 Skills、PostToolUse 自动校验钩子。
-> 当前版本：v0.5.0（2026-07-09）
+> 当前版本：v0.5.1（2026-07-09）
 
 ## 入口（按 AI 工具）
 
@@ -32,7 +32,7 @@
 - [.claude/skills/multimodal-llm/SKILL.md](.claude/skills/multimodal-llm/SKILL.md): LLM 客户端领域（OpenAI Vision / Whisper / DALL-E / SSE 流式解析 / union content 拆双字段）
 - [.claude/skills/web-bridge/SKILL.md](.claude/skills/web-bridge/SKILL.md): ArkUI Web 组件 + H5↔ArkTS 桥（`javaScriptProxy` 稳定实例 / `runJavaScript` 时序 / Markdown 离线渲染器）
 - [.claude/skills/testing-quality/SKILL.md](.claude/skills/testing-quality/SKILL.md): 测试与质量评估（hypium 单测 / UiTest / `aa test` CLI / AGC 云测·SmartPerf·wukong 工位）
-- [.claude/skills/harmonyos-review/SKILL.md](.claude/skills/harmonyos-review/SKILL.md): 9 大类 60+ 规则代码审查 → 优先级报告（提审前一次性扫描，不 always-on）
+- [.claude/skills/harmonyos-review/SKILL.md](.claude/skills/harmonyos-review/SKILL.md): 10 大类 75 条规则代码审查 → 优先级报告（提审前一次性扫描，不 always-on）
 
 ## Recipes（可粘贴的鸿蒙最小可用代码）
 

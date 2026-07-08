@@ -17,7 +17,7 @@
 | `build-debug` | Hvigor / OHPM / hdc / 错误码诊断 |
 | `signing-publish` | 签名三件套、AGC 上架、审核拒因 |
 | `runtime-pitfalls` | 运行时装配陷阱 |
-| `harmonyos-review` | 9 大类规则审查与报告模板 |
+| `harmonyos-review` | 10 大类规则审查与报告模板 |
 | `multimodal-llm` | OpenAI / Anthropic / Gemini 多模态与 SSE 调用 |
 | `web-bridge` | ArkUI Web 组件与 H5 ↔ ArkTS 桥 |
 | `testing-quality` | hypium 单测 / UiTest / `aa test` / 云测·SmartPerf·wukong 质量工位 |

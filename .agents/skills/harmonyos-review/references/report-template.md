@@ -108,8 +108,8 @@
 | 前缀 | 主题 | 数量 | 来源文件 |
 | --- | --- | --- | --- |
 | `ARKTS-*` | ArkTS 语法（编译期） | 14 条 | `.claude/skills/arkts-rules/references/spec-quick-ref.md` § 一 |
-| `STATE-*` | 状态管理（运行时） | 10 条 | 同上 § 二 |
-| `KIT-*` | Kit 使用规范 | 7 条 | 同上 § 三 + `references/checklist.md` |
+| `STATE-*` | 状态管理（运行时） | 13 条 | `references/checklist.md` § 3（与 spec-quick-ref § 二对齐） |
+| `KIT-*` | Kit 使用规范 | 9 条 | `references/checklist.md` § 9（与 scanner / spec-quick-ref 对齐） |
 | `PERF-*` | 性能反模式 | 8 条 | `references/checklist.md` § 7 |
 | `SEC-*` | 安全 / 隐私 | 8 条 | `references/checklist.md` § 1 |
 | `LIFE-*` | 生命周期资源管理 | 5 条 | `references/checklist.md` § 4 |
@@ -119,7 +119,7 @@
 | `AGC-RJ-*` | 上架审核拒因 | 20 条 | `07-publishing/checklist-2026-rejection-top20.md` |
 | `TEST-*` | 测试与质量 | 2 条 | `references/checklist.md` § 10 |
 
-合计 **90 条**带稳定 ID 的规则跨四类生命周期阶段。
+合计 **95 条**带稳定 ID 的规则跨四类生命周期阶段。另有 `NAV-*` / `UI-*` / `TYPES-*` / `CSPRNG-*` / `STRING-JSON-*` 等案例沉淀编号（见 `spec-quick-ref.md` § 二/三/四），报告中同样用稳定 ID 引用。
 
 ### 引用格式（强制）
 

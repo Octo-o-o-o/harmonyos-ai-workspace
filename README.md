@@ -247,11 +247,11 @@ PostToolUse 钩子并非孤例（[`yibaiba/harmonyos-skills-pack`](https://githu
 | 层 | 数量 | 位置 | 用途 |
 | --- | --- | --- | --- |
 | **自动化扫描**（钩子触发） | 32 条 | `tools/hooks/lib/scan-arkts.sh` 内联 + awk 装饰器上下文检测 | grep-based 快扫，毫秒级反馈；支持 [inline-suppress](.claude/skills/arkts-rules/SKILL.md#抑制-scanner-误报inline-suppress) |
-| **代码审查清单** | 38 条（10 大类） | `.claude/skills/harmonyos-review/references/checklist.md` | review skill 引用的稳定 ID（`SEC-001` / `STATE-002` / `TEST-002` 等） |
+| **代码审查清单** | 75 条（10 大类） | `.claude/skills/harmonyos-review/references/checklist.md` | review skill 引用的稳定 ID（`SEC-001` / `STATE-002` / `TEST-002` 等） |
 | **AGC 提审拒因** | 20 条 | `07-publishing/checklist-2026-rejection-top20.md` | 上架审核拒因映射，含 `AGC-RJ-*` 稳定 ID |
-| **OHPM 黑名单**（已知伪包） | ~25 项 | `tools/data/ohpm-blacklist.txt` + 脚本内联 | 防 AI 虚构包名 |
+| **OHPM 黑名单**（已知伪包） | 28 项 | `tools/data/ohpm-blacklist.txt` + 脚本内联 | 防 AI 虚构包名 |
 
-合计 ~95 条编号规则，分布在四层；它们用于不同场景。
+合计 ~155 个条目，分布在四层（scan 层与审查清单共用同一 ID 体系，部分编号重叠）；它们用于不同场景。
 
 **接线层陷阱**（scanner 抓不到、灰度才暴露的）单独整理在 [`05-best-practices/bridge-integration-pitfalls.md`](05-best-practices/bridge-integration-pitfalls.md)：18 类常见 Web Bridge + 原生外壳集成坑（capability 握手 fail-closed、`javaScriptProxy` 生命周期、idempotencyKey 强制、envelope schema validation、token / SecureStore 写入原子性、pasteboard 提示时机、App-Linking 双侧配置 + EntryAbility 双入口、HMS ScanKit dual-import、原生 blur 有界增强、WebView 前后台生命周期统一管理、ArkWeb data-URL 下载、手机 WebView 软键盘 / visualViewport、移动 raw socket 边界、picker 上传 / RAG 真机验收等），沉淀自下游真工程教训。
 

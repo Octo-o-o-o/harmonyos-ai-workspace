@@ -282,12 +282,15 @@ do_clean() {
 }
 
 find_hap() {
-  local signed
-  signed=$(find "$PROJECT_DIR/$MODULE_NAME/build" -name "*-signed.hap" -type f 2>/dev/null | sort | tail -1 || true)
+  # $1: outputs 子目录（default = 主 HAP；ohosTest = 测试 HAP），缺省 default。
+  # 限定子目录很重要：跑过 test 子命令后 build/ 下同时存在 default 与 ohosTest 两套产物，
+  # 不限定会把 ohosTest HAP 误当主 HAP 装上去。优先取签名产物，同名多产物取排序最新。
+  local sub="${1:-default}" signed
+  signed=$(find "$PROJECT_DIR/$MODULE_NAME/build" -path "*outputs/$sub/*-signed.hap" -type f 2>/dev/null | sort | tail -1 || true)
   if [[ -n "$signed" ]]; then
     echo "$signed"
   else
-    find "$PROJECT_DIR/$MODULE_NAME/build" -name "*.hap" -type f 2>/dev/null | sort | tail -1 || true
+    find "$PROJECT_DIR/$MODULE_NAME/build" -path "*outputs/$sub/*.hap" -type f 2>/dev/null | sort | tail -1 || true
   fi
 }
 
@@ -386,8 +389,8 @@ do_test() {
     assembleHap --no-daemon
 
   local MAIN_HAP TEST_HAP
-  MAIN_HAP=$(find "$PROJECT_DIR/$MODULE_NAME/build" -path '*outputs/default/*.hap' -print 2>/dev/null | head -1)
-  TEST_HAP=$(find "$PROJECT_DIR/$MODULE_NAME/build" -path '*outputs/ohosTest/*.hap' -print 2>/dev/null | head -1)
+  MAIN_HAP=$(find_hap default)
+  TEST_HAP=$(find_hap ohosTest)
   [[ -z "$MAIN_HAP" ]] && { echo "ERROR: main HAP not found under $MODULE_NAME/build/**/outputs/default/" >&2; exit 1; }
   [[ -z "$TEST_HAP" ]] && { echo "ERROR: ohosTest HAP not found under $MODULE_NAME/build/**/outputs/ohosTest/（检查 ohosTest 签名配置，未签名会构建失败）" >&2; exit 1; }
 

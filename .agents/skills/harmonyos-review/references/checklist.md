@@ -1,6 +1,10 @@
 # 鸿蒙代码审查 · 完整 Checklist
 
-> 9 大类、~60 条具体扫描点。每条带稳定 ID（如 `SEC-001`、`ARKTS-002`），便于 AI 在报告中引用。
+> 10 大类、75 条具体扫描点。每条带稳定 ID（如 `SEC-001`、`ARKTS-002`），便于 AI 在报告中引用。
+>
+> **v0.5.1 ID 对齐说明**：本清单曾与 scanner（`tools/hooks/lib/scan-arkts.sh`）/ [`spec-quick-ref.md`](../../arkts-rules/references/spec-quick-ref.md) 对 `STATE-009/010`、`KIT-002/003/004` 各自定义不同语义。现以 **scanner 语义为准**（下游代码里的 `// scan-ignore:` 抑制注释与历史报告引用的都是 scanner 语义），本清单侧改号：原 STATE-009（@Watch 死循环）→ `STATE-012`；原 STATE-010（AppStorage）→ `STATE-013`；原 KIT-002（File 流式）→ `KIT-008`；原 KIT-003（ImageSource release）→ `KIT-002`；原 KIT-004（通知）→ `KIT-009`。
+>
+> 另有案例沉淀的 `NAV-*` / `UI-*` / `TYPES-*` / `CSPRNG-*` / `STRING-JSON-*` 编号（scanner / 运行时陷阱侧），映射见 [`spec-quick-ref.md`](../../arkts-rules/references/spec-quick-ref.md)，报告中同样可直接引用。
 
 ## 1. 安全合规（SEC）
 
@@ -46,8 +50,11 @@
 | STATE-006 | V1 `@Link` 调用方传 `$$x`，不是 `x` | Medium |
 | STATE-007 | V2 `@Event` 字段必须有默认值 `() => {}` | Medium |
 | STATE-008 | `build()` 是纯函数，不调 await / setState / 副作用 | High |
-| STATE-009 | `@Watch` / `@Monitor` 回调内不修改触发字段（无限循环） | High |
-| STATE-010 | 跨页面共享状态用 AppStorage / LocalStorage，不用全局变量 | Medium |
+| STATE-009 | Map / Set 状态变更替换实例（`new Map(this.cache)` 后再赋值），无 `set/delete/clear/add` 就地 mutation | High |
+| STATE-010 | Per-host / per-workspace 语义的单例 store 用 `${serverId}:${...}` 联合 key 分桶，不用单 key（多 host 状态串扰） | Medium |
+| STATE-011 | 所有 store 写入走 reducer / action 单一入口，不绕过（绕路径丢 timestamp 等元数据） | Medium |
+| STATE-012 | `@Watch` / `@Monitor` 回调内不修改触发字段（无限循环）（v0.5.1 前编号 STATE-009） | High |
+| STATE-013 | 跨页面共享状态用 AppStorage / LocalStorage，不用全局变量（v0.5.1 前编号 STATE-010） | Medium |
 
 ## 4. 生命周期（LIFECYCLE）
 
@@ -108,12 +115,14 @@
 | ID | 检查项 | 严重级 |
 | --- | --- | --- |
 | KIT-001 | Network Kit：`http.createHttp()` 用完调 `destroy()` | High |
-| KIT-002 | File Kit：流式读写大文件，不一次性 readAll | Medium |
-| KIT-003 | Image Kit：解码后释放 `imageSource` | High |
-| KIT-004 | Notification Kit：通知 ID 唯一，渠道注册一次 | Medium |
+| KIT-002 | Image Kit：解码后释放 `imageSource`（v0.5.1 前编号 KIT-003） | High |
+| KIT-003 | HMS ScanKit：dual-import `@hms.core.scan.*` 而非直接 `@kit.ScanKit`（HarmonyOS 6.x 真机 default export 解析不稳） | Medium |
+| KIT-004 | HMS ScanKit：`ScanType.QR_CODE` 新名（`QRCODE` 旧名已改名，解析为 undefined → BusinessError 401） | High |
 | KIT-005 | 错误处理：所有 Kit Promise 都有 catch，BusinessError 显式判 code | High |
 | KIT-006 | Background Tasks Kit 不滥用，遵守平台后台执行约束 | Medium |
 | KIT-007 | 跨进程通信走 RPC（@kit.AbilityKit），不用文件共享 | Medium |
+| KIT-008 | File Kit：流式读写大文件，不一次性 readAll（v0.5.1 前编号 KIT-002） | Medium |
+| KIT-009 | Notification Kit：通知 ID 唯一，渠道注册一次（v0.5.1 前编号 KIT-004） | Medium |
 
 ## 10. 测试与质量（TEST）
 

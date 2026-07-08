@@ -144,7 +144,7 @@ devecocli init --mcp --agent claude-code --project ./    # 工程级
 devecocli init --mcp                                     # 用户级
 ```
 
-与本仓的关系：deveco-mcp 的语法检查发生在 **AI 主动调用时**；本仓 PostToolUse 钩子是 **每次编辑后强制触发**且带 60+ 编号规则与 OHPM 校验。两者可共存——官方 MCP 补"真编译器视角"，本仓钩子保"违规零漏过"。要求 DevEco Studio ≥ 6.1.0，macOS / Windows。
+与本仓的关系：deveco-mcp 的语法检查发生在 **AI 主动调用时**；本仓 PostToolUse 钩子是 **每次编辑后强制触发**且带 30+ 编号规则与 OHPM 校验。两者可共存——官方 MCP 补"真编译器视角"，本仓钩子保"违规零漏过"。要求 DevEco Studio ≥ 6.1.0，macOS / Windows。
 
 ## 维护者注
 

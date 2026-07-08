@@ -219,3 +219,15 @@ API 编号 ↔ 系统版本对照（更新后单一权威表）：
 - 验证证据：`tools/test-suite.sh` **40 passed, 0 failed**（含 2 条新增的黑名单误杀回归断言 + 新模板自动纳入 sample 扫描）；`generate-ai-configs.sh --check` 通过；`doctor.sh` 9 skills 双侧识别（唯一 FAIL 是"当前目录不是鸿蒙 app 工程"，对 DevSpace 本体属预期）。
 - 实施中在方案外新发现并顺手修正：`scaffold-deveco-project.sh` 的 `--api-target 22` 与 `SDK_VERSION 6.1.1(24)` 内部矛盾（会生成 compatible > target 的工程配置）；`04-build-debug-tools` oh-package 示例 `modelVersion 5.0.0` 过旧；`bin/cli.js` 版本提示串。
 - 改动规模：80 文件 +560/-210，另新增 5 组文件（testing-quality skill ×2 镜像、hypium-uitest 模板、good-oh-package fixture、本文档）。
+
+---
+
+## 七、推送后复查（v0.5.1，2026-07-09 同日）
+
+v0.5.0 推送后做了一轮新鲜通读复查（对账 §4 承诺项 + 重放上轮 subagent review 发现），确认三类残留问题并以 v0.5.1 收尾：
+
+1. **规则 ID 语义冲突（真错误，v0.5.0 之前就存在）**：checklist 与 scanner/spec-quick-ref 对 `STATE-009/010`、`KIT-002/003/004` 各自定义了不同语义——稳定 ID 体系的根本承诺（跨工具用同一编号交流）被破坏。根因：v0.4.x 案例反哺往 scanner/spec 加新规则时跳过了 spec-quick-ref §五"纳入流程"的第 2 步（checklist 同步），撞上了 checklist 既有编号。裁决：**scanner 语义为准**（下游代码里的 `// scan-ignore:` 抑制注释与 fixture 断言都引用 scanner 语义，动它是 breaking change），checklist 侧改号 + 补齐缺失行（75 条），迁移对照表写进 checklist 头部与 CHANGELOG。
+2. **上轮 bugbot 指出但未修净的 `do_test` HAP 选择**：`find | head -1` 不选签名包且顺序不稳；顺藤摸出 `find_hap()` 更早的坑——跑过 `test` 后 `build/` 同时有 default 与 ohosTest 产物，`sort | tail -1` 按字典序会把 ohosTest HAP 误当主 HAP 装（`d` < `o`）。统一为 `find_hap <outputs子目录>`。
+3. **计数矛盾**：checklist 头部"9 大类 ~60 条" / README"38 条 + ~25 项" / llms.txt 与 `.agents/skills/README.md`"9 大类" / AGENTS.md 把 32 条 scanner 写成"60+"。全部对齐实际值（scanner 32 / checklist 75 / AGC 20 / OHPM 黑名单 28）。
+
+**遗留观察（不在本轮处理，记录在案）**：`report-template.md` 的 ID 命名空间表只列 review 视角的 11 个前缀，`NAV-*`/`UI-*`/`TYPES-*` 等案例编号以一行指针指向 spec-quick-ref（避免双源）；`docs/REVIEW-NEXT-STEPS-2026-05.md` 的 `platform-matrix.json` 单源生成仍是候选项。

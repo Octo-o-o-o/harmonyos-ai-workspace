@@ -199,7 +199,7 @@ this.cache = next;
 | 用状态装饰器 / "UI 不刷新" / V1 vs V2 选型 | `state-management` | 替换引用铁律、V1/V2 对照、错误诊断 |
 | 打包 / Hvigor / OHPM / hdc / 错误码诊断 | `harmonyos-build-debug` | 三种产物、命令速查、错误码 |
 | 配签名 / 申请证书 / AGC 上架 / 审核被拒 | `harmonyos-signing-publish` | 三件套、AGC 流程、Top 20 拒因 |
-| review 鸿蒙代码 / PR 审查 / 上架前自查 | `harmonyos-review` | 10 大类 60+ 编号规则扫描 + 报告模板 |
+| review 鸿蒙代码 / PR 审查 / 上架前自查 | `harmonyos-review` | 10 大类 75 条编号规则扫描 + 报告模板 |
 | 主题切换 / 模块改名 / `string.json` 空数组 / HUKS 加密 / `DEVECO_SDK_HOME` / 替换品牌图标（layered icon） 工程装配 | `runtime-pitfalls` | 17 类工程层装配陷阱（一～十七，grep 扫不出来的运行期 BUG，含 NavPathStack 白屏 / emoji 渲染 / Button padding / build() 单 root / timeline timestamp / per-host store / daemon workspaceId / layered icon foreground 透明） |
 | 写测试 / hypium / UiTest / `aa test` / 上架前自测·云测·性能摸底 | `testing-quality` | Local vs ohosTest 铁律、hypium/UiTest 速查、`aa test` CLI、质量评估工位（云测/SmartPerf/wukong/Profiler） |
 | OpenAI Vision / Whisper / DALL-E / SSE 流式 / `string\|object[]` union content | `multimodal-llm` | LLM 客户端领域专项 |

@@ -6,6 +6,19 @@
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-09
+
+**主题：v0.5.0 推送后复查收尾——规则 ID 冲突消解 + 计数一致性 + dev-cycle HAP 选择修复**（复查过程见 [`docs/RESEARCH-UPDATE-2026-07.cursor.fable.md` §7](docs/RESEARCH-UPDATE-2026-07.cursor.fable.md)）。
+
+### Fixed
+
+- **规则 ID 语义冲突消解（checklist ↔ scanner/spec-quick-ref）**：`checklist.md` 与 `scan-arkts.sh`/`spec-quick-ref.md` 对同一编号定义了不同规则——`STATE-009`（checklist=@Watch 死循环 vs scanner=Map/Set 就地 mutation）、`STATE-010`（AppStorage vs per-host store 隔离）、`KIT-002/003/004`（File 流式/ImageSource/通知 vs ImageSource/ScanKit dual-import/QR_CODE 改名）。破坏了"稳定 ID 跨工具交流"的根本承诺（下游 `// scan-ignore:` 注释引用的都是 scanner 语义）。**以 scanner 语义为准，checklist 侧改号**并在头部附迁移对照：
+  - checklist `STATE-009`（@Watch 死循环）→ `STATE-012`；`STATE-010`（AppStorage）→ `STATE-013`
+  - checklist `KIT-002`（File 流式）→ `KIT-008`；`KIT-003`（ImageSource release）→ `KIT-002`；`KIT-004`（通知）→ `KIT-009`
+  - checklist 补齐 scanner/案例已有但清单缺失的行：`STATE-009`（Map/Set mutation）/ `STATE-010`（per-host store serverId 隔离）/ `STATE-011`（store 写入走 reducer 单一入口）/ `KIT-003`（ScanKit dual-import）/ `KIT-004`（ScanType.QR_CODE）——执行 spec-quick-ref §五"新规则纳入流程"欠下的第 2 步
+- **`harmony-dev-cycle.sh` HAP 选择两处 bug**（上轮 subagent review 指出未修净）：① `do_test` 用 `find | head -1` 选 HAP——不优先 `-signed.hap` 且顺序不稳定，多产物时可能装到未签名/过时包；② `find_hap()` 不限定 outputs 子目录——跑过 `test` 后 `build/` 下同时存在 default 与 ohosTest 产物，`sort | tail -1` 会把 ohosTest HAP 误当主 HAP 安装。统一为 `find_hap <default|ohosTest>`：限定子目录 + 签名优先 + 排序取最新。
+- **规则计数全仓矛盾**：checklist 头部仍写"9 大类 ~60 条"（实际 10 大类；本轮补行后 75 条）；README 规则四层表写"38 条"（v0.4.x 起就与实际不符）与"OHPM ~25 项"（实际 28 项）；llms.txt / `.agents/skills/README.md` 残留"9 大类"；AGENTS.md 把 32 条的 scanner 写成"60+ 规则"。统一为：scanner 32 条 / 审查清单 75 条（10 大类）/ AGC 20 条 / OHPM 黑名单 28 项；report-template 稳定 ID 合计 90 → 95 条，并注明 `NAV-*`/`UI-*`/`TYPES-*`/`CSPRNG-*` 等案例编号见 spec-quick-ref。
+
 ## [0.5.0] - 2026-07-09
 
 **主题：版本现实对齐 + OHPM 误判纠错 + 测试/质量评估补全**。调研与决策全文见 [`docs/RESEARCH-UPDATE-2026-07.cursor.fable.md`](docs/RESEARCH-UPDATE-2026-07.cursor.fable.md)（含同类项目借鉴评估 A×2/B×3/C×4 与方案自 review）。
